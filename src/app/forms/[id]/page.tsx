@@ -315,7 +315,6 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
         visibleAnswers[field.id] = answers[field.id];
       }
     });
-
     startTransition(async () => {
       const result = await submitResponseAction(formId, visibleAnswers);
       if (result.success) {
@@ -329,9 +328,9 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
 
   if (isLoadingForm) {
     return (
-      <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-neutral-955 text-neutral-100 flex flex-col items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
-        <p className="text-sm text-neutral-400">Memuat formulir...</p>
+        <p className="text-sm text-neutral-450 font-medium">Memuat formulir...</p>
       </div>
     );
   }
@@ -339,17 +338,16 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
   if (!form) {
     return (
       <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col items-center justify-center p-4">
-        <Card className="w-full max-w-md border-neutral-900 bg-neutral-900/50 text-center p-6">
-          <CardHeader>
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-950/30 border border-red-900/50 text-red-400 mb-4">
-              <AlertCircle className="h-6 w-6" />
-            </div>
-            <CardTitle className="text-xl text-neutral-200">Formulir Tidak Ditemukan</CardTitle>
-            <CardDescription className="text-neutral-500 mt-2">
-              Tautan yang Anda ikuti mungkin rusak, atau formulir ini telah dihapus oleh pengelolanya.
-            </CardDescription>
-          </CardHeader>
-        </Card>
+        <div className="w-full max-w-md border border-neutral-850 bg-neutral-900/10 backdrop-blur-md rounded-2xl text-center p-8 relative overflow-hidden shadow-2xl">
+          <div className="absolute top-0 left-0 w-full h-[3px] bg-rose-500" />
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-rose-955/20 border border-rose-900/40 text-rose-450 mb-5 shadow-[0_0_20px_rgba(244,63,94,0.08)]">
+            <AlertCircle className="h-6 w-6" />
+          </div>
+          <h2 className="text-xl font-bold text-neutral-200">Formulir Tidak Ditemukan</h2>
+          <p className="text-neutral-455 text-sm mt-3 leading-relaxed">
+            Tautan yang Anda ikuti mungkin rusak, atau formulir ini telah dihapus oleh pengelolanya.
+          </p>
+        </div>
       </div>
     );
   }
@@ -358,27 +356,25 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
   const isExpired = form.expiry_date ? new Date() > new Date(form.expiry_date) : false;
   if (isExpired || !form.is_active) {
     return (
-      <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col items-center justify-center p-4">
-        <Card className="w-full max-w-md border-neutral-900 bg-neutral-900/50 text-center p-6 relative overflow-hidden shadow-2xl">
+      <div className="min-h-screen bg-neutral-955 text-neutral-100 flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md border border-neutral-850 bg-neutral-900/10 backdrop-blur-md rounded-2xl text-center p-8 relative overflow-hidden shadow-2xl">
           <div className="absolute top-0 left-0 w-full h-[3px] bg-amber-500" />
-          <CardHeader>
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-950/30 border border-amber-900/50 text-amber-500 mb-4">
-              <AlertCircle className="h-6 w-6" />
-            </div>
-            <CardTitle className="text-xl font-bold text-neutral-200">Formulir Ditutup</CardTitle>
-            <CardDescription className="text-neutral-400 mt-2 text-sm leading-relaxed">
-              {isExpired ? (
-                <>
-                  Formulir <strong className="text-neutral-300">"{form.title}"</strong> sudah melewati batas waktu pengisian ({new Date(form.expiry_date!).toLocaleString("id-ID")}) dan tidak menerima tanggapan baru.
-                </>
-              ) : (
-                <>
-                  Formulir <strong className="text-neutral-300">"{form.title}"</strong> sudah ditutup oleh pemiliknya dan tidak menerima tanggapan baru.
-                </>
-              )}
-            </CardDescription>
-          </CardHeader>
-        </Card>
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-amber-955/20 border border-amber-900/40 text-amber-500 mb-5 shadow-[0_0_20px_rgba(245,158,11,0.08)]">
+            <AlertCircle className="h-6 w-6" />
+          </div>
+          <h2 className="text-xl font-bold text-neutral-205">Formulir Ditutup</h2>
+          <p className="text-neutral-450 text-sm mt-3 leading-relaxed">
+            {isExpired ? (
+              <>
+                Formulir <strong className="text-neutral-300">"{form.title}"</strong> sudah melewati batas waktu pengisian ({new Date(form.expiry_date!).toLocaleString("id-ID")}) dan tidak menerima tanggapan baru.
+              </>
+            ) : (
+              <>
+                Formulir <strong className="text-neutral-300">"{form.title}"</strong> sudah ditutup oleh pemiliknya dan tidak menerima tanggapan baru.
+              </>
+            )}
+          </p>
+        </div>
       </div>
     );
   }
@@ -386,18 +382,16 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
   if (isAlreadySubmitted) {
     return (
       <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col items-center justify-center p-4">
-        <Card className="w-full max-w-md border-neutral-900 bg-neutral-900/50 text-center p-6 relative overflow-hidden shadow-2xl">
-          <div className="absolute top-0 left-0 w-full h-[3px] bg-red-500" />
-          <CardHeader>
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-950/30 border border-red-900/50 text-red-550 mb-4">
-              <AlertCircle className="h-6 w-6" />
-            </div>
-            <CardTitle className="text-xl font-bold text-neutral-200">Tanggapan Dibatasi</CardTitle>
-            <CardDescription className="text-neutral-400 mt-2 text-sm leading-relaxed">
-              Anda sudah mengirimkan tanggapan untuk formulir <strong className="text-neutral-350">"{form.title}"</strong> sebelumnya. Formulir ini dikonfigurasi untuk hanya menerima 1 tanggapan per orang (IP Address).
-            </CardDescription>
-          </CardHeader>
-        </Card>
+        <div className="w-full max-w-md border border-neutral-855 bg-neutral-900/10 backdrop-blur-md rounded-2xl text-center p-8 relative overflow-hidden shadow-2xl">
+          <div className="absolute top-0 left-0 w-full h-[3px] bg-rose-500" />
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-rose-955/20 border border-rose-900/40 text-rose-450 mb-5 shadow-[0_0_20px_rgba(244,63,94,0.08)]">
+            <AlertCircle className="h-6 w-6" />
+          </div>
+          <h2 className="text-xl font-bold text-neutral-200">Tanggapan Dibatasi</h2>
+          <p className="text-neutral-450 text-sm mt-3 leading-relaxed">
+            Anda sudah mengirimkan tanggapan untuk formulir <strong className="text-neutral-300">"{form.title}"</strong> sebelumnya. Formulir ini dikonfigurasi untuk hanya menerima 1 tanggapan per orang (IP Address).
+          </p>
+        </div>
       </div>
     );
   }
@@ -405,74 +399,75 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
   if (isSubmitted) {
     return (
       <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col items-center justify-center p-4">
-        <Card className="w-full max-w-xl border-neutral-900 bg-neutral-900/40 backdrop-blur shadow-2xl relative overflow-hidden text-center py-8 px-6 transition-all duration-305">
+        <div className="w-full max-w-lg border border-neutral-850 bg-neutral-900/10 backdrop-blur-md rounded-2xl text-center p-8 relative overflow-hidden shadow-2xl space-y-6">
           <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-emerald-500/20 via-emerald-500 to-emerald-500/20" />
-          <CardHeader className="space-y-4">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-950/40 border border-emerald-900/60 text-emerald-450">
-              <CheckCircle2 className="h-8 w-8" />
-            </div>
-            <CardTitle className="text-2xl font-bold tracking-tight text-neutral-100">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-955/20 border border-emerald-900/40 text-emerald-450 shadow-[0_0_20px_rgba(16,185,129,0.08)]">
+            <CheckCircle2 className="h-8 w-8" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold tracking-tight text-neutral-100">
               Tanggapan Dikirim!
-            </CardTitle>
-            <CardDescription className="text-neutral-400 text-sm max-w-md mx-auto whitespace-pre-line leading-relaxed">
+            </h2>
+            <p className="text-neutral-400 text-sm leading-relaxed whitespace-pre-line max-w-md mx-auto">
               {form.custom_success_message || `Terima kasih, tanggapan Anda untuk formulir "${form.title}" telah berhasil disimpan di database kami.`}
-            </CardDescription>
-          </CardHeader>
+            </p>
+          </div>
           
           {form.redirect_url && (
-            <div className="text-xs text-neutral-500 pt-2 flex items-center justify-center space-x-1.5 animate-pulse">
+            <div className="text-xs text-neutral-500 pt-2 flex items-center justify-center gap-2 animate-pulse">
               <Loader2 className="h-3 w-3 animate-spin text-primary" />
               <span>Mengalihkan Anda ke tautan luar dalam beberapa detik...</span>
             </div>
           )}
 
           {!form.redirect_url && (
-            <CardFooter className="flex justify-center pt-6">
+            <div className="pt-4 border-t border-neutral-900/60">
               <Button
+                type="button"
                 onClick={() => {
                   setAnswers({});
                   setUploadedFiles({});
                   setIsSubmitted(false);
                 }}
-                className="bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800"
+                className="bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-850 rounded-xl px-6"
               >
                 Kirim Tanggapan Lain
               </Button>
-            </CardFooter>
+            </div>
           )}
-        </Card>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col items-center py-12 px-4 sm:px-6">
-      {/* Background decoration */}
+    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col items-center py-12 px-4 sm:px-6 relative overflow-x-hidden">
+      {/* Background glow decoration */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[250px] bg-gradient-to-b from-primary/5 to-transparent rounded-full blur-[100px] pointer-events-none" />
 
       <div className="w-full max-w-2xl space-y-6 relative">
         
         {/* Form Banner */}
         {form.banner_url && (
-          <div className="w-full h-44 sm:h-60 rounded-xl border border-neutral-900 overflow-hidden relative shadow-lg">
+          <div className="w-full h-44 sm:h-60 rounded-2xl border border-neutral-900 overflow-hidden relative shadow-lg">
             <img src={form.banner_url} alt="Form Banner" className="w-full h-full object-cover" />
           </div>
         )}
 
         {/* Form Meta Header */}
-        <Card className="bg-neutral-900/45 border-neutral-900 shadow-xl overflow-hidden relative">
-          <div className="absolute top-0 left-0 w-full h-[4px] bg-gradient-to-r from-primary/40 via-primary to-primary/40" />
-          <CardHeader className="pt-8 pb-6">
-            <CardTitle className="text-2xl font-bold tracking-tight text-neutral-100 sm:text-3xl">
+        <div className="relative overflow-hidden rounded-2xl border border-neutral-800/40 bg-neutral-900/10 p-6 sm:p-8 backdrop-blur-md shadow-xl">
+          <div className="absolute top-0 left-0 w-full h-[4px] bg-gradient-to-r from-primary/30 via-primary to-primary/30" />
+          <div className="space-y-3">
+            <h1 className="text-2xl font-bold tracking-tight text-neutral-100 sm:text-3xl">
               {form.title}
-            </CardTitle>
+            </h1>
             {form.description && (
-              <CardDescription className="text-neutral-400 text-sm leading-relaxed whitespace-pre-line mt-3">
+              <p className="text-neutral-400 text-sm leading-relaxed whitespace-pre-line">
                 {form.description}
-              </CardDescription>
+              </p>
             )}
-          </CardHeader>
-        </Card>
+          </div>
+        </div>
 
         {/* Form Input fields */}
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -496,20 +491,22 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
             if (!isFieldVisible(field.id)) return null;
 
             return (
-              <Card 
+              <div 
                 key={field.id} 
                 id={`container-${field.id}`}
-                className={`bg-neutral-900/30 border-neutral-900 transition-all duration-300 ${
-                  errors[field.id] ? "border-red-900/50 bg-red-950/5" : "hover:border-neutral-850"
+                className={`relative overflow-hidden rounded-2xl border transition-all duration-300 p-6 backdrop-blur-sm ${
+                  errors[field.id] 
+                    ? "border-rose-900/50 bg-rose-955/5 shadow-[0_0_15px_rgba(239,68,68,0.02)]" 
+                    : "border-neutral-800/40 bg-neutral-900/10 hover:border-neutral-800/80 shadow-md"
                 }`}
               >
-                <CardContent className="p-6 space-y-3">
+                <div className="space-y-3">
                   <div className="flex items-center space-x-1.5">
                     <Label className="text-neutral-200 text-sm font-semibold tracking-wide">
                       {field.label}
                     </Label>
                     {field.required && (
-                      <span className="text-red-500 font-bold" title="Wajib Diisi">*</span>
+                      <span className="text-rose-500 font-bold" title="Wajib Diisi">*</span>
                     )}
                   </div>
 
@@ -520,7 +517,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                       value={answers[field.id] || ""}
                       onChange={(e) => handleInputChange(field.id, e.target.value)}
                       disabled={isPending}
-                      className="bg-neutral-950/80 border-neutral-850 text-neutral-200 focus:border-primary focus:ring-1 focus:ring-primary/50 h-10"
+                      className="bg-neutral-950/40 border-neutral-800/80 text-neutral-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 h-10 rounded-xl transition-all"
                       placeholder="Jawaban Anda..."
                     />
                   )}
@@ -531,7 +528,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                       value={answers[field.id] || ""}
                       onChange={(e) => handleInputChange(field.id, e.target.value)}
                       disabled={isPending}
-                      className="bg-neutral-950/80 border-neutral-850 text-neutral-200 focus:border-primary focus:ring-1 focus:ring-primary/50 min-h-[100px]"
+                      className="bg-neutral-950/40 border-neutral-800/80 text-neutral-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 min-h-[100px] rounded-xl transition-all resize-y"
                       placeholder="Jawaban Anda..."
                     />
                   )}
@@ -543,12 +540,12 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                       onValueChange={(val) => handleInputChange(field.id, val)}
                       disabled={isPending}
                     >
-                      <SelectTrigger className="bg-neutral-950/80 border-neutral-850 text-neutral-200 focus:ring-1 focus:ring-primary/50 h-10">
+                      <SelectTrigger className="bg-neutral-955/40 border-neutral-800/80 text-neutral-200 focus:ring-1 focus:ring-primary/20 h-10 rounded-xl">
                         <SelectValue placeholder="Pilih salah satu..." />
                       </SelectTrigger>
-                      <SelectContent className="bg-neutral-900 border-neutral-800 text-neutral-200">
+                      <SelectContent className="bg-neutral-900 border-neutral-800 text-neutral-200 rounded-xl">
                         {field.options.map((opt, idx) => (
-                          <SelectItem key={idx} value={opt} className="focus:bg-neutral-850 focus:text-neutral-100">
+                          <SelectItem key={idx} value={opt} className="focus:bg-neutral-800 focus:text-neutral-100 rounded-lg">
                             {opt}
                           </SelectItem>
                         ))}
@@ -558,23 +555,27 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
 
                   {/* Radio choice input */}
                   {field.type === "radio" && field.options && (
-                    <div className="grid grid-cols-1 gap-2 pt-1">
+                    <div className="grid grid-cols-1 gap-2.5 pt-1">
                       {field.options.map((opt, idx) => {
                         const isSelected = answers[field.id] === opt;
                         return (
                           <div
                             key={idx}
                             onClick={() => !isPending && handleInputChange(field.id, opt)}
-                            className={`flex items-center px-4 py-3 rounded-lg border border-neutral-850 bg-neutral-950/40 cursor-pointer transition-all duration-150 hover:border-neutral-750 ${
-                              isSelected ? "border-primary/50 bg-primary/5 text-primary-foreground" : ""
+                            className={`flex items-center px-4 py-3 rounded-xl border cursor-pointer transition-all duration-200 select-none ${
+                              isSelected 
+                                ? "border-primary/50 bg-primary/10 text-neutral-100 shadow-[0_0_15px_rgba(139,92,246,0.05)]" 
+                                : "border-neutral-800/60 bg-neutral-950/20 text-neutral-300 hover:border-neutral-700 hover:bg-neutral-950/50"
                             }`}
                           >
-                            <div className="h-4 w-4 rounded-full border border-neutral-600 flex items-center justify-center mr-3 shrink-0">
+                            <div className={`h-4.5 w-4.5 rounded-full border flex items-center justify-center mr-3 shrink-0 transition-all ${
+                              isSelected ? "border-primary bg-primary/20" : "border-neutral-700 bg-transparent"
+                            }`}>
                               {isSelected && (
                                 <div className="h-2.5 w-2.5 rounded-full bg-primary" />
                               )}
                             </div>
-                            <span className="text-sm text-neutral-200">{opt}</span>
+                            <span className="text-sm font-medium">{opt}</span>
                           </div>
                         );
                       })}
@@ -585,7 +586,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                   {field.type === "file" && (
                     <div className="space-y-3 pt-1">
                       {!uploadedFiles[field.id] ? (
-                        <div className="relative border border-dashed border-neutral-800 rounded-lg p-5 bg-neutral-950/20 text-center flex flex-col items-center justify-center space-y-2 group hover:border-neutral-700 transition-colors">
+                        <div className="relative border border-dashed border-neutral-800 hover:border-neutral-700 rounded-2xl p-6 bg-neutral-955/20 text-center flex flex-col items-center justify-center space-y-3 group transition-all duration-300 cursor-pointer">
                           <input
                             id={`file-input-${field.id}`}
                             type="file"
@@ -594,18 +595,18 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                             disabled={isPending || uploadingFields[field.id]}
                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                           />
-                          <div className="h-9 w-9 rounded-full bg-neutral-900 flex items-center justify-center border border-neutral-800 text-neutral-450 group-hover:text-neutral-200">
+                          <div className="h-10 w-10 rounded-xl bg-neutral-900/60 flex items-center justify-center border border-neutral-800 text-neutral-400 group-hover:text-neutral-250 transition-all duration-300">
                             {uploadingFields[field.id] ? (
-                              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                              <Loader2 className="h-5 w-5 animate-spin text-primary" />
                             ) : (
-                              <Upload className="h-4 w-4" />
+                              <Upload className="h-5 w-5 text-neutral-450 group-hover:text-primary transition-colors" />
                             )}
                           </div>
-                          <div>
-                            <p className="text-xs text-neutral-300 font-medium">
+                          <div className="space-y-1">
+                            <p className="text-xs text-neutral-300 font-semibold">
                               {uploadingFields[field.id] ? "Mengunggah..." : "Klik atau seret berkas ke sini"}
                             </p>
-                            <p className="text-[10px] text-neutral-500 mt-0.5">
+                            <p className="text-[10px] text-neutral-500 max-w-xs mx-auto leading-relaxed">
                               {field.fileTypes === "image/*" && "Hanya Gambar (PNG, JPG, WebP, GIF) (Maks. 5MB)"}
                               {field.fileTypes === "audio/*" && "Hanya Audio (MP3, WAV, OGG) (Maks. 5MB)"}
                               {field.fileTypes && field.fileTypes.includes(".") && `Hanya Dokumen (${field.fileTypes.replace(/\./g, "").toUpperCase()}) (Maks. 5MB)`}
@@ -615,24 +616,26 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
 
                           {/* Progress indicator */}
                           {uploadingFields[field.id] && (
-                            <div className="w-full max-w-xs mt-2">
-                              <div className="h-1.5 w-full bg-neutral-900 rounded-full overflow-hidden border border-neutral-850">
+                            <div className="w-full max-w-xs mt-2 space-y-1.5">
+                              <div className="h-1.5 w-full bg-neutral-950 rounded-full overflow-hidden border border-neutral-900/60">
                                 <div 
                                   className="h-full bg-primary transition-all duration-150 rounded-full" 
                                   style={{ width: `${uploadProgress[field.id] || 0}%` }}
                                 />
                               </div>
-                              <span className="text-[10px] text-neutral-450 mt-1 block text-center">
+                              <span className="text-[10px] text-neutral-450 font-semibold block text-center">
                                 Mengunggah: {uploadProgress[field.id] || 0}%
                               </span>
                             </div>
                           )}
                         </div>
                       ) : (
-                        <div className="flex items-center justify-between p-3 rounded-lg border border-neutral-800 bg-neutral-950/60 text-xs">
-                          <div className="flex items-center space-x-2.5 truncate max-w-sm">
-                            <Paperclip className="h-4 w-4 text-primary shrink-0" />
-                            <span className="text-neutral-200 font-medium truncate">
+                        <div className="flex items-center justify-between p-3.5 rounded-xl border border-neutral-800 bg-neutral-950/60 text-xs shadow-inner">
+                          <div className="flex items-center space-x-3 truncate max-w-sm">
+                            <div className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                              <Paperclip className="h-4 w-4" />
+                            </div>
+                            <span className="text-neutral-200 font-semibold truncate font-mono text-[11px]">
                               {uploadedFiles[field.id].name}
                             </span>
                           </div>
@@ -648,7 +651,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                               });
                               handleInputChange(field.id, "");
                             }}
-                            className="h-7 px-2 text-neutral-400 hover:text-red-400 hover:bg-transparent"
+                            className="h-8 px-3 text-neutral-450 hover:text-rose-455 hover:bg-rose-955/15 rounded-lg transition-colors cursor-pointer animate-fade-in"
                           >
                             Ganti File
                           </Button>
@@ -659,25 +662,25 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
 
                   {/* Individual Field Validation Error */}
                   {errors[field.id] && (
-                    <p className="text-xs text-red-500 font-medium flex items-center pt-1">
+                    <p className="text-xs text-rose-500 font-semibold flex items-center pt-1 animate-pulse">
                       <AlertCircle className="h-3.5 w-3.5 mr-1 shrink-0" />
                       {errors[field.id]}
                     </p>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             );
           })}
 
           {/* Form Submit Button */}
-          <div className="flex justify-between items-center pt-2">
-            <span className="text-[11px] text-neutral-500">
-              Personal Form Builder aman dan terlindungi.
+          <div className="flex flex-col sm:flex-row gap-3 justify-between items-center pt-4">
+            <span className="text-[11px] text-neutral-500 font-medium">
+              Formulir ini aman & terenkripsi oleh Personal Form Builder.
             </span>
             <Button
               type="submit"
               disabled={isPending || Object.values(uploadingFields).some(Boolean)}
-              className="bg-primary text-primary-foreground hover:bg-primary/95 font-medium px-8 h-11 shadow-lg hover:shadow-primary/10"
+              className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-8 h-11 rounded-xl shadow-lg shadow-primary/10 hover:shadow-primary/20 hover:-translate-y-[1px] transition-all duration-300"
             >
               {isPending ? (
                 <>
@@ -685,7 +688,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                   Mengirim...
                 </>
               ) : (
-                "Submit"
+                "Kirim Tanggapan"
               )}
             </Button>
           </div>

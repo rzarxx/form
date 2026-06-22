@@ -42,30 +42,32 @@ function LoginForm() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen items-center justify-center bg-radial from-neutral-900 to-neutral-950 p-4">
+    <div className="flex flex-col min-h-screen items-center justify-center bg-gradient-to-b from-neutral-950 via-neutral-900 to-neutral-950 p-4 relative overflow-hidden">
       {/* Background decoration */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] rounded-full bg-primary/10 blur-[100px] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-primary/5 blur-[120px] pointer-events-none" />
 
-      <Card className="w-full max-w-md border-neutral-800 bg-neutral-900/60 backdrop-blur-xl shadow-2xl relative overflow-hidden transition-all duration-300 hover:border-neutral-700">
-        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+      <Card className="w-full max-w-md border-neutral-900 bg-neutral-900/40 backdrop-blur-xl shadow-2xl relative overflow-hidden transition-all duration-300 hover:border-primary/20 hover:shadow-primary/5 group">
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary/60 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
         
-        <CardHeader className="space-y-2 text-center pt-8">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-neutral-800 border border-neutral-700">
-            <Lock className="h-6 w-6 text-primary" />
+        <CardHeader className="space-y-3 text-center pt-8">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-neutral-950 border border-neutral-850 text-primary shadow-inner">
+            <Lock className="h-5 w-5" />
           </div>
-          <CardTitle className="text-2xl font-bold tracking-tight text-neutral-100">
-            Panel Admin
-          </CardTitle>
-          <CardDescription className="text-neutral-400">
-            Masukkan kata sandi untuk mengelola formulir Anda
-          </CardDescription>
+          <div className="space-y-1">
+            <CardTitle className="text-2xl font-bold tracking-tight text-neutral-100">
+              Panel Administrator
+            </CardTitle>
+            <CardDescription className="text-neutral-450 text-xs">
+              Masukkan kata sandi akses untuk mengelola formulir dinamis
+            </CardDescription>
+          </div>
         </CardHeader>
         
         <form onSubmit={handleLogin}>
           <CardContent className="space-y-4 pt-2">
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-neutral-300 text-sm">
-                Kata Sandi
+              <Label htmlFor="password" className="text-neutral-400 text-xs font-semibold">
+                Kata Sandi Admin
               </Label>
               <Input
                 id="password"
@@ -74,7 +76,7 @@ function LoginForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isPending}
-                className="bg-neutral-950/80 border-neutral-800 text-neutral-200 placeholder-neutral-600 focus:border-primary focus:ring-1 focus:ring-primary/50 h-11"
+                className="bg-neutral-950/60 border-neutral-850 text-neutral-200 placeholder-neutral-700 focus:border-primary/80 focus:ring-1 focus:ring-primary/40 h-11"
               />
             </div>
           </CardContent>
@@ -83,16 +85,16 @@ function LoginForm() {
             <Button
               type="submit"
               disabled={isPending}
-              className="w-full h-11 bg-primary text-primary-foreground hover:bg-primary/95 font-medium transition-all duration-200"
+              className="w-full h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-medium transition-all duration-200 shadow-md shadow-primary/10 hover:shadow-primary/25 hover:scale-[1.015]"
             >
               {isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Memproses...
+                  Memverifikasi...
                 </>
               ) : (
                 <>
-                  Masuk
+                  Masuk ke Dasbor
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </>
               )}
