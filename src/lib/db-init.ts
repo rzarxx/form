@@ -1,0 +1,53 @@
+import { sql } from "./db";
+
+let isInitialized = false;
+
+export async function initDatabase() {
+  if (isInitialized) return;
+
+  try {
+    // Check connection first, then create tables
+    console.log("Initializing database tables if not exist...");
+
+    // Create forms table
+    // Using gen_random_uuid() for PostgreSQL 13+
+    await sql`
+      CREATE TABLE IF NOT EXISTS forms (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        fields JSONB NOT NULL
+      );
+    `;
+
+    // Create form_responses table
+    await sql`
+      ALTER TABLE forms ADD COLUMN IF NOT EXISTS banner_url TEXT;
+    `;
+    await sql`
+      ALTER TABLE forms ADD COLUMN IF NOT EXISTS max_responses INT DEFAULT 0;
+    `;
+    await sql`
+      ALTER TABLE forms ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
+    `;
+    await sql`
+      CREATE TABLE IF NOT EXISTS form_responses (
+        id SERIAL PRIMARY KEY,
+        form_id UUID REFERENCES forms(id) ON DELETE CASCADE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        answers JSONB NOT NULL
+      );
+    `;
+    await sql`
+      ALTER TABLE form_responses ADD COLUMN IF NOT EXISTS ip_address VARCHAR(45);
+    `;
+
+    isInitialized = true;
+    console.log("Database initialization check completed successfully.");
+  } catch (error) {
+    console.error("Database initialization failed:", error);
+    // Don't flip isInitialized to true so it retries on next call
+    throw error;
+  }
+}

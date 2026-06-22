@@ -1,0 +1,516 @@
+"use client";
+
+import React, { useState, useTransition } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { createFormAction } from "@/app/actions/forms";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
+import { 
+  Plus, 
+  Trash2, 
+  ArrowLeft, 
+  Save, 
+  MoveUp, 
+  MoveDown, 
+  FileText, 
+  AlignLeft, 
+  List, 
+  Radio, 
+  Upload,
+  Loader2
+} from "lucide-react";
+
+interface FieldSchema {
+  id: string;
+  label: string;
+  type: "text" | "textarea" | "select" | "radio" | "file";
+  required: boolean;
+  options?: string[];
+  fileTypes?: string;
+}
+
+export default function NewFormBuilder() {
+  const router = useRouter();
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [bannerUrl, setBannerUrl] = useState("");
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const [fields, setFields] = useState<FieldSchema[]>([]);
+  const [limitResponses, setLimitResponses] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  const handleAddField = (type: FieldSchema["type"]) => {
+    const newField: FieldSchema = {
+      id: `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      label: "",
+      type,
+      required: false,
+      options: type === "select" || type === "radio" ? ["Pilihan 1"] : undefined,
+      fileTypes: type === "file" ? "*" : undefined,
+    };
+    setFields((prev) => [...prev, newField]);
+    toast.success(`Input baru (${type}) ditambahkan.`);
+  };
+
+  const handleRemoveField = (fieldId: string) => {
+    setFields((prev) => prev.filter((f) => f.id !== fieldId));
+    toast.info("Input dihapus.");
+  };
+
+  const handleFieldChange = (fieldId: string, updates: Partial<FieldSchema>) => {
+    setFields((prev) =>
+      prev.map((f) => (f.id === fieldId ? { ...f, ...updates } : f))
+    );
+  };
+
+  const handleAddOption = (fieldId: string) => {
+    setFields((prev) =>
+      prev.map((f) => {
+        if (f.id === fieldId && f.options) {
+          return { ...f, options: [...f.options, `Pilihan ${f.options.length + 1}`] };
+        }
+        return f;
+      })
+    );
+  };
+
+  const handleRemoveOption = (fieldId: string, optionIndex: number) => {
+    setFields((prev) =>
+      prev.map((f) => {
+        if (f.id === fieldId && f.options) {
+          const newOptions = f.options.filter((_, idx) => idx !== optionIndex);
+          return { ...f, options: newOptions.length > 0 ? newOptions : ["Pilihan 1"] };
+        }
+        return f;
+      })
+    );
+  };
+
+  const handleOptionChange = (fieldId: string, optionIndex: number, value: string) => {
+    setFields((prev) =>
+      prev.map((f) => {
+        if (f.id === fieldId && f.options) {
+          const newOptions = [...f.options];
+          newOptions[optionIndex] = value;
+          return { ...f, options: newOptions };
+        }
+        return f;
+      })
+    );
+  };
+
+  const handleMoveField = (index: number, direction: "up" | "down") => {
+    if (direction === "up" && index === 0) return;
+    if (direction === "down" && index === fields.length - 1) return;
+
+    const newIndex = direction === "up" ? index - 1 : index + 1;
+    const newFields = [...fields];
+    const temp = newFields[index];
+    newFields[index] = newFields[newIndex];
+    newFields[newIndex] = temp;
+    setFields(newFields);
+  };
+
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingBanner(true);
+    toast.info("Mengunggah banner...");
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.url) {
+        setBannerUrl(data.url);
+        toast.success("Banner berhasil diunggah.");
+      } else {
+        toast.error(data.error || "Gagal mengunggah banner.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Terjadi kesalahan koneksi saat mengunggah banner.");
+    } finally {
+      setIsUploadingBanner(false);
+    }
+  };
+
+  const handleSaveForm = () => {
+    if (!title) {
+      toast.error("Judul formulir wajib diisi.");
+      return;
+    }
+
+    if (fields.length === 0) {
+      toast.error("Formulir harus memiliki minimal 1 input.");
+      return;
+    }
+
+    const hasEmptyLabels = fields.some((f) => !f.label.trim());
+    if (hasEmptyLabels) {
+      toast.error("Semua label input wajib diisi.");
+      return;
+    }
+
+    startTransition(async () => {
+      const result = await createFormAction(title, description, fields, bannerUrl, limitResponses ? 1 : 0, true);
+      if (result.success) {
+        toast.success("Formulir berhasil disimpan!");
+        router.push("/admin");
+        router.refresh();
+      } else {
+        toast.error(result.error || "Gagal menyimpan formulir.");
+      }
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col">
+      {/* Header */}
+      <header className="border-b border-neutral-900 bg-neutral-950/50 backdrop-blur sticky top-0 z-50">
+        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+          <Link href="/admin">
+            <Button variant="ghost" size="sm" className="text-neutral-400 hover:text-neutral-200">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Kembali ke Dasbor
+            </Button>
+          </Link>
+          <Button 
+            onClick={handleSaveForm} 
+            disabled={isPending || isUploadingBanner}
+            className="bg-primary text-primary-foreground hover:bg-primary/95"
+          >
+            {isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Menyimpan...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4 mr-2" />
+                Simpan Form
+              </>
+            )}
+          </Button>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-8 space-y-6">
+        
+        {/* Form Meta */}
+        <Card className="bg-neutral-900/40 border-neutral-900 shadow-xl overflow-hidden relative">
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-primary/30 via-primary/50 to-primary/30" />
+          <CardHeader className="space-y-4 pt-6">
+            <CardTitle className="text-xl font-bold text-neutral-100">Informasi Formulir</CardTitle>
+            <CardDescription className="text-neutral-400">Tentukan judul, deskripsi, dan banner untuk formulir baru Anda</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-0">
+            <div className="space-y-2">
+              <Label htmlFor="form-title" className="text-neutral-300 text-sm font-medium">Judul Formulir</Label>
+              <Input
+                id="form-title"
+                placeholder="Contoh: Formulir Pendaftaran Acara"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="bg-neutral-950/80 border-neutral-850 focus:border-primary text-neutral-200 h-11"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="form-desc" className="text-neutral-300 text-sm font-medium">Deskripsi (Opsional)</Label>
+              <Textarea
+                id="form-desc"
+                placeholder="Tulis instruksi atau keterangan singkat mengenai formulir ini..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="bg-neutral-950/80 border-neutral-850 focus:border-primary text-neutral-200 min-h-[80px]"
+              />
+            </div>
+
+            {/* Banner Image Uploader */}
+            <div className="space-y-2 pt-2">
+              <Label className="text-neutral-300 text-sm font-medium">Gambar Banner Formulir (Opsional)</Label>
+              <div className="flex flex-col gap-4">
+                {bannerUrl ? (
+                  <div className="relative w-full h-32 rounded-lg border border-neutral-800 overflow-hidden bg-neutral-950">
+                    <img src={bannerUrl} alt="Banner Preview" className="w-full h-full object-cover" />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setBannerUrl("")}
+                      className="absolute top-2 right-2 h-7 px-2 text-xs bg-red-900/80 text-white hover:bg-red-900"
+                    >
+                      Hapus Banner
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="relative border border-dashed border-neutral-800 rounded-lg p-6 bg-neutral-950/20 text-center w-full group hover:border-neutral-700 transition-colors">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleBannerUpload}
+                      disabled={isUploadingBanner}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                    <div className="flex flex-col items-center justify-center space-y-1.5 text-neutral-400">
+                      {isUploadingBanner ? (
+                        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      ) : (
+                        <Upload className="h-5 w-5" />
+                      )}
+                      <span className="text-xs font-medium text-neutral-300">
+                        {isUploadingBanner ? "Mengunggah banner..." : "Unggah Gambar Banner"}
+                      </span>
+                      <span className="text-[10px] text-neutral-500">Rasio lebar dianjurkan (misal: 1200x400)</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Form Settings / Limit Responses */}
+            <div className="flex items-center space-x-2 pt-4 border-t border-neutral-900/60">
+              <Checkbox
+                id="limit-responses"
+                checked={limitResponses}
+                onCheckedChange={(checked) => setLimitResponses(!!checked)}
+                className="border-neutral-700 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+              />
+              <Label htmlFor="limit-responses" className="text-neutral-300 text-sm font-medium cursor-pointer">
+                Batasi 1 Tanggapan per IP Address (Cegah Duplikasi Data)
+              </Label>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Dynamic Fields List */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold text-neutral-200 flex items-center">
+            Struktur Input Formulir
+            <span className="ml-2.5 px-2 py-0.5 rounded-full text-xs bg-neutral-900 border border-neutral-800 text-neutral-400">
+              {fields.length} Input
+            </span>
+          </h2>
+
+          {fields.length === 0 ? (
+            <div className="border border-dashed border-neutral-900 rounded-xl p-12 text-center flex flex-col items-center justify-center space-y-3">
+              <p className="text-neutral-500 text-sm">Belum ada input. Tambahkan jenis input di bawah.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {fields.map((field, index) => (
+                <Card key={field.id} className="bg-neutral-900/20 border-neutral-900 relative overflow-hidden group">
+                  <div className="absolute left-0 top-0 h-full w-[3px] bg-primary/20 group-hover:bg-primary/50 transition-colors" />
+                  
+                  <CardHeader className="py-4 px-6 flex flex-row items-center justify-between border-b border-neutral-900/60 bg-neutral-900/10">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-xs text-neutral-500 font-mono">#{index + 1}</span>
+                      <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400 flex items-center space-x-1.5">
+                        {field.type === "text" && <FileText className="h-3.5 w-3.5 mr-1" />}
+                        {field.type === "textarea" && <AlignLeft className="h-3.5 w-3.5 mr-1" />}
+                        {field.type === "select" && <List className="h-3.5 w-3.5 mr-1" />}
+                        {field.type === "radio" && <Radio className="h-3.5 w-3.5 mr-1" />}
+                        {field.type === "file" && <Upload className="h-3.5 w-3.5 mr-1" />}
+                        {field.type}
+                      </span>
+                    </div>
+
+                    {/* Order & Remove Controls */}
+                    <div className="flex items-center space-x-1">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleMoveField(index, "up")}
+                        disabled={index === 0}
+                        className="h-7 w-7 text-neutral-500 hover:text-neutral-250 disabled:opacity-20"
+                      >
+                        <MoveUp className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleMoveField(index, "down")}
+                        disabled={index === fields.length - 1}
+                        className="h-7 w-7 text-neutral-500 hover:text-neutral-250 disabled:opacity-20"
+                      >
+                        <MoveDown className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleRemoveField(field.id)}
+                        className="h-7 w-7 text-neutral-500 hover:text-red-400"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="p-6 space-y-4">
+                    {/* Label Input */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="md:col-span-2 space-y-1.5">
+                        <Label htmlFor={`label-${field.id}`} className="text-neutral-400 text-xs font-medium">
+                          Pertanyaan / Label Input
+                        </Label>
+                        <Input
+                          id={`label-${field.id}`}
+                          placeholder="Masukkan pertanyaan untuk input ini..."
+                          value={field.label}
+                          onChange={(e) => handleFieldChange(field.id, { label: e.target.value })}
+                          className="bg-neutral-950/80 border-neutral-850 focus:border-primary text-neutral-200"
+                        />
+                      </div>
+                      
+                      {/* Required toggle */}
+                      <div className="flex items-end pb-3.5 space-x-2">
+                        <Checkbox
+                          id={`req-${field.id}`}
+                          checked={field.required}
+                          onCheckedChange={(checked) => 
+                            handleFieldChange(field.id, { required: !!checked })
+                          }
+                          className="border-neutral-700 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                        />
+                        <Label htmlFor={`req-${field.id}`} className="text-neutral-300 text-sm font-medium cursor-pointer">
+                          Wajib Diisi (Required)
+                        </Label>
+                      </div>
+                    </div>
+
+                    {/* File Types Selection */}
+                    {field.type === "file" && (
+                      <div className="border-t border-neutral-900/60 pt-4 space-y-2">
+                        <Label className="text-neutral-400 text-xs font-medium">Tipe Berkas yang Diizinkan</Label>
+                        <Select
+                          value={field.fileTypes || "*"}
+                          onValueChange={(val) => handleFieldChange(field.id, { fileTypes: val ?? undefined })}
+                        >
+                          <SelectTrigger className="bg-neutral-950/45 border-neutral-850 text-neutral-200 max-w-sm h-9">
+                            <SelectValue placeholder="Pilih tipe berkas..." />
+                          </SelectTrigger>
+                          <SelectContent className="bg-neutral-900 border-neutral-800 text-neutral-200">
+                            <SelectItem value="*">Semua Berkas (*)</SelectItem>
+                            <SelectItem value="image/*">Hanya Gambar (PNG, JPG, WebP, GIF)</SelectItem>
+                            <SelectItem value="audio/*">Hanya Audio (MP3, WAV, OGG)</SelectItem>
+                            <SelectItem value=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx">Hanya Dokumen (PDF, Word, Excel, PPT)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    {/* Options configuration for Select/Radio types */}
+                    {(field.type === "select" || field.type === "radio") && field.options && (
+                      <div className="border-t border-neutral-900/60 pt-4 space-y-3">
+                        <Label className="text-neutral-400 text-xs font-medium">Opsi Pilihan</Label>
+                        <div className="space-y-2">
+                          {field.options.map((option, optIdx) => (
+                            <div key={optIdx} className="flex items-center space-x-2">
+                              <span className="text-xs text-neutral-600 font-mono">Opsi {optIdx + 1}</span>
+                              <Input
+                                value={option}
+                                onChange={(e) => handleOptionChange(field.id, optIdx, e.target.value)}
+                                className="bg-neutral-950/40 border-neutral-850 focus:border-primary text-neutral-200 max-w-sm h-8 text-sm"
+                              />
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => handleRemoveOption(field.id, optIdx)}
+                                className="h-8 w-8 text-neutral-500 hover:text-red-400"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleAddOption(field.id)}
+                          className="border-neutral-800 text-neutral-400 hover:text-neutral-200 mt-1 h-8"
+                        >
+                          <Plus className="h-3.5 w-3.5 mr-1" />
+                          Tambah Opsi
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Add Field Toolbar */}
+        <div className="border border-neutral-900 bg-neutral-900/10 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <span className="text-sm text-neutral-400 font-medium">Tambah Input Baru:</span>
+          <div className="flex flex-wrap gap-2 justify-center">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleAddField("text")}
+              className="border-neutral-850 text-neutral-300 hover:bg-neutral-900 hover:text-neutral-100"
+            >
+              <FileText className="h-3.5 w-3.5 mr-1.5" />
+              Teks Pendek
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleAddField("textarea")}
+              className="border-neutral-850 text-neutral-300 hover:bg-neutral-900 hover:text-neutral-100"
+            >
+              <AlignLeft className="h-3.5 w-3.5 mr-1.5" />
+              Paragraf
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleAddField("select")}
+              className="border-neutral-850 text-neutral-300 hover:bg-neutral-900 hover:text-neutral-100"
+            >
+              <List className="h-3.5 w-3.5 mr-1.5" />
+              Dropdown
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleAddField("radio")}
+              className="border-neutral-850 text-neutral-300 hover:bg-neutral-900 hover:text-neutral-100"
+            >
+              <Radio className="h-3.5 w-3.5 mr-1.5" />
+              Pilihan Ganda
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleAddField("file")}
+              className="border-neutral-850 text-neutral-300 hover:bg-neutral-900 hover:text-neutral-100"
+            >
+              <Upload className="h-3.5 w-3.5 mr-1.5" />
+              Unggah File
+            </Button>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  );
+}
