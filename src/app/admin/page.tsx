@@ -20,7 +20,8 @@ import {
   Search,
   Calendar,
   Loader2,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Settings
 } from "lucide-react";
 
 interface FormSchema {
@@ -273,6 +274,16 @@ export default function AdminDashboard() {
                         >
                           <Eye className="h-4 w-4 mr-1.5" />
                           Lihat Respons
+                        </Button>
+                      </Link>
+                      <Link href={`/admin/forms/${form.id}/edit`}>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="border-neutral-800 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-900 h-9"
+                        >
+                          <Settings className="h-4 w-4 mr-1.5" />
+                          Edit
                         </Button>
                       </Link>
                       <Button

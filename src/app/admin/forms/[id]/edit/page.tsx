@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useEffect, useTransition, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createFormAction } from "@/app/actions/forms";
+import { getFormDetailAction, updateFormAction } from "@/app/actions/forms";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +25,8 @@ import {
   Radio, 
   Upload,
   Loader2,
-  Settings
+  Settings,
+  Eye
 } from "lucide-react";
 
 interface FieldSchema {
@@ -39,14 +40,33 @@ interface FieldSchema {
   conditionValue?: string;
 }
 
-export default function NewFormBuilder() {
+const formatDateTimeLocal = (dateVal: any) => {
+  if (!dateVal) return "";
+  const date = new Date(dateVal);
+  if (isNaN(date.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const yyyy = date.getFullYear();
+  const MM = pad(date.getMonth() + 1);
+  const dd = pad(date.getDate());
+  const hh = pad(date.getHours());
+  const mm = pad(date.getMinutes());
+  return `${yyyy}-${MM}-${dd}T${hh}:${mm}`;
+};
+
+export default function EditFormBuilder({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
+  const formId = resolvedParams.id;
+  
   const router = useRouter();
+  
+  const [isLoading, setIsLoading] = useState(true);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [bannerUrl, setBannerUrl] = useState("");
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
   const [fields, setFields] = useState<FieldSchema[]>([]);
   const [limitResponses, setLimitResponses] = useState(false);
+  const [isActive, setIsActive] = useState(true);
   
   // Advanced Settings State
   const [expiryDate, setExpiryDate] = useState("");
@@ -55,6 +75,40 @@ export default function NewFormBuilder() {
   const [redirectUrl, setRedirectUrl] = useState("");
 
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    const fetchForm = async () => {
+      setIsLoading(true);
+      const result = await getFormDetailAction(formId);
+      if (result.success && result.data) {
+        const { form } = result.data;
+        setTitle(form.title || "");
+        setDescription(form.description || "");
+        setBannerUrl(form.banner_url || "");
+        setLimitResponses(form.max_responses === 1);
+        setIsActive(form.is_active !== false);
+        
+        // Parse fields safely
+        const formFields = Array.isArray(form.fields)
+          ? form.fields
+          : typeof form.fields === "string"
+            ? JSON.parse(form.fields)
+            : [];
+        setFields(formFields);
+
+        // Populate advanced settings
+        setExpiryDate(formatDateTimeLocal(form.expiry_date));
+        setNotifyEmail(form.notify_email || "");
+        setCustomSuccessMessage(form.custom_success_message || "");
+        setRedirectUrl(form.redirect_url || "");
+      } else {
+        toast.error(result.error || "Gagal memuat data formulir.");
+      }
+      setIsLoading(false);
+    };
+
+    fetchForm();
+  }, [formId]);
 
   const handleAddField = (type: FieldSchema["type"]) => {
     const newField: FieldSchema = {
@@ -178,7 +232,8 @@ export default function NewFormBuilder() {
     }
 
     startTransition(async () => {
-      const result = await createFormAction(
+      const result = await updateFormAction(
+        formId,
         title,
         description,
         fields,
@@ -188,12 +243,12 @@ export default function NewFormBuilder() {
         redirectUrl || null,
         expiryDate || null,
         notifyEmail || null,
-        true
+        isActive
       );
       
       if (result.success) {
-        toast.success("Formulir berhasil disimpan!");
-        router.push("/admin");
+        toast.success("Perubahan formulir berhasil disimpan!");
+        router.push(`/admin/forms/${formId}`);
         router.refresh();
       } else {
         toast.error(result.error || "Gagal menyimpan formulir.");
@@ -201,34 +256,56 @@ export default function NewFormBuilder() {
     });
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+        <p className="text-sm text-neutral-400 font-medium">Memuat data formulir...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col">
       {/* Header */}
       <header className="border-b border-neutral-900 bg-neutral-950/50 backdrop-blur sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/admin">
-            <Button variant="ghost" size="sm" className="text-neutral-400 hover:text-neutral-200">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Kembali ke Dasbor
+          <div className="flex items-center space-x-2">
+            <Link href={`/admin/forms/${formId}`}>
+              <Button variant="ghost" size="sm" className="text-neutral-400 hover:text-neutral-200">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Batal
+              </Button>
+            </Link>
+            <span className="text-neutral-600 text-sm">|</span>
+            <span className="text-xs text-neutral-400 font-mono truncate max-w-[200px]">Edit Form</span>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Link href={`/forms/${formId}`} target="_blank">
+              <Button variant="outline" size="sm" className="border-neutral-800 text-neutral-450 hover:text-neutral-200 h-9">
+                <Eye className="h-4 w-4 mr-2" />
+                Pratinjau
+              </Button>
+            </Link>
+            <Button 
+              onClick={handleSaveForm} 
+              disabled={isPending || isUploadingBanner}
+              className="bg-primary text-primary-foreground hover:bg-primary/95 h-9"
+            >
+              {isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Menyimpan...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Simpan Perubahan
+                </>
+              )}
             </Button>
-          </Link>
-          <Button 
-            onClick={handleSaveForm} 
-            disabled={isPending || isUploadingBanner}
-            className="bg-primary text-primary-foreground hover:bg-primary/95"
-          >
-            {isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Menyimpan...
-              </>
-            ) : (
-              <>
-                <Save className="h-4 w-4 mr-2" />
-                Simpan Form
-              </>
-            )}
-          </Button>
+          </div>
         </div>
       </header>
 
@@ -238,9 +315,24 @@ export default function NewFormBuilder() {
         {/* Form Meta */}
         <Card className="bg-neutral-900/40 border-neutral-900 shadow-xl overflow-hidden relative">
           <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-primary/30 via-primary/50 to-primary/30" />
-          <CardHeader className="space-y-1 pt-6">
-            <CardTitle className="text-xl font-bold text-neutral-100">Informasi Formulir</CardTitle>
-            <CardDescription className="text-neutral-400">Tentukan judul, deskripsi, dan banner untuk formulir baru Anda</CardDescription>
+          <CardHeader className="space-y-1 pt-6 flex flex-col md:flex-row md:items-center md:justify-between">
+            <div className="space-y-1">
+              <CardTitle className="text-xl font-bold text-neutral-100">Informasi Formulir</CardTitle>
+              <CardDescription className="text-neutral-400">Edit judul, deskripsi, status aktif, dan banner formulir Anda</CardDescription>
+            </div>
+            
+            {/* Form Active Switch */}
+            <div className="flex items-center space-x-2 pt-2 md:pt-0">
+              <Checkbox
+                id="is-active"
+                checked={isActive}
+                onCheckedChange={(checked) => setIsActive(!!checked)}
+                className="border-neutral-700 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+              />
+              <Label htmlFor="is-active" className="text-neutral-300 text-sm font-semibold cursor-pointer">
+                Status Formulir Aktif (Menerima Jawaban)
+              </Label>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4 pt-0">
             <div className="space-y-2">

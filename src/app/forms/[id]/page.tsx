@@ -25,6 +25,8 @@ interface FieldSchema {
   required: boolean;
   options?: string[];
   fileTypes?: string;
+  conditionFieldId?: string;
+  conditionValue?: string;
 }
 
 interface FormSchema {
@@ -35,6 +37,9 @@ interface FormSchema {
   banner_url?: string;
   is_active?: boolean;
   max_responses?: number;
+  custom_success_message?: string;
+  redirect_url?: string;
+  expiry_date?: string;
 }
 
 export default function PublicFormPage({ params }: { params: Promise<{ id: string }> }) {
@@ -45,8 +50,15 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
   const [form, setForm] = useState<FormSchema | null>(null);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  // File Upload states
   const [uploadingFields, setUploadingFields] = useState<Record<string, boolean>>({});
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, { name: string; url: string }>>({});
+  
+  // Anti-spam states
+  const [honeypot, setHoneypot] = useState("");
+
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isAlreadySubmitted, setIsAlreadySubmitted] = useState(false);
   const [isLoadingForm, setIsLoadingForm] = useState(true);
@@ -84,6 +96,31 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
     fetchForm();
   }, [formId]);
 
+  // Handle auto redirect if configured
+  useEffect(() => {
+    if (isSubmitted && form?.redirect_url) {
+      const timer = setTimeout(() => {
+        window.location.href = form.redirect_url!;
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isSubmitted, form]);
+
+  // Helper to determine if a field is visible based on conditional logic
+  const isFieldVisible = (fieldId: string): boolean => {
+    const field = fields.find((f) => f.id === fieldId);
+    if (!field) return false;
+    if (!field.conditionFieldId) return true;
+
+    // Recursive check if the parent trigger field itself is visible
+    const isParentVisible = isFieldVisible(field.conditionFieldId);
+    if (!isParentVisible) return false;
+
+    // Check if parent value matches the trigger condition value
+    const parentValue = answers[field.conditionFieldId];
+    return parentValue === field.conditionValue;
+  };
+
   const handleInputChange = (fieldId: string, value: any) => {
     setAnswers((prev) => ({ ...prev, [fieldId]: value }));
     // Clear error for this field
@@ -102,6 +139,14 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
 
     const field = fields.find((f) => f.id === fieldId);
     if (!field) return;
+
+    // Client-side size validation (5MB)
+    const MAX_SIZE = 5 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      toast.error("Ukuran berkas maksimal adalah 5MB!");
+      e.target.value = "";
+      return;
+    }
 
     // Validate file type on the client side
     const fileTypes = field.fileTypes || "*";
@@ -128,35 +173,63 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
       }
     }
 
-    // Set uploading state
+    // Use XHR to upload files with a progress bar
     setUploadingFields((prev) => ({ ...prev, [fieldId]: true }));
+    setUploadProgress((prev) => ({ ...prev, [fieldId]: 0 }));
     toast.info(`Mengunggah ${file.name}...`);
 
     const formData = new FormData();
     formData.append("file", file);
 
     try {
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", `/api/upload?formId=${formId}&fieldId=${fieldId}`, true);
 
-      const data = await response.json();
+      // Track progress
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percentComplete = Math.round((event.loaded / event.total) * 100);
+          setUploadProgress((prev) => ({ ...prev, [fieldId]: percentComplete }));
+        }
+      };
 
-      if (response.ok && data.url) {
-        setUploadedFiles((prev) => ({
-          ...prev,
-          [fieldId]: { name: file.name, url: data.url }
-        }));
-        handleInputChange(fieldId, data.url);
-        toast.success(`Berkas ${file.name} berhasil diunggah.`);
-      } else {
-        toast.error(data.error || "Gagal mengunggah berkas.");
-      }
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            if (data.url) {
+              setUploadedFiles((prev) => ({
+                ...prev,
+                [fieldId]: { name: file.name, url: data.url }
+              }));
+              handleInputChange(fieldId, data.url);
+              toast.success(`Berkas ${file.name} berhasil diunggah.`);
+            } else {
+              toast.error(data.error || "Gagal mengunggah berkas.");
+            }
+          } catch {
+            toast.error("Gagal mengurai respon server.");
+          }
+        } else {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            toast.error(data.error || "Gagal mengunggah berkas.");
+          } catch {
+            toast.error(`Gagal mengunggah berkas (Status ${xhr.status}).`);
+          }
+        }
+        setUploadingFields((prev) => ({ ...prev, [fieldId]: false }));
+      };
+
+      xhr.onerror = () => {
+        toast.error("Terjadi kesalahan koneksi saat mengunggah.");
+        setUploadingFields((prev) => ({ ...prev, [fieldId]: false }));
+      };
+
+      xhr.send(formData);
     } catch (err) {
-      console.error("Upload error:", err);
-      toast.error("Terjadi kesalahan koneksi saat mengunggah.");
-    } finally {
+      console.error("Upload setup error:", err);
+      toast.error("Terjadi kesalahan teknis saat mengunggah.");
       setUploadingFields((prev) => ({ ...prev, [fieldId]: false }));
     }
   };
@@ -167,6 +240,9 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
     const newErrors: Record<string, string> = {};
     
     fields.forEach((field) => {
+      // Bypasses validation if field is hidden by conditional logic
+      if (!isFieldVisible(field.id)) return;
+
       const val = answers[field.id];
       
       // 1. Required check
@@ -200,6 +276,14 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
       return;
     }
 
+    // Honeypot detection
+    if (honeypot) {
+      console.warn("Honeypot triggered. Silent reject.");
+      setIsSubmitted(true);
+      toast.success("Tanggapan berhasil dikirim!");
+      return;
+    }
+
     if (!validateForm()) {
       toast.error("Mohon periksa kembali isian formulir Anda.");
       
@@ -211,8 +295,16 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
       return;
     }
 
+    // Clean answers to ONLY send values for visible fields
+    const visibleAnswers: Record<string, any> = {};
+    fields.forEach((field) => {
+      if (isFieldVisible(field.id) && answers[field.id] !== undefined) {
+        visibleAnswers[field.id] = answers[field.id];
+      }
+    });
+
     startTransition(async () => {
-      const result = await submitResponseAction(formId, answers);
+      const result = await submitResponseAction(formId, visibleAnswers);
       if (result.success) {
         setIsSubmitted(true);
         toast.success("Tanggapan berhasil dikirim!");
@@ -249,7 +341,9 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
     );
   }
 
-  if (!form.is_active) {
+  // Check Expiry Date / Deadline
+  const isExpired = form.expiry_date ? new Date() > new Date(form.expiry_date) : false;
+  if (isExpired || !form.is_active) {
     return (
       <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col items-center justify-center p-4">
         <Card className="w-full max-w-md border-neutral-900 bg-neutral-900/50 text-center p-6 relative overflow-hidden shadow-2xl">
@@ -259,8 +353,16 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
               <AlertCircle className="h-6 w-6" />
             </div>
             <CardTitle className="text-xl font-bold text-neutral-200">Formulir Ditutup</CardTitle>
-            <CardDescription className="text-neutral-400 mt-2 text-sm">
-              Formulir <strong className="text-neutral-300">"{form.title}"</strong> sudah ditutup oleh pemiliknya dan tidak menerima tanggapan baru.
+            <CardDescription className="text-neutral-400 mt-2 text-sm leading-relaxed">
+              {isExpired ? (
+                <>
+                  Formulir <strong className="text-neutral-300">"{form.title}"</strong> sudah melewati batas waktu pengisian ({new Date(form.expiry_date!).toLocaleString("id-ID")}) dan tidak menerima tanggapan baru.
+                </>
+              ) : (
+                <>
+                  Formulir <strong className="text-neutral-300">"{form.title}"</strong> sudah ditutup oleh pemiliknya dan tidak menerima tanggapan baru.
+                </>
+              )}
             </CardDescription>
           </CardHeader>
         </Card>
@@ -274,11 +376,11 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
         <Card className="w-full max-w-md border-neutral-900 bg-neutral-900/50 text-center p-6 relative overflow-hidden shadow-2xl">
           <div className="absolute top-0 left-0 w-full h-[3px] bg-red-500" />
           <CardHeader>
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-950/30 border border-red-900/50 text-red-500 mb-4">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-950/30 border border-red-900/50 text-red-550 mb-4">
               <AlertCircle className="h-6 w-6" />
             </div>
             <CardTitle className="text-xl font-bold text-neutral-200">Tanggapan Dibatasi</CardTitle>
-            <CardDescription className="text-neutral-400 mt-2 text-sm">
+            <CardDescription className="text-neutral-400 mt-2 text-sm leading-relaxed">
               Anda sudah mengirimkan tanggapan untuk formulir <strong className="text-neutral-350">"{form.title}"</strong> sebelumnya. Formulir ini dikonfigurasi untuk hanya menerima 1 tanggapan per orang (IP Address).
             </CardDescription>
           </CardHeader>
@@ -290,31 +392,41 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
   if (isSubmitted) {
     return (
       <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col items-center justify-center p-4">
-        <Card className="w-full max-w-xl border-neutral-900 bg-neutral-900/40 backdrop-blur shadow-2xl relative overflow-hidden text-center py-8 px-6 transition-all duration-300">
+        <Card className="w-full max-w-xl border-neutral-900 bg-neutral-900/40 backdrop-blur shadow-2xl relative overflow-hidden text-center py-8 px-6 transition-all duration-305">
           <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-emerald-500/20 via-emerald-500 to-emerald-500/20" />
           <CardHeader className="space-y-4">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-950/40 border border-emerald-900/60 text-emerald-400">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-950/40 border border-emerald-900/60 text-emerald-450">
               <CheckCircle2 className="h-8 w-8" />
             </div>
             <CardTitle className="text-2xl font-bold tracking-tight text-neutral-100">
               Tanggapan Dikirim!
             </CardTitle>
-            <CardDescription className="text-neutral-400 text-sm max-w-md mx-auto">
-              Terima kasih, tanggapan Anda untuk formulir <strong className="text-neutral-200">"{form.title}"</strong> telah berhasil disimpan di database kami.
+            <CardDescription className="text-neutral-400 text-sm max-w-md mx-auto whitespace-pre-line leading-relaxed">
+              {form.custom_success_message || `Terima kasih, tanggapan Anda untuk formulir "${form.title}" telah berhasil disimpan di database kami.`}
             </CardDescription>
           </CardHeader>
-          <CardFooter className="flex justify-center pt-6">
-            <Button
-              onClick={() => {
-                setAnswers({});
-                setUploadedFiles({});
-                setIsSubmitted(false);
-              }}
-              className="bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800"
-            >
-              Kirim Tanggapan Lain
-            </Button>
-          </CardFooter>
+          
+          {form.redirect_url && (
+            <div className="text-xs text-neutral-500 pt-2 flex items-center justify-center space-x-1.5 animate-pulse">
+              <Loader2 className="h-3 w-3 animate-spin text-primary" />
+              <span>Mengalihkan Anda ke tautan luar dalam beberapa detik...</span>
+            </div>
+          )}
+
+          {!form.redirect_url && (
+            <CardFooter className="flex justify-center pt-6">
+              <Button
+                onClick={() => {
+                  setAnswers({});
+                  setUploadedFiles({});
+                  setIsSubmitted(false);
+                }}
+                className="bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800"
+              >
+                Kirim Tanggapan Lain
+              </Button>
+            </CardFooter>
+          )}
         </Card>
       </div>
     );
@@ -351,163 +463,198 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
 
         {/* Form Input fields */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {fields.map((field) => (
-            <Card 
-              key={field.id} 
-              id={`container-${field.id}`}
-              className={`bg-neutral-900/30 border-neutral-900 transition-all duration-300 ${
-                errors[field.id] ? "border-red-900/50 bg-red-950/5" : "hover:border-neutral-850"
-              }`}
-            >
-              <CardContent className="p-6 space-y-3">
-                <div className="flex items-center space-x-1.5">
-                  <Label className="text-neutral-200 text-sm font-semibold tracking-wide">
-                    {field.label}
-                  </Label>
-                  {field.required && (
-                    <span className="text-red-500 font-bold" title="Wajib Diisi">*</span>
-                  )}
-                </div>
+          
+          {/* Honeypot field (Anti-spam bot protection) */}
+          <div style={{ display: "none" }} aria-hidden="true">
+            <label htmlFor="website">Website</label>
+            <input
+              id="website"
+              type="text"
+              name="website"
+              value={honeypot}
+              onChange={(e) => setHoneypot(e.target.value)}
+              tabIndex={-1}
+              autoComplete="off"
+            />
+          </div>
 
-                {/* Text input */}
-                {field.type === "text" && (
-                  <Input
-                    type="text"
-                    value={answers[field.id] || ""}
-                    onChange={(e) => handleInputChange(field.id, e.target.value)}
-                    disabled={isPending}
-                    className="bg-neutral-950/80 border-neutral-850 text-neutral-200 focus:border-primary focus:ring-1 focus:ring-primary/50 h-10"
-                    placeholder="Jawaban Anda..."
-                  />
-                )}
+          {fields.map((field) => {
+            // Hide field if it does not satisfy conditional logic
+            if (!isFieldVisible(field.id)) return null;
 
-                {/* Textarea paragraph input */}
-                {field.type === "textarea" && (
-                  <Textarea
-                    value={answers[field.id] || ""}
-                    onChange={(e) => handleInputChange(field.id, e.target.value)}
-                    disabled={isPending}
-                    className="bg-neutral-950/80 border-neutral-850 text-neutral-200 focus:border-primary focus:ring-1 focus:ring-primary/50 min-h-[100px]"
-                    placeholder="Jawaban Anda..."
-                  />
-                )}
-
-                {/* Dropdown Select input */}
-                {field.type === "select" && field.options && (
-                  <Select
-                    value={answers[field.id] || ""}
-                    onValueChange={(val) => handleInputChange(field.id, val)}
-                    disabled={isPending}
-                  >
-                    <SelectTrigger className="bg-neutral-950/80 border-neutral-850 text-neutral-200 focus:ring-1 focus:ring-primary/50 h-10">
-                      <SelectValue placeholder="Pilih salah satu..." />
-                    </SelectTrigger>
-                    <SelectContent className="bg-neutral-900 border-neutral-800 text-neutral-200">
-                      {field.options.map((opt, idx) => (
-                        <SelectItem key={idx} value={opt} className="focus:bg-neutral-850 focus:text-neutral-100">
-                          {opt}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-
-                {/* Radio choice input */}
-                {field.type === "radio" && field.options && (
-                  <div className="grid grid-cols-1 gap-2 pt-1">
-                    {field.options.map((opt, idx) => {
-                      const isSelected = answers[field.id] === opt;
-                      return (
-                        <div
-                          key={idx}
-                          onClick={() => !isPending && handleInputChange(field.id, opt)}
-                          className={`flex items-center px-4 py-3 rounded-lg border border-neutral-850 bg-neutral-950/40 cursor-pointer transition-all duration-150 hover:border-neutral-750 ${
-                            isSelected ? "border-primary/50 bg-primary/5 text-primary-foreground" : ""
-                          }`}
-                        >
-                          <div className="h-4 w-4 rounded-full border border-neutral-600 flex items-center justify-center mr-3 shrink-0">
-                            {isSelected && (
-                              <div className="h-2.5 w-2.5 rounded-full bg-primary" />
-                            )}
-                          </div>
-                          <span className="text-sm text-neutral-200">{opt}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* File/Image Upload input */}
-                {field.type === "file" && (
-                  <div className="space-y-3 pt-1">
-                    {!uploadedFiles[field.id] ? (
-                      <div className="relative border border-dashed border-neutral-800 rounded-lg p-5 bg-neutral-950/20 text-center flex flex-col items-center justify-center space-y-2 group hover:border-neutral-700 transition-colors">
-                        <input
-                          id={`file-input-${field.id}`}
-                          type="file"
-                          accept={field.fileTypes || "*"}
-                          onChange={(e) => handleFileUpload(field.id, e)}
-                          disabled={isPending || uploadingFields[field.id]}
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        />
-                        <div className="h-9 w-9 rounded-full bg-neutral-900 flex items-center justify-center border border-neutral-800 text-neutral-450 group-hover:text-neutral-200">
-                          {uploadingFields[field.id] ? (
-                            <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                          ) : (
-                            <Upload className="h-4 w-4" />
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-xs text-neutral-300 font-medium">
-                            {uploadingFields[field.id] ? "Mengunggah..." : "Klik atau seret berkas ke sini"}
-                          </p>
-                          <p className="text-[10px] text-neutral-500 mt-0.5">
-                            {field.fileTypes === "image/*" && "Hanya Gambar (PNG, JPG, WebP, GIF) (Maks. 5MB)"}
-                            {field.fileTypes === "audio/*" && "Hanya Audio (MP3, WAV, OGG) (Maks. 5MB)"}
-                            {field.fileTypes && field.fileTypes.includes(".") && `Hanya Dokumen (${field.fileTypes.replace(/\./g, "").toUpperCase()}) (Maks. 5MB)`}
-                            {(!field.fileTypes || field.fileTypes === "*") && "Semua Format Berkas (Maks. 5MB)"}
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-between p-3 rounded-lg border border-neutral-800 bg-neutral-950/60 text-xs">
-                        <div className="flex items-center space-x-2.5 truncate max-w-sm">
-                          <Paperclip className="h-4 w-4 text-primary shrink-0" />
-                          <span className="text-neutral-200 font-medium truncate">
-                            {uploadedFiles[field.id].name}
-                          </span>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setUploadedFiles((prev) => {
-                              const next = { ...prev };
-                              delete next[field.id];
-                              return next;
-                            });
-                            handleInputChange(field.id, "");
-                          }}
-                          className="h-7 px-2 text-neutral-400 hover:text-red-400 hover:bg-transparent"
-                        >
-                          Ganti File
-                        </Button>
-                      </div>
+            return (
+              <Card 
+                key={field.id} 
+                id={`container-${field.id}`}
+                className={`bg-neutral-900/30 border-neutral-900 transition-all duration-300 ${
+                  errors[field.id] ? "border-red-900/50 bg-red-950/5" : "hover:border-neutral-850"
+                }`}
+              >
+                <CardContent className="p-6 space-y-3">
+                  <div className="flex items-center space-x-1.5">
+                    <Label className="text-neutral-200 text-sm font-semibold tracking-wide">
+                      {field.label}
+                    </Label>
+                    {field.required && (
+                      <span className="text-red-500 font-bold" title="Wajib Diisi">*</span>
                     )}
                   </div>
-                )}
 
-                {/* Individual Field Validation Error */}
-                {errors[field.id] && (
-                  <p className="text-xs text-red-500 font-medium flex items-center pt-1">
-                    <AlertCircle className="h-3.5 w-3.5 mr-1 shrink-0" />
-                    {errors[field.id]}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+                  {/* Text input */}
+                  {field.type === "text" && (
+                    <Input
+                      type="text"
+                      value={answers[field.id] || ""}
+                      onChange={(e) => handleInputChange(field.id, e.target.value)}
+                      disabled={isPending}
+                      className="bg-neutral-950/80 border-neutral-850 text-neutral-200 focus:border-primary focus:ring-1 focus:ring-primary/50 h-10"
+                      placeholder="Jawaban Anda..."
+                    />
+                  )}
+
+                  {/* Textarea paragraph input */}
+                  {field.type === "textarea" && (
+                    <Textarea
+                      value={answers[field.id] || ""}
+                      onChange={(e) => handleInputChange(field.id, e.target.value)}
+                      disabled={isPending}
+                      className="bg-neutral-950/80 border-neutral-850 text-neutral-200 focus:border-primary focus:ring-1 focus:ring-primary/50 min-h-[100px]"
+                      placeholder="Jawaban Anda..."
+                    />
+                  )}
+
+                  {/* Dropdown Select input */}
+                  {field.type === "select" && field.options && (
+                    <Select
+                      value={answers[field.id] || ""}
+                      onValueChange={(val) => handleInputChange(field.id, val)}
+                      disabled={isPending}
+                    >
+                      <SelectTrigger className="bg-neutral-950/80 border-neutral-850 text-neutral-200 focus:ring-1 focus:ring-primary/50 h-10">
+                        <SelectValue placeholder="Pilih salah satu..." />
+                      </SelectTrigger>
+                      <SelectContent className="bg-neutral-900 border-neutral-800 text-neutral-200">
+                        {field.options.map((opt, idx) => (
+                          <SelectItem key={idx} value={opt} className="focus:bg-neutral-850 focus:text-neutral-100">
+                            {opt}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+
+                  {/* Radio choice input */}
+                  {field.type === "radio" && field.options && (
+                    <div className="grid grid-cols-1 gap-2 pt-1">
+                      {field.options.map((opt, idx) => {
+                        const isSelected = answers[field.id] === opt;
+                        return (
+                          <div
+                            key={idx}
+                            onClick={() => !isPending && handleInputChange(field.id, opt)}
+                            className={`flex items-center px-4 py-3 rounded-lg border border-neutral-850 bg-neutral-950/40 cursor-pointer transition-all duration-150 hover:border-neutral-750 ${
+                              isSelected ? "border-primary/50 bg-primary/5 text-primary-foreground" : ""
+                            }`}
+                          >
+                            <div className="h-4 w-4 rounded-full border border-neutral-600 flex items-center justify-center mr-3 shrink-0">
+                              {isSelected && (
+                                <div className="h-2.5 w-2.5 rounded-full bg-primary" />
+                              )}
+                            </div>
+                            <span className="text-sm text-neutral-200">{opt}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* File/Image Upload input */}
+                  {field.type === "file" && (
+                    <div className="space-y-3 pt-1">
+                      {!uploadedFiles[field.id] ? (
+                        <div className="relative border border-dashed border-neutral-800 rounded-lg p-5 bg-neutral-950/20 text-center flex flex-col items-center justify-center space-y-2 group hover:border-neutral-700 transition-colors">
+                          <input
+                            id={`file-input-${field.id}`}
+                            type="file"
+                            accept={field.fileTypes || "*"}
+                            onChange={(e) => handleFileUpload(field.id, e)}
+                            disabled={isPending || uploadingFields[field.id]}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          />
+                          <div className="h-9 w-9 rounded-full bg-neutral-900 flex items-center justify-center border border-neutral-800 text-neutral-450 group-hover:text-neutral-200">
+                            {uploadingFields[field.id] ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                            ) : (
+                              <Upload className="h-4 w-4" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-xs text-neutral-300 font-medium">
+                              {uploadingFields[field.id] ? "Mengunggah..." : "Klik atau seret berkas ke sini"}
+                            </p>
+                            <p className="text-[10px] text-neutral-500 mt-0.5">
+                              {field.fileTypes === "image/*" && "Hanya Gambar (PNG, JPG, WebP, GIF) (Maks. 5MB)"}
+                              {field.fileTypes === "audio/*" && "Hanya Audio (MP3, WAV, OGG) (Maks. 5MB)"}
+                              {field.fileTypes && field.fileTypes.includes(".") && `Hanya Dokumen (${field.fileTypes.replace(/\./g, "").toUpperCase()}) (Maks. 5MB)`}
+                              {(!field.fileTypes || field.fileTypes === "*") && "Semua Format Berkas (Maks. 5MB)"}
+                            </p>
+                          </div>
+
+                          {/* Progress indicator */}
+                          {uploadingFields[field.id] && (
+                            <div className="w-full max-w-xs mt-2">
+                              <div className="h-1.5 w-full bg-neutral-900 rounded-full overflow-hidden border border-neutral-850">
+                                <div 
+                                  className="h-full bg-primary transition-all duration-150 rounded-full" 
+                                  style={{ width: `${uploadProgress[field.id] || 0}%` }}
+                                />
+                              </div>
+                              <span className="text-[10px] text-neutral-450 mt-1 block text-center">
+                                Mengunggah: {uploadProgress[field.id] || 0}%
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between p-3 rounded-lg border border-neutral-800 bg-neutral-950/60 text-xs">
+                          <div className="flex items-center space-x-2.5 truncate max-w-sm">
+                            <Paperclip className="h-4 w-4 text-primary shrink-0" />
+                            <span className="text-neutral-200 font-medium truncate">
+                              {uploadedFiles[field.id].name}
+                            </span>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setUploadedFiles((prev) => {
+                                const next = { ...prev };
+                                delete next[field.id];
+                                return next;
+                              });
+                              handleInputChange(field.id, "");
+                            }}
+                            className="h-7 px-2 text-neutral-400 hover:text-red-400 hover:bg-transparent"
+                          >
+                            Ganti File
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Individual Field Validation Error */}
+                  {errors[field.id] && (
+                    <p className="text-xs text-red-500 font-medium flex items-center pt-1">
+                      <AlertCircle className="h-3.5 w-3.5 mr-1 shrink-0" />
+                      {errors[field.id]}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
 
           {/* Form Submit Button */}
           <div className="flex justify-between items-center pt-2">

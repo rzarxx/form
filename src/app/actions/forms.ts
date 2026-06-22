@@ -4,6 +4,38 @@ import { cookies, headers } from "next/headers";
 import { sql } from "@/lib/db";
 import { initDatabase } from "@/lib/db-init";
 import { verifyAdminSession } from "@/lib/auth-helper";
+import { del } from "@vercel/blob";
+import { promises as fs } from "fs";
+import path from "path";
+
+// Simple in-memory rate limiter
+const ipRequestCounts = new Map<string, { timestamp: number; count: number }>();
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const timeframe = 60 * 1000; // 1 minute
+  const maxLimit = 5;
+
+  const clientData = ipRequestCounts.get(ip);
+
+  if (!clientData) {
+    ipRequestCounts.set(ip, { timestamp: now, count: 1 });
+    return true;
+  }
+
+  if (now - clientData.timestamp > timeframe) {
+    // Reset window
+    ipRequestCounts.set(ip, { timestamp: now, count: 1 });
+    return true;
+  }
+
+  if (clientData.count >= maxLimit) {
+    return false;
+  }
+
+  clientData.count += 1;
+  return true;
+}
 
 // Helper to enforce authentication in admin actions
 async function requireAuth() {
@@ -15,12 +47,66 @@ async function requireAuth() {
   }
 }
 
+// Helper to extract URLs from JSON answers and delete them
+async function deleteResponseBlobs(answersJson: any) {
+  let answers: Record<string, any> = {};
+  try {
+    if (typeof answersJson === "string") {
+      answers = JSON.parse(answersJson);
+    } else if (answersJson && typeof answersJson === "object") {
+      answers = answersJson;
+    }
+  } catch (e) {
+    console.error("Failed to parse answers for blob deletion:", e);
+    return;
+  }
+
+  const urls: string[] = [];
+  for (const key in answers) {
+    const val = answers[key];
+    if (typeof val === "string") {
+      if (val.includes("public.blob.vercel-storage.com")) {
+        urls.push(val);
+      } else if (val.startsWith("/uploads/")) {
+        urls.push(val);
+      }
+    }
+  }
+
+  if (urls.length === 0) return;
+
+  console.log("Found blob URLs in response to delete:", urls);
+  for (const url of urls) {
+    try {
+      if (url.includes("public.blob.vercel-storage.com")) {
+        if (process.env.BLOB_READ_WRITE_TOKEN) {
+          await del(url);
+          console.log("Successfully deleted Vercel Blob:", url);
+        } else {
+          console.warn("BLOB_READ_WRITE_TOKEN is missing. Cannot delete blob from Vercel:", url);
+        }
+      } else if (url.startsWith("/uploads/")) {
+        const filename = url.replace("/uploads/", "");
+        const filePath = path.join(process.cwd(), "public", "uploads", filename);
+        await fs.unlink(filePath);
+        console.log("Successfully deleted local upload:", filePath);
+      }
+    } catch (err: any) {
+      console.error(`Failed to delete asset ${url}:`, err.message || err);
+    }
+  }
+}
+
 export async function createFormAction(
   title: string,
   description: string,
   fields: any[],
-  bannerUrl?: string,
+  bannerUrl?: string | null,
   maxResponses: number = 0,
+  customSuccessMessage?: string | null,
+  redirectUrl?: string | null,
+  expiryDate?: string | null,
+  notifyEmail?: string | null,
   isActive: boolean = true
 ) {
   try {
@@ -34,8 +120,15 @@ export async function createFormAction(
     const fieldsJson = JSON.stringify(fields);
 
     const result = await sql`
-      INSERT INTO forms (title, description, fields, banner_url, max_responses, is_active)
-      VALUES (${title}, ${description || null}, ${fieldsJson}, ${bannerUrl || null}, ${maxResponses}, ${isActive})
+      INSERT INTO forms (
+        title, description, fields, banner_url, max_responses, is_active,
+        custom_success_message, redirect_url, expiry_date, notify_email
+      )
+      VALUES (
+        ${title}, ${description || null}, ${fieldsJson}, ${bannerUrl || null}, ${maxResponses}, ${isActive},
+        ${customSuccessMessage || null}, ${redirectUrl || null}, 
+        ${expiryDate ? new Date(expiryDate) : null}, ${notifyEmail || null}
+      )
       RETURNING id, title, created_at
     `;
 
@@ -43,6 +136,55 @@ export async function createFormAction(
   } catch (error: any) {
     console.error("Error creating form:", error);
     return { success: false, error: error.message || "Gagal membuat formulir." };
+  }
+}
+
+export async function updateFormAction(
+  formId: string,
+  title: string,
+  description: string,
+  fields: any[],
+  bannerUrl?: string | null,
+  maxResponses: number = 0,
+  customSuccessMessage?: string | null,
+  redirectUrl?: string | null,
+  expiryDate?: string | null,
+  notifyEmail?: string | null,
+  isActive: boolean = true
+) {
+  try {
+    await requireAuth();
+    await initDatabase();
+
+    if (!formId) {
+      return { success: false, error: "ID formulir tidak valid." };
+    }
+    if (!title) {
+      return { success: false, error: "Judul formulir wajib diisi." };
+    }
+
+    const fieldsJson = JSON.stringify(fields);
+
+    await sql`
+      UPDATE forms
+      SET 
+        title = ${title},
+        description = ${description || null},
+        fields = ${fieldsJson},
+        banner_url = ${bannerUrl || null},
+        max_responses = ${maxResponses},
+        custom_success_message = ${customSuccessMessage || null},
+        redirect_url = ${redirectUrl || null},
+        expiry_date = ${expiryDate ? new Date(expiryDate) : null},
+        notify_email = ${notifyEmail || null},
+        is_active = ${isActive}
+      WHERE id = ${formId}
+    `;
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error updating form:", error);
+    return { success: false, error: error.message || "Gagal memperbarui formulir." };
   }
 }
 
@@ -54,6 +196,7 @@ export async function getFormsAction() {
     // Fetch forms along with response counts using a LEFT JOIN and GROUP BY
     const forms = await sql`
       SELECT f.id, f.title, f.description, f.created_at, f.fields, f.banner_url, f.max_responses, f.is_active,
+             f.custom_success_message, f.redirect_url, f.expiry_date, f.notify_email,
              COUNT(r.id)::int as response_count
       FROM forms f
       LEFT JOIN form_responses r ON f.id = r.form_id
@@ -75,7 +218,8 @@ export async function getFormDetailAction(formId: string) {
 
     // Fetch form configuration
     const formResult = await sql`
-      SELECT id, title, description, created_at, fields, banner_url, max_responses, is_active
+      SELECT id, title, description, created_at, fields, banner_url, max_responses, is_active,
+             custom_success_message, redirect_url, expiry_date, notify_email
       FROM forms
       WHERE id = ${formId}
     `;
@@ -110,6 +254,40 @@ export async function deleteFormAction(formId: string) {
     await requireAuth();
     await initDatabase();
 
+    // 1. Get form to delete banner
+    const formRes = await sql`
+      SELECT banner_url FROM forms WHERE id = ${formId}
+    `;
+
+    // 2. Get all responses to delete uploaded assets
+    const responses = await sql`
+      SELECT answers FROM form_responses WHERE form_id = ${formId}
+    `;
+
+    // Delete response files
+    for (const r of responses) {
+      await deleteResponseBlobs(r.answers);
+    }
+
+    // Delete banner
+    if (formRes.length > 0 && formRes[0].banner_url) {
+      const bannerUrl = formRes[0].banner_url;
+      try {
+        if (bannerUrl.includes("public.blob.vercel-storage.com")) {
+          if (process.env.BLOB_READ_WRITE_TOKEN) {
+            await del(bannerUrl);
+          }
+        } else if (bannerUrl.startsWith("/uploads/")) {
+          const filename = bannerUrl.replace("/uploads/", "");
+          const filePath = path.join(process.cwd(), "public", "uploads", filename);
+          await fs.unlink(filePath);
+        }
+      } catch (err) {
+        console.error("Failed to delete banner:", err);
+      }
+    }
+
+    // 3. Delete form (which cascades deleted responses)
     await sql`
       DELETE FROM forms
       WHERE id = ${formId}
@@ -119,6 +297,33 @@ export async function deleteFormAction(formId: string) {
   } catch (error: any) {
     console.error("Error deleting form:", error);
     return { success: false, error: error.message || "Gagal menghapus formulir." };
+  }
+}
+
+export async function deleteResponseAction(responseId: number) {
+  try {
+    await requireAuth();
+    await initDatabase();
+
+    // 1. Get response details to delete assets
+    const responseRes = await sql`
+      SELECT answers FROM form_responses WHERE id = ${responseId}
+    `;
+
+    if (responseRes.length > 0) {
+      await deleteResponseBlobs(responseRes[0].answers);
+    }
+
+    // 2. Delete response row
+    await sql`
+      DELETE FROM form_responses
+      WHERE id = ${responseId}
+    `;
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error deleting response:", error);
+    return { success: false, error: error.message || "Gagal menghapus tanggapan." };
   }
 }
 
@@ -134,9 +339,15 @@ export async function submitResponseAction(formId: string, answers: Record<strin
     const headerList = await headers();
     const ip = headerList.get("x-forwarded-for")?.split(",")[0] || headerList.get("x-real-ip") || "127.0.0.1";
 
-    // 2. Fetch form details to verify if active and check response limits
+    // 2. Check rate limit (Max 5 submissions per minute per IP)
+    const allowed = checkRateLimit(ip);
+    if (!allowed) {
+      return { success: false, error: "Terlalu banyak permintaan. Silakan tunggu 1 menit sebelum mengirim lagi (Rate Limit)." };
+    }
+
+    // 3. Fetch form details to verify if active, limits, and expiry
     const formResult = await sql`
-      SELECT is_active, max_responses FROM forms WHERE id = ${formId}
+      SELECT title, is_active, max_responses, expiry_date, notify_email, fields FROM forms WHERE id = ${formId}
     `;
 
     if (formResult.length === 0) {
@@ -145,12 +356,21 @@ export async function submitResponseAction(formId: string, answers: Record<strin
 
     const form = formResult[0];
 
-    // 3. Check if form is active
+    // 4. Check if form is active
     if (!form.is_active) {
       return { success: false, error: "Formulir ini sudah ditutup dan tidak menerima tanggapan lagi." };
     }
 
-    // 4. Check if max responses per IP is limited (e.g. limit to 1 response)
+    // 5. Check if deadline has passed
+    if (form.expiry_date) {
+      const now = new Date();
+      const expiry = new Date(form.expiry_date);
+      if (now > expiry) {
+        return { success: false, error: "Formulir sudah kadaluarsa (Batas waktu pengisian berakhir)." };
+      }
+    }
+
+    // 6. Check if max responses per IP is limited
     if (form.max_responses === 1) {
       const existingResponse = await sql`
         SELECT id FROM form_responses 
@@ -162,11 +382,68 @@ export async function submitResponseAction(formId: string, answers: Record<strin
       }
     }
 
-    // 5. Insert response (using sql.json helper for proper JSONB serialization)
+    // 7. Insert response (using sql.json helper for proper JSONB serialization)
     await sql`
       INSERT INTO form_responses (form_id, answers, ip_address)
       VALUES (${formId}, ${sql.json(answers)}, ${ip})
     `;
+
+    // 8. Send real-time email notification if notify_email is configured
+    if (form.notify_email && form.notify_email.trim()) {
+      const formFields = Array.isArray(form.fields)
+        ? form.fields
+        : typeof form.fields === "string"
+          ? JSON.parse(form.fields)
+          : [];
+
+      if (process.env.RESEND_API_KEY) {
+        try {
+          const res = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+            },
+            body: JSON.stringify({
+              from: "Personal Form Builder <onboarding@resend.dev>",
+              to: form.notify_email,
+              subject: `Tanggapan Baru: ${form.title}`,
+              html: `
+                <h3>Tanggapan Baru untuk Formulir: ${form.title}</h3>
+                <p>Seseorang baru saja mengisi formulir Anda pada ${new Date().toLocaleString("id-ID")}.</p>
+                <h4>Detail Jawaban:</h4>
+                <ul>
+                  ${Object.entries(answers)
+                    .map(([key, value]) => {
+                      const field = formFields.find((f: any) => f.id === key);
+                      const label = field ? field.label : key;
+                      return `<li><strong>${label}:</strong> ${value}</li>`;
+                    })
+                    .join("")}
+                </ul>
+                <hr />
+                <p>IP Address Pengisi: <code>${ip}</code></p>
+              `,
+            }),
+          });
+          if (!res.ok) {
+            const errText = await res.text();
+            console.error("Resend API error response:", errText);
+          } else {
+            console.log("Email notification sent to:", form.notify_email);
+          }
+        } catch (emailErr) {
+          console.error("Error sending email notification via Resend:", emailErr);
+        }
+      } else {
+        console.log("-----------------------------------------");
+        console.log("FALLBACK EMAIL LOG (RESEND_API_KEY not set):");
+        console.log("To:", form.notify_email);
+        console.log("Subject: Tanggapan Baru: " + form.title);
+        console.log("Answers:", answers);
+        console.log("-----------------------------------------");
+      }
+    }
 
     return { success: true };
   } catch (error: any) {
@@ -180,7 +457,8 @@ export async function getPublicFormAction(formId: string) {
     await initDatabase();
 
     const formResult = await sql`
-      SELECT id, title, description, fields, banner_url, max_responses, is_active
+      SELECT id, title, description, fields, banner_url, max_responses, is_active,
+             custom_success_message, redirect_url, expiry_date, notify_email
       FROM forms
       WHERE id = ${formId}
     `;

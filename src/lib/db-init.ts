@@ -42,6 +42,18 @@ export async function initDatabase() {
     await sql`
       ALTER TABLE form_responses ADD COLUMN IF NOT EXISTS ip_address VARCHAR(45);
     `;
+    await sql`
+      ALTER TABLE forms ADD COLUMN IF NOT EXISTS custom_success_message TEXT;
+    `;
+    await sql`
+      ALTER TABLE forms ADD COLUMN IF NOT EXISTS redirect_url TEXT;
+    `;
+    await sql`
+      ALTER TABLE forms ADD COLUMN IF NOT EXISTS expiry_date TIMESTAMP WITH TIME ZONE;
+    `;
+    await sql`
+      ALTER TABLE forms ADD COLUMN IF NOT EXISTS notify_email VARCHAR(255);
+    `;
 
     isInitialized = true;
     console.log("Database initialization check completed successfully.");
