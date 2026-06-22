@@ -288,9 +288,9 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
       {/* Background Glow */}
       <div className="absolute top-0 right-1/4 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-primary/5 blur-[120px] pointer-events-none" />
 
-      {/* Header */}
-      <header className="border-b border-neutral-900 bg-neutral-950/40 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-4 min-h-16 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+      {/* Subpage Header Actions */}
+      <div className="border-b border-neutral-900 bg-neutral-900/10 py-4">
+        <div className="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center space-x-2">
             <Link href={`/admin/forms/${formId}`}>
               <Button variant="ghost" size="sm" className="text-neutral-450 hover:text-neutral-200">
@@ -299,12 +299,12 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
               </Button>
             </Link>
             <span className="text-neutral-700 text-sm">|</span>
-            <span className="text-xs text-neutral-500 font-mono uppercase tracking-wider bg-neutral-900 px-2 py-1 rounded border border-neutral-850 truncate max-w-[200px]">Edit Form</span>
+            <span className="text-[10px] text-neutral-550 font-bold uppercase tracking-wider bg-neutral-950 border border-neutral-850 px-2 py-1 rounded font-mono truncate max-w-[200px]">Edit Form</span>
           </div>
 
           <div className="flex items-center gap-2">
             <Link href={`/forms/${formId}`} target="_blank">
-              <Button variant="outline" size="sm" className="border-neutral-850 text-neutral-450 hover:text-neutral-200 h-9 text-xs">
+              <Button variant="outline" size="sm" className="border-neutral-850 text-neutral-455 hover:text-neutral-200 h-9 text-xs">
                 <Eye className="h-4 w-4 mr-2 text-primary" />
                 Pratinjau
               </Button>
@@ -312,7 +312,7 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
             <Button 
               onClick={handleSaveForm} 
               disabled={isPending || isUploadingBanner}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-4 h-9 shadow-lg shadow-primary/10 hover:shadow-primary/20 hover:scale-[1.015] transition-all"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-4 h-9 rounded-xl shadow-lg shadow-primary/10 hover:shadow-primary/20 hover:scale-[1.015] transition-all"
             >
               {isPending ? (
                 <>
@@ -328,13 +328,13 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
             </Button>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Main Content */}
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-8 pb-36 space-y-6 relative z-10">
         
         {/* Form Meta */}
-        <Card className="bg-neutral-900/30 border-neutral-900 shadow-xl overflow-hidden relative backdrop-blur-md">
+        <Card className="bg-neutral-900/10 border-neutral-850/60 shadow-lg overflow-hidden relative backdrop-blur-md rounded-2xl">
           <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary/55 to-transparent" />
           <CardHeader className="space-y-1.5 pt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="space-y-1.5">
@@ -439,7 +439,7 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
         </Card>
 
         {/* Advanced Settings */}
-        <Card className="bg-neutral-900/30 border-neutral-900 shadow-xl overflow-hidden relative backdrop-blur-md">
+        <Card className="bg-neutral-900/10 border-neutral-850/60 shadow-lg overflow-hidden relative backdrop-blur-md rounded-2xl">
           <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-violet-500/50 to-transparent" />
           <CardHeader className="space-y-1.5 pt-6">
             <CardTitle className="text-xl font-bold text-neutral-100 flex items-center gap-2">

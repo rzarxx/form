@@ -303,12 +303,13 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col">
       {/* Header */}
-      <header className="border-b border-neutral-900 bg-neutral-950/60 backdrop-blur-md sticky top-0 z-50 transition-all duration-300">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+      {/* Subpage Header Actions */}
+      <div className="border-b border-neutral-900 bg-neutral-900/10 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <Link href="/admin">
             <Button variant="ghost" size="sm" className="text-neutral-400 hover:text-neutral-200 transition-colors">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Dasbor Utama
+              Kembali ke Dasbor
             </Button>
           </Link>
           
@@ -317,7 +318,7 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
               variant="outline" 
               size="sm" 
               onClick={handleToggleActive}
-              className={`h-9 px-3.5 border border-neutral-800/80 bg-neutral-950/30 hover:bg-neutral-900/60 transition-all duration-200 cursor-pointer ${
+              className={`h-9 px-3.5 border border-neutral-850 bg-neutral-950/30 hover:bg-neutral-900/60 transition-all duration-200 cursor-pointer ${
                 form.is_active 
                   ? "text-emerald-450 hover:text-emerald-400" 
                   : "text-amber-500 hover:text-amber-400"
@@ -331,7 +332,7 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="border-neutral-800/80 bg-neutral-950/30 hover:bg-neutral-900/60 text-neutral-300 hover:text-neutral-100 h-9 transition-all cursor-pointer"
+                className="border-neutral-850 bg-neutral-955/30 hover:bg-neutral-900/60 text-neutral-300 hover:text-neutral-100 h-9 transition-all cursor-pointer"
               >
                 <Settings className="h-4 w-4 mr-1.5" />
                 Edit Form
@@ -342,7 +343,7 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
               variant="outline"
               size="sm"
               onClick={() => setShowShare(!showShare)}
-              className={`border-neutral-800/80 bg-neutral-950/30 hover:bg-neutral-900/60 text-neutral-300 hover:text-neutral-100 h-9 transition-all cursor-pointer ${showShare ? "bg-neutral-900 border-neutral-750" : ""}`}
+              className={`border-neutral-855 bg-neutral-955/30 hover:bg-neutral-900/60 text-neutral-300 hover:text-neutral-100 h-9 transition-all cursor-pointer ${showShare ? "bg-neutral-900 border-neutral-750" : ""}`}
             >
               <Share2 className="h-4 w-4 mr-1.5" />
               Bagikan
@@ -352,7 +353,7 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="border-neutral-800/80 bg-neutral-950/30 hover:bg-neutral-900/60 text-neutral-300 hover:text-neutral-100 h-9 transition-all cursor-pointer"
+                className="border-neutral-850 bg-neutral-955/30 hover:bg-neutral-900/60 text-neutral-300 hover:text-neutral-100 h-9 transition-all cursor-pointer"
               >
                 <ExternalLink className="h-4 w-4 mr-1.5" />
                 Link Publik
@@ -364,7 +365,7 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
               variant="ghost"
               onClick={handleDeleteForm}
               disabled={isPending}
-              className="text-neutral-400 hover:text-rose-400 hover:bg-rose-950/15 border border-transparent hover:border-rose-900/30 h-9 transition-all cursor-pointer"
+              className="text-neutral-400 hover:text-rose-455 hover:bg-rose-955/10 border border-transparent hover:border-rose-900/20 h-9 transition-all cursor-pointer"
             >
               {isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -377,7 +378,7 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
             </Button>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Main Content */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">

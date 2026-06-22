@@ -100,28 +100,7 @@ export default function AdminDashboard() {
       <div className="absolute top-0 left-1/4 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-primary/5 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-10 right-10 w-[400px] h-[400px] rounded-full bg-violet-500/5 blur-[120px] pointer-events-none" />
 
-      {/* Header */}
-      <header className="border-b border-neutral-900 bg-neutral-950/40 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center space-x-3">
-            <div className="h-9 w-9 rounded-lg bg-primary/10 border border-primary/30 flex items-center justify-center text-primary shadow-lg shadow-primary/5">
-              <FileSpreadsheet className="h-5 w-5" />
-            </div>
-            <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-neutral-100 via-neutral-200 to-neutral-450 bg-clip-text text-transparent">
-              Personal Form Builder
-            </span>
-          </div>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleLogout}
-            className="text-neutral-450 hover:text-red-400 hover:bg-red-950/15 h-9 transition-colors"
-          >
-            <LogOut className="h-4 w-4 mr-2" />
-            Keluar Dasbor
-          </Button>
-        </div>
-      </header>
+
 
       {/* Main Content */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 relative z-10">
