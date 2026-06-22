@@ -16,27 +16,6 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { 
-  ArrowLeft, 
-  Download, 
-  Trash2, 
-  Calendar, 
-  Search, 
-  ChevronLeft, 
-  ChevronRight, 
-  Loader2,
-  ExternalLink,
-  FileSpreadsheet,
-  Inbox,
-  Clock,
-  Settings,
-  Share2,
-  Copy,
-  QrCode,
-  Code,
-  BarChart3,
-  FileText
-} from "lucide-react";
 
 interface FieldSchema {
   id: string;
@@ -276,9 +255,9 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
-        <p className="text-sm text-neutral-450 font-medium">Memuat detail formulir...</p>
+      <div className="min-h-screen bg-[#f1f5f9] text-slate-800 flex flex-col items-center justify-center">
+        <i className="fa-solid fa-circle-notch fa-spin text-indigo-600 text-3xl mb-3"></i>
+        <p className="text-sm text-slate-505 font-semibold">Memuat detail formulir...</p>
       </div>
     );
   }
@@ -301,30 +280,27 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
   };
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col">
-      {/* Header */}
+    <div className="bg-[#f1f5f9] text-slate-800 flex flex-col min-h-full">
       {/* Subpage Header Actions */}
-      <div className="border-b border-neutral-900 bg-neutral-900/10 py-4">
+      <div className="border-b border-slate-200/80 bg-white py-4 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <Link href="/admin">
-            <Button variant="ghost" size="sm" className="text-neutral-400 hover:text-neutral-200 transition-colors">
-              <ArrowLeft className="h-4 w-4 mr-2" />
+            <Button variant="ghost" size="sm" className="text-slate-500 hover:text-slate-850 transition-colors font-semibold cursor-pointer">
+              <i className="fa-solid fa-arrow-left mr-2"></i>
               Kembali ke Dasbor
             </Button>
           </Link>
           
           <div className="flex flex-wrap items-center justify-center gap-2">
             <Button 
-              variant="outline" 
-              size="sm" 
               onClick={handleToggleActive}
-              className={`h-9 px-3.5 border border-neutral-850 bg-neutral-950/30 hover:bg-neutral-900/60 transition-all duration-200 cursor-pointer ${
+              className={`h-9 px-3.5 border bg-white rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-sm ${
                 form.is_active 
-                  ? "text-emerald-450 hover:text-emerald-400" 
-                  : "text-amber-500 hover:text-amber-400"
+                  ? "border-emerald-200 text-emerald-600 hover:bg-emerald-50/50" 
+                  : "border-amber-200 text-amber-600 hover:bg-amber-50/50"
               }`}
             >
-              <span className={`h-2 w-2 rounded-full mr-2 ${form.is_active ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-amber-500 animate-pulse"}`} />
+              <span className={`h-2 w-2 rounded-full mr-2 shrink-0 ${form.is_active ? "bg-emerald-500" : "bg-amber-500"}`} />
               {form.is_active ? "Form Aktif" : "Form Tutup"}
             </Button>
 
@@ -332,9 +308,9 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="border-neutral-850 bg-neutral-955/30 hover:bg-neutral-900/60 text-neutral-300 hover:text-neutral-100 h-9 transition-all cursor-pointer"
+                className="border-slate-200 bg-white hover:bg-slate-50 text-slate-650 hover:text-slate-900 h-9 rounded-xl transition-all cursor-pointer font-semibold"
               >
-                <Settings className="h-4 w-4 mr-1.5" />
+                <i className="fa-solid fa-gear mr-1.5 text-slate-400"></i>
                 Edit Form
               </Button>
             </Link>
@@ -343,9 +319,9 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
               variant="outline"
               size="sm"
               onClick={() => setShowShare(!showShare)}
-              className={`border-neutral-855 bg-neutral-955/30 hover:bg-neutral-900/60 text-neutral-300 hover:text-neutral-100 h-9 transition-all cursor-pointer ${showShare ? "bg-neutral-900 border-neutral-750" : ""}`}
+              className={`border-slate-200 bg-white hover:bg-slate-50 text-slate-650 hover:text-slate-900 h-9 rounded-xl transition-all cursor-pointer font-semibold ${showShare ? "bg-slate-50 border-slate-300" : ""}`}
             >
-              <Share2 className="h-4 w-4 mr-1.5" />
+              <i className="fa-solid fa-share-nodes mr-1.5 text-slate-400"></i>
               Bagikan
             </Button>
 
@@ -353,9 +329,9 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="border-neutral-850 bg-neutral-955/30 hover:bg-neutral-900/60 text-neutral-300 hover:text-neutral-100 h-9 transition-all cursor-pointer"
+                className="border-slate-200 bg-white hover:bg-slate-50 text-slate-655 hover:text-slate-900 h-9 rounded-xl transition-all cursor-pointer font-semibold"
               >
-                <ExternalLink className="h-4 w-4 mr-1.5" />
+                <i className="fa-solid fa-arrow-up-right-from-square mr-1.5 text-slate-400"></i>
                 Link Publik
               </Button>
             </Link>
@@ -365,13 +341,13 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
               variant="ghost"
               onClick={handleDeleteForm}
               disabled={isPending}
-              className="text-neutral-400 hover:text-rose-455 hover:bg-rose-955/10 border border-transparent hover:border-rose-900/20 h-9 transition-all cursor-pointer"
+              className="text-slate-500 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-100 h-9 px-3 rounded-xl transition-all cursor-pointer font-semibold"
             >
               {isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <i className="fa-solid fa-circle-notch fa-spin text-slate-400"></i>
               ) : (
                 <>
-                  <Trash2 className="h-4 w-4 mr-1.5" />
+                  <i className="fa-regular fa-trash-can mr-1.5 text-slate-400 group-hover:text-rose-500"></i>
                   Hapus
                 </>
               )}
@@ -384,152 +360,156 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         
         {/* Form Meta details */}
-        <div className="relative overflow-hidden rounded-2xl border border-neutral-800/40 bg-neutral-900/10 p-6 backdrop-blur-md shadow-lg transition-all duration-300 hover:border-neutral-700/60">
-          <div className="absolute top-0 left-0 h-full w-[4px] bg-gradient-to-b from-primary to-primary/45" />
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center gap-2.5">
-                <h1 className="text-2xl font-bold tracking-tight text-neutral-100">{form.title}</h1>
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-                  form.is_active 
-                    ? "bg-emerald-950/30 border-emerald-850/50 text-emerald-450" 
-                    : "bg-amber-950/30 border-amber-850/50 text-amber-500"
-                }`}>
-                  <span className={`h-1.5 w-1.5 rounded-full mr-1.5 ${form.is_active ? "bg-emerald-400" : "bg-amber-400 animate-pulse"}`} />
-                  {form.is_active ? "Aktif" : "Ditutup"}
-                </span>
-                {form.max_responses === 1 && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-neutral-950 border border-neutral-800/80 text-neutral-450">
-                    Batasi 1 IP
+        <Card className="bg-white border-slate-200 shadow-sm rounded-2xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-[4px] h-full bg-indigo-600" />
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h1 className="text-2xl font-black tracking-tight text-slate-900">{form.title}</h1>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                    form.is_active 
+                      ? "bg-emerald-50 border-emerald-100 text-emerald-600" 
+                      : "bg-amber-50 border-amber-100 text-amber-600"
+                  }`}>
+                    <span className={`h-1.5 w-1.5 rounded-full mr-1.5 ${form.is_active ? "bg-emerald-500" : "bg-amber-500"}`} />
+                    {form.is_active ? "Aktif" : "Ditutup"}
                   </span>
+                  {form.max_responses === 1 && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-50 border border-slate-200 text-slate-500">
+                      Batasi 1 IP
+                    </span>
+                  )}
+                </div>
+                {form.description && (
+                  <p className="text-slate-500 text-sm max-w-2xl leading-relaxed">{form.description}</p>
                 )}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-400 pt-1 font-semibold">
+                  <span className="flex items-center gap-1.5">
+                    <i className="fa-regular fa-calendar text-slate-400"></i>
+                    Dibuat pada {new Date(form.created_at).toLocaleDateString("id-ID", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric"
+                    })}
+                  </span>
+                  <span className="hidden sm:inline text-slate-200">•</span>
+                  <span className="flex items-center gap-1.5">
+                    <i className="fa-regular fa-file-lines text-slate-400"></i>
+                    {fields.length} Pertanyaan
+                  </span>
+                </div>
               </div>
-              {form.description && (
-                <p className="text-neutral-450 text-sm max-w-2xl leading-relaxed">{form.description}</p>
-              )}
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-neutral-500 pt-1">
-                <span className="flex items-center gap-1.5">
-                  <Calendar className="h-3.5 w-3.5 text-neutral-500" />
-                  Dibuat pada {new Date(form.created_at).toLocaleDateString("id-ID", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric"
-                  })}
-                </span>
-                <span className="hidden sm:inline text-neutral-700">•</span>
-                <span className="flex items-center gap-1.5">
-                  <FileText className="h-3.5 w-3.5 text-neutral-500" />
-                  {fields.length} Pertanyaan
-                </span>
-              </div>
-            </div>
 
-            <Button 
-              onClick={handleExportCSV}
-              disabled={filteredResponses.length === 0}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold h-10 shrink-0 rounded-xl transition-all duration-300 shadow-md shadow-primary/10 hover:shadow-primary/20 hover:-translate-y-[1px] disabled:opacity-40 disabled:pointer-events-none"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Ekspor ke CSV
-            </Button>
-          </div>
-        </div>
+              <Button 
+                onClick={handleExportCSV}
+                disabled={filteredResponses.length === 0}
+                className="bg-indigo-600 text-white hover:bg-indigo-750 font-semibold h-10 shrink-0 rounded-xl shadow-sm hover:shadow-indigo-500/10 transition-all duration-300 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+              >
+                <i className="fa-solid fa-download mr-2"></i>
+                Ekspor ke CSV
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Collapsible Share Panel */}
         {showShare && (
-          <div className="relative overflow-hidden rounded-2xl border border-neutral-800/40 bg-neutral-900/10 p-6 backdrop-blur-md shadow-lg transition-all duration-300">
-            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-primary/10 via-primary to-primary/10" />
-            <div className="flex items-center justify-between pb-4 mb-4 border-b border-neutral-900/60">
-              <h3 className="text-sm font-bold text-neutral-200 flex items-center gap-2">
-                <Share2 className="h-4 w-4 text-primary" />
-                Bagikan Formulir & Kode Embed
-              </h3>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
-              {/* QR Code */}
-              <div className="md:col-span-4 lg:col-span-3 flex flex-col items-center justify-center p-4 bg-neutral-950/40 border border-neutral-800/40 rounded-xl">
-                <span className="text-xs text-neutral-450 font-semibold flex items-center gap-1.5 mb-3">
-                  <QrCode className="h-3.5 w-3.5 text-primary" />
-                  Scan QR Code
-                </span>
-                <div className="bg-white p-2.5 rounded-xl shadow-inner mb-3">
-                  <img src={qrCodeUrl} alt="QR Code Link Form" className="w-[120px] h-[120px]" />
-                </div>
-                <a 
-                  href={qrCodeUrl} 
-                  target="_blank" 
-                  rel="noreferrer"
-                  className="text-xs text-primary hover:text-primary/80 font-medium transition-colors flex items-center gap-1"
-                >
-                  Buka File QR (Download)
-                  <ExternalLink className="h-3 w-3" />
-                </a>
+          <Card className="bg-white border-slate-200 shadow-sm rounded-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-indigo-500/40 to-transparent" />
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+                <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                  <i className="fa-solid fa-share-nodes text-indigo-600"></i>
+                  Bagikan Formulir & Kode Embed
+                </h3>
               </div>
-
-              {/* Share Links & Embed Codes */}
-              <div className="md:col-span-8 lg:col-span-9 flex flex-col justify-between space-y-4">
-                {/* Public Link */}
-                <div className="space-y-1.5">
-                  <Label className="text-neutral-450 text-xs font-semibold">Tautan Formulir</Label>
-                  <div className="flex gap-2">
-                    <input 
-                      type="text" 
-                      readOnly 
-                      value={formUrl}
-                      className="bg-neutral-950/60 border border-neutral-850 text-neutral-300 text-xs rounded-xl px-3.5 py-2.5 flex-1 focus:outline-none font-mono text-[11px]"
-                    />
-                    <Button 
-                      size="sm"
-                      onClick={() => copyToClipboard(formUrl, "Link formulir berhasil disalin!")}
-                      className="bg-neutral-900 border border-neutral-800/80 hover:bg-neutral-800 text-neutral-350 px-4 rounded-xl transition-all"
-                    >
-                      <Copy className="h-3.5 w-3.5 mr-1.5" />
-                      Salin
-                    </Button>
+              
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
+                {/* QR Code */}
+                <div className="md:col-span-4 lg:col-span-3 flex flex-col items-center justify-center p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                  <span className="text-xs text-slate-500 font-bold flex items-center gap-1.5 mb-3">
+                    <i className="fa-solid fa-qrcode text-indigo-600"></i>
+                    Scan QR Code
+                  </span>
+                  <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm mb-3">
+                    <img src={qrCodeUrl} alt="QR Code Link Form" className="w-[120px] h-[120px]" />
                   </div>
+                  <a 
+                    href={qrCodeUrl} 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="text-xs text-indigo-600 hover:text-indigo-700 font-bold transition-colors flex items-center gap-1"
+                  >
+                    Buka File QR (Download)
+                    <i className="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                  </a>
                 </div>
 
-                {/* Embed Iframe */}
-                <div className="space-y-1.5">
-                  <Label className="text-neutral-450 text-xs font-semibold flex items-center gap-1">
-                    <Code className="h-3.5 w-3.5 text-primary" />
-                    HTML Embed Iframe (Tempel di Web Anda)
-                  </Label>
-                  <div className="flex gap-2">
-                    <input 
-                      type="text" 
-                      readOnly 
-                      value={embedCode}
-                      className="bg-neutral-950/60 border border-neutral-850 text-neutral-300 text-xs rounded-xl px-3.5 py-2.5 flex-1 focus:outline-none font-mono text-[11px]"
-                    />
-                    <Button 
-                      size="sm"
-                      onClick={() => copyToClipboard(embedCode, "Kode embed iframe berhasil disalin!")}
-                      className="bg-neutral-900 border border-neutral-800/80 hover:bg-neutral-800 text-neutral-355 px-4 rounded-xl transition-all"
-                    >
-                      <Copy className="h-3.5 w-3.5 mr-1.5" />
-                      Salin
-                    </Button>
+                {/* Share Links & Embed Codes */}
+                <div className="md:col-span-8 lg:col-span-9 flex flex-col justify-between space-y-4">
+                  {/* Public Link */}
+                  <div className="space-y-1.5">
+                    <Label className="text-slate-600 text-xs font-bold">Tautan Formulir</Label>
+                    <div className="flex gap-2">
+                      <input 
+                        type="text" 
+                        readOnly 
+                        value={formUrl}
+                        className="bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl px-3.5 py-2.5 flex-1 focus:outline-none font-mono text-[11px]"
+                      />
+                      <Button 
+                        size="sm"
+                        onClick={() => copyToClipboard(formUrl, "Link formulir berhasil disalin!")}
+                        className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-650 px-4 rounded-xl transition-all shadow-sm cursor-pointer"
+                      >
+                        <i className="fa-regular fa-copy mr-1.5 text-slate-400"></i>
+                        Salin
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Embed Iframe */}
+                  <div className="space-y-1.5">
+                    <Label className="text-slate-655 text-xs font-bold flex items-center gap-1">
+                      <i className="fa-solid fa-code text-indigo-600 mr-1"></i>
+                      HTML Embed Iframe (Tempel di Web Anda)
+                    </Label>
+                    <div className="flex gap-2">
+                      <input 
+                        type="text" 
+                        readOnly 
+                        value={embedCode}
+                        className="bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl px-3.5 py-2.5 flex-1 focus:outline-none font-mono text-[11px]"
+                      />
+                      <Button 
+                        size="sm"
+                        onClick={() => copyToClipboard(embedCode, "Kode embed iframe berhasil disalin!")}
+                        className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-655 px-4 rounded-xl transition-all shadow-sm cursor-pointer"
+                      >
+                        <i className="fa-regular fa-copy mr-1.5 text-slate-400"></i>
+                        Salin
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Tab View Header: Table vs Charts */}
-        <div className="flex space-x-1 rounded-xl bg-neutral-950 p-1 border border-neutral-900 max-w-sm">
+        <div className="flex space-x-1 rounded-xl bg-slate-200/60 p-1 border border-slate-200/40 max-w-sm shadow-sm">
           <button
             type="button"
             onClick={() => setActiveTab("table")}
             className={`flex items-center justify-center space-x-2 w-full rounded-lg py-2 text-xs font-semibold transition-all duration-200 cursor-pointer ${
               activeTab === "table" 
-                ? "bg-neutral-900 text-neutral-105 shadow" 
-                : "text-neutral-500 hover:text-neutral-300"
+                ? "bg-white text-slate-800 shadow-sm" 
+                : "text-slate-500 hover:text-slate-800"
             }`}
           >
-            <Inbox className="h-3.5 w-3.5" />
+            <i className="fa-solid fa-inbox text-[11px]"></i>
             <span>Tabel Respon</span>
           </button>
           <button
@@ -537,11 +517,11 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
             onClick={() => setActiveTab("analytics")}
             className={`flex items-center justify-center space-x-2 w-full rounded-lg py-2 text-xs font-semibold transition-all duration-200 cursor-pointer ${
               activeTab === "analytics" 
-                ? "bg-neutral-900 text-neutral-105 shadow" 
-                : "text-neutral-500 hover:text-neutral-300"
+                ? "bg-white text-slate-800 shadow-sm" 
+                : "text-slate-500 hover:text-slate-800"
             }`}
           >
-            <BarChart3 className="h-3.5 w-3.5" />
+            <i className="fa-solid fa-chart-bar text-[11px]"></i>
             <span>Grafik Ringkasan</span>
           </button>
         </div>
@@ -551,15 +531,15 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
           <>
             {/* Responses statistics */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
-              <h2 className="text-base font-bold text-neutral-200 flex items-center">
+              <h2 className="text-base font-bold text-slate-800 flex items-center">
                 Daftar Tanggapan Masuk
-                <span className="ml-2.5 px-2.5 py-0.5 rounded-full text-xs bg-neutral-900 border border-neutral-800 text-neutral-450 font-semibold">
+                <span className="ml-2.5 px-2.5 py-0.5 rounded-full text-xs bg-white border border-slate-200 text-slate-500 font-semibold shadow-sm animate-fade-in">
                   {filteredResponses.length} Hasil
                 </span>
               </h2>
 
               <div className="relative w-full sm:w-64">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-500" />
+                <i className="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                 <input
                   type="text"
                   placeholder="Cari kata kunci..."
@@ -568,61 +548,61 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
                     setSearchQuery(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-full bg-neutral-900/30 border border-neutral-800/80 rounded-xl pl-10 pr-3.5 py-2 text-xs text-neutral-200 placeholder-neutral-600 focus:outline-none focus:border-neutral-700 focus:ring-1 focus:ring-neutral-700/50 transition-all"
+                  className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition-all shadow-sm"
                 />
               </div>
             </div>
 
             {/* Table & Data */}
-            <div className="rounded-2xl border border-neutral-850/60 bg-neutral-900/10 overflow-hidden shadow-lg">
+            <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
               {responses.length === 0 ? (
                 <div className="p-16 text-center flex flex-col items-center justify-center space-y-4">
-                  <div className="h-12 w-12 rounded-xl bg-neutral-900/60 flex items-center justify-center border border-neutral-800">
-                    <Inbox className="h-5 w-5 text-neutral-500" />
+                  <div className="h-12 w-12 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-200">
+                    <i className="fa-solid fa-inbox text-slate-400 text-lg"></i>
                   </div>
                   <div className="space-y-1">
-                    <h3 className="font-semibold text-neutral-250">Belum ada tanggapan</h3>
-                    <p className="text-neutral-500 text-xs max-w-sm mx-auto leading-relaxed">
+                    <h3 className="font-bold text-slate-800 text-base">Belum ada tanggapan</h3>
+                    <p className="text-slate-500 text-xs max-w-sm mx-auto leading-relaxed">
                       Kirim link publik formulir ini ke pengisi, dan tanggapan mereka akan muncul secara instan di tabel ini.
                     </p>
                   </div>
                 </div>
               ) : filteredResponses.length === 0 ? (
                 <div className="p-16 text-center flex flex-col items-center justify-center space-y-2">
-                  <div className="h-10 w-10 rounded-full bg-neutral-950 flex items-center justify-center border border-neutral-900">
-                    <Search className="h-4 w-4 text-neutral-600" />
+                  <div className="h-10 w-10 rounded-full bg-slate-50 flex items-center justify-center border border-slate-200">
+                    <i className="fa-solid fa-magnifying-glass text-slate-350"></i>
                   </div>
-                  <p className="text-neutral-500 text-xs">
+                  <p className="text-slate-500 text-xs font-semibold">
                     Tidak ada tanggapan yang cocok dengan kata pencarian.
                   </p>
                 </div>
               ) : (
-                <div className="flex flex-col">
+                <div className="flex flex-col animate-fade-in">
                   <div className="overflow-x-auto">
                     <Table>
-                      <TableHeader className="bg-neutral-950/40 border-b border-neutral-900">
-                        <TableRow className="hover:bg-transparent border-b-neutral-900">
-                          <TableHead className="w-16 text-neutral-500 font-bold uppercase tracking-wider text-[10px] py-3.5 px-5">ID</TableHead>
-                          <TableHead className="w-44 text-neutral-500 font-bold uppercase tracking-wider text-[10px] py-3.5 px-5">
+                      <TableHeader className="bg-slate-50 border-b border-slate-200">
+                        <TableRow className="hover:bg-transparent border-b-slate-200">
+                          <TableHead className="w-16 text-slate-450 font-bold uppercase tracking-wider text-[10px] py-3.5 px-5">ID</TableHead>
+                          <TableHead className="w-44 text-slate-450 font-bold uppercase tracking-wider text-[10px] py-3.5 px-5">
                             <span className="flex items-center gap-1.5">
-                              <Clock className="h-3.5 w-3.5 text-neutral-500" />
+                              <i className="fa-regular fa-clock text-slate-450 text-xs"></i>
                               Waktu Kirim
                             </span>
                           </TableHead>
-                          <TableHead className="w-32 text-neutral-500 font-bold uppercase tracking-wider text-[10px] py-3.5 px-5">IP Address</TableHead>
+                          <TableHead className="w-32 text-slate-450 font-bold uppercase tracking-wider text-[10px] py-3.5 px-5">IP Address</TableHead>
                           {fields.map((field) => (
-                            <TableHead key={field.id} className="text-neutral-500 font-bold uppercase tracking-wider text-[10px] py-3.5 px-5 min-w-[150px]">
+                            <TableHead key={field.id} className="text-slate-450 font-bold uppercase tracking-wider text-[10px] py-3.5 px-5 min-w-[150px]">
                               {field.label}
                             </TableHead>
                           ))}
-                          <TableHead className="w-20 text-neutral-500 font-bold uppercase tracking-wider text-[10px] py-3.5 px-5 text-right">Aksi</TableHead>
+                          <TableHead className="w-20 text-slate-450 font-bold uppercase tracking-wider text-[10px] py-3.5 px-5 text-right">Aksi</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {paginatedResponses.map((res) => (
-                          <TableRow key={res.id} className="hover:bg-neutral-900/10 border-b border-neutral-900/40 transition-colors">
-                            <TableCell className="font-mono text-xs text-neutral-500 py-4 px-5">{res.id}</TableCell>
-                            <TableCell className="text-xs text-neutral-400 py-4 px-5">
+                          <TableRow key={res.id} className="hover:bg-slate-50/50 border-b border-slate-100 transition-colors">
+                            <TableCell className="font-mono text-xs text-slate-400 py-4 px-5">{res.id}</TableCell>
+                            <TableCell className="text-xs text-slate-500 py-4 px-5">
                               {new Date(res.created_at).toLocaleString("id-ID", {
                                 day: "2-digit",
                                 month: "short",
@@ -631,25 +611,25 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
                                 minute: "2-digit"
                               })}
                             </TableCell>
-                            <TableCell className="font-mono text-xs text-neutral-500 py-4 px-5">
+                            <TableCell className="font-mono text-xs text-slate-400 py-4 px-5">
                               {res.ip_address || "-"}
                             </TableCell>
                             {fields.map((field) => {
                               const parsedAnswers = typeof res.answers === "string" ? JSON.parse(res.answers) : res.answers;
                               const val = parsedAnswers[field.id];
                               return (
-                                <TableCell key={field.id} className="text-sm text-neutral-250 py-4 px-5 max-w-[300px] truncate">
+                                <TableCell key={field.id} className="text-sm text-slate-700 py-4 px-5 max-w-[300px] truncate">
                                   {isUrl(val) ? (
                                     <Link 
                                       href={val} 
                                       target="_blank" 
-                                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs text-primary font-semibold hover:bg-primary/20 transition-all"
+                                      className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 border border-indigo-150 px-2.5 py-1 text-xs text-indigo-600 font-bold hover:bg-indigo-100 transition-all shadow-inner"
                                     >
                                       Unduh Berkas
-                                      <ExternalLink className="h-3 w-3" />
+                                      <i className="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
                                     </Link>
                                   ) : val === undefined || val === null ? (
-                                    <span className="text-neutral-600">-</span>
+                                    <span className="text-slate-350">-</span>
                                   ) : Array.isArray(val) ? (
                                     val.join(", ")
                                   ) : (
@@ -664,9 +644,9 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
                                 variant="ghost"
                                 onClick={() => handleDeleteResponse(res.id)}
                                 disabled={isPending}
-                                className="h-8 w-8 text-neutral-500 hover:text-rose-450 hover:bg-rose-955/20 rounded-lg transition-all"
+                                className="h-8 w-8 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <i className="fa-regular fa-trash-can text-sm"></i>
                               </Button>
                             </TableCell>
                           </TableRow>
@@ -677,11 +657,11 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
 
                   {/* Pagination controls */}
                   {totalPages > 1 && (
-                    <div className="border-t border-neutral-900 bg-neutral-950/40 px-5 py-3.5 flex items-center justify-between">
-                      <div className="text-xs text-neutral-500">
-                        Menampilkan <span className="text-neutral-400">{startIndex + 1}</span> hingga{" "}
-                        <span className="text-neutral-400">{Math.min(startIndex + itemsPerPage, totalItems)}</span> dari{" "}
-                        <span className="text-neutral-400">{totalItems}</span> tanggapan
+                    <div className="border-t border-slate-100 bg-slate-50/30 px-5 py-3.5 flex items-center justify-between">
+                      <div className="text-xs text-slate-450 font-semibold">
+                        Menampilkan <span className="text-slate-700">{startIndex + 1}</span> hingga{" "}
+                        <span className="text-slate-700">{Math.min(startIndex + itemsPerPage, totalItems)}</span> dari{" "}
+                        <span className="text-slate-700">{totalItems}</span> tanggapan
                       </div>
                       <div className="flex items-center space-x-2">
                         <Button
@@ -689,11 +669,11 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
                           size="icon"
                           onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                           disabled={currentPage === 1}
-                          className="h-8 w-8 border-neutral-800 hover:bg-neutral-900 disabled:opacity-30 disabled:pointer-events-none rounded-lg"
+                          className="h-8 w-8 border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:pointer-events-none rounded-lg cursor-pointer shadow-sm"
                         >
-                          <ChevronLeft className="h-4 w-4" />
+                          <i className="fa-solid fa-chevron-left text-xs"></i>
                         </Button>
-                        <span className="text-xs text-neutral-450 font-medium px-1">
+                        <span className="text-xs text-slate-500 font-bold px-1 font-mono">
                           Halaman {currentPage} / {totalPages}
                         </span>
                         <Button
@@ -701,9 +681,9 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
                           size="icon"
                           onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
                           disabled={currentPage === totalPages}
-                          className="h-8 w-8 border-neutral-800 hover:bg-neutral-900 disabled:opacity-30 disabled:pointer-events-none rounded-lg"
+                          className="h-8 w-8 border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:pointer-events-none rounded-lg cursor-pointer shadow-sm"
                         >
-                          <ChevronRight className="h-4 w-4" />
+                          <i className="fa-solid fa-chevron-right text-xs"></i>
                         </Button>
                       </div>
                     </div>
@@ -718,9 +698,9 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
         {activeTab === "analytics" && (
           <div className="space-y-6">
             {responses.length === 0 ? (
-              <div className="rounded-2xl border border-neutral-850/60 bg-neutral-900/10 p-16 text-center text-neutral-500 text-xs">
+              <Card className="border border-slate-200 bg-white p-16 text-center text-slate-450 text-xs font-semibold shadow-sm">
                 Belum ada tanggapan masuk untuk dianalisis.
-              </div>
+              </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {fields.map((field) => {
@@ -728,26 +708,26 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
                   if (field.type === "radio" || field.type === "select") {
                     const stats = getFieldStats(field);
                     return (
-                      <div key={field.id} className="relative overflow-hidden rounded-2xl border border-neutral-800/40 bg-neutral-900/10 backdrop-blur-md shadow-lg transition-all duration-300 hover:border-neutral-700/60">
-                        <div className="py-4 px-6 border-b border-neutral-900/60 bg-neutral-950/20 flex flex-col gap-0.5">
-                          <h3 className="text-sm font-bold text-neutral-200 leading-tight">{field.label}</h3>
-                          <span className="text-[10px] text-neutral-500 uppercase font-mono tracking-wider font-semibold">
+                      <Card key={field.id} className="bg-white border border-slate-200 shadow-sm rounded-2xl relative overflow-hidden transition-all duration-300 hover:border-slate-300">
+                        <div className="py-4 px-6 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-0.5">
+                          <h3 className="text-sm font-bold text-slate-800 leading-tight">{field.label}</h3>
+                          <span className="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-bold">
                             Visual Chart ({field.type})
                           </span>
                         </div>
                         <div className="p-6 space-y-4">
                           {stats.length === 0 ? (
-                            <p className="text-xs text-neutral-500 italic">Tidak ada opsi.</p>
+                            <p className="text-xs text-slate-400 italic">Tidak ada opsi.</p>
                           ) : (
                             stats.map((item, idx) => (
                               <div key={idx} className="space-y-2">
                                 <div className="flex justify-between items-center text-xs">
-                                  <span className="text-neutral-300 font-medium">{item.option}</span>
-                                  <span className="text-neutral-400 font-semibold">{item.count} tanggapan ({item.percentage}%)</span>
+                                  <span className="text-slate-700 font-semibold">{item.option}</span>
+                                  <span className="text-slate-450 font-bold">{item.count} tanggapan ({item.percentage}%)</span>
                                 </div>
-                                <div className="h-2.5 w-full bg-neutral-950 rounded-full overflow-hidden border border-neutral-900/80">
+                                <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200 shadow-inner">
                                   <div 
-                                    className="h-full bg-gradient-to-r from-primary/70 via-primary to-violet-500/80 rounded-full transition-all duration-500"
+                                    className="h-full bg-gradient-to-r from-indigo-500/80 via-indigo-650 to-violet-500/90 rounded-full transition-all duration-500 shadow-sm"
                                     style={{ width: `${item.percentage}%` }}
                                   />
                                 </div>
@@ -755,7 +735,7 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
                             ))
                           )}
                         </div>
-                      </div>
+                      </Card>
                     );
                   }
 
@@ -770,27 +750,27 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
                       .slice(0, 5); // get latest 5
 
                     return (
-                      <div key={field.id} className="relative overflow-hidden rounded-2xl border border-neutral-800/40 bg-neutral-900/10 backdrop-blur-md shadow-lg transition-all duration-300 hover:border-neutral-700/60">
-                        <div className="py-4 px-6 border-b border-neutral-900/60 bg-neutral-950/20 flex flex-col gap-0.5">
-                          <h3 className="text-sm font-bold text-neutral-200 leading-tight">{field.label}</h3>
-                          <span className="text-[10px] text-neutral-500 uppercase font-mono tracking-wider font-semibold">
+                      <Card key={field.id} className="bg-white border border-slate-200 shadow-sm rounded-2xl relative overflow-hidden transition-all duration-300 hover:border-slate-300">
+                        <div className="py-4 px-6 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-0.5">
+                          <h3 className="text-sm font-bold text-slate-800 leading-tight">{field.label}</h3>
+                          <span className="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-bold">
                             Teks Masuk Terkini (Maks. 5)
                           </span>
                         </div>
-                        <div className="p-4 divide-y divide-neutral-900/60">
+                        <div className="p-2 divide-y divide-slate-100">
                           {textAnswers.length === 0 ? (
-                            <p className="text-xs text-neutral-550 italic p-4 text-center">Belum ada jawaban teks.</p>
+                            <p className="text-xs text-slate-400 italic p-6 text-center font-semibold">Belum ada jawaban teks.</p>
                           ) : (
                             textAnswers.map((ans, idx) => (
-                              <div key={idx} className="py-3 px-3 hover:bg-neutral-900/10 transition-colors">
-                                <p className="text-xs text-neutral-300 leading-relaxed font-medium">
+                              <div key={idx} className="py-3.5 px-4 hover:bg-slate-50/40 transition-colors">
+                                <p className="text-xs text-slate-650 leading-relaxed font-semibold">
                                   {String(ans)}
                                 </p>
                               </div>
                             ))
                           )}
                         </div>
-                      </div>
+                      </Card>
                     );
                   }
 
@@ -805,38 +785,38 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
                       .slice(0, 5); // get latest 5
 
                     return (
-                      <div key={field.id} className="relative overflow-hidden rounded-2xl border border-neutral-800/40 bg-neutral-900/10 backdrop-blur-md shadow-lg transition-all duration-300 hover:border-neutral-700/60">
-                        <div className="py-4 px-6 border-b border-neutral-900/60 bg-neutral-950/20 flex flex-col gap-0.5">
-                          <h3 className="text-sm font-bold text-neutral-200 leading-tight">{field.label}</h3>
-                          <span className="text-[10px] text-neutral-500 uppercase font-mono tracking-wider font-semibold">
+                      <Card key={field.id} className="bg-white border border-slate-200 shadow-sm rounded-2xl relative overflow-hidden transition-all duration-300 hover:border-slate-300">
+                        <div className="py-4 px-6 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-0.5">
+                          <h3 className="text-sm font-bold text-slate-800 leading-tight">{field.label}</h3>
+                          <span className="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-bold">
                             Berkas Terkini (Maks. 5)
                           </span>
                         </div>
-                        <div className="p-4 divide-y divide-neutral-900/60">
+                        <div className="p-2 divide-y divide-slate-100">
                           {uploadedFilesList.length === 0 ? (
-                            <p className="text-xs text-neutral-550 italic p-4 text-center">Belum ada berkas terunggah.</p>
+                            <p className="text-xs text-slate-400 italic p-6 text-center font-semibold">Belum ada berkas terunggah.</p>
                           ) : (
                             uploadedFilesList.map((url, idx) => {
                               const filename = url.split("/").pop() || "Unduh File";
                               return (
-                                <div key={idx} className="py-3 px-3 flex items-center justify-between text-xs hover:bg-neutral-900/10 transition-colors">
-                                  <span className="text-neutral-400 font-medium truncate max-w-[200px]" title={filename}>
+                                <div key={idx} className="py-3 px-4 flex items-center justify-between text-xs hover:bg-slate-50/40 transition-colors">
+                                  <span className="text-slate-500 font-semibold truncate max-w-[200px] font-mono text-[11px]" title={filename}>
                                     {filename}
                                   </span>
                                   <Link 
                                     href={url} 
                                     target="_blank" 
-                                    className="inline-flex items-center gap-1 text-primary hover:text-primary/80 font-semibold transition-colors"
+                                    className="inline-flex items-center gap-1.5 text-indigo-650 hover:text-indigo-750 font-bold transition-colors"
                                   >
                                     Buka Berkas
-                                    <ExternalLink className="h-3 w-3" />
+                                    <i className="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
                                   </Link>
                                 </div>
                               );
                             })
                           )}
                         </div>
-                      </div>
+                      </Card>
                     );
                   }
 

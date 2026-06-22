@@ -13,24 +13,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/image-compress";
-import { 
-  Plus, 
-  Trash2, 
-  ArrowLeft, 
-  Save, 
-  MoveUp, 
-  MoveDown, 
-  FileText, 
-  AlignLeft, 
-  List, 
-  Radio, 
-  Upload,
-  Loader2,
-  Settings,
-  Eye,
-  Sparkles,
-  Layers
-} from "lucide-react";
 
 interface FieldSchema {
   id: string;
@@ -276,52 +258,51 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
-        <p className="text-sm text-neutral-400 font-medium">Memuat data formulir...</p>
+      <div className="min-h-screen bg-[#f1f5f9] text-slate-800 flex flex-col items-center justify-center">
+        <i className="fa-solid fa-circle-notch fa-spin text-indigo-600 text-3xl mb-3"></i>
+        <p className="text-sm text-slate-500 font-semibold">Memuat data formulir...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-neutral-950 via-neutral-900 to-neutral-950 text-neutral-100 flex flex-col relative overflow-hidden">
-      {/* Background Glow */}
-      <div className="absolute top-0 right-1/4 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-primary/5 blur-[120px] pointer-events-none" />
-
+    <div className="bg-[#f1f5f9] text-slate-800 flex flex-col min-h-full">
       {/* Subpage Header Actions */}
-      <div className="border-b border-neutral-900 bg-neutral-900/10 py-4">
+      <div className="border-b border-slate-200/80 bg-white py-4 shadow-sm">
         <div className="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center space-x-2">
             <Link href={`/admin/forms/${formId}`}>
-              <Button variant="ghost" size="sm" className="text-neutral-450 hover:text-neutral-200">
-                <ArrowLeft className="h-4 w-4 mr-2" />
+              <Button variant="ghost" size="sm" className="text-slate-500 hover:text-slate-800 transition-colors font-semibold cursor-pointer">
+                <i className="fa-solid fa-arrow-left mr-2"></i>
                 Batal
               </Button>
             </Link>
-            <span className="text-neutral-700 text-sm">|</span>
-            <span className="text-[10px] text-neutral-550 font-bold uppercase tracking-wider bg-neutral-950 border border-neutral-850 px-2 py-1 rounded font-mono truncate max-w-[200px]">Edit Form</span>
+            <span className="text-slate-350 text-sm">|</span>
+            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider bg-slate-50 border border-slate-205 px-2.5 py-1 rounded-lg font-mono truncate max-w-[200px]">
+              Edit Form
+            </span>
           </div>
 
           <div className="flex items-center gap-2">
             <Link href={`/forms/${formId}`} target="_blank">
-              <Button variant="outline" size="sm" className="border-neutral-850 text-neutral-455 hover:text-neutral-200 h-9 text-xs">
-                <Eye className="h-4 w-4 mr-2 text-primary" />
+              <Button variant="outline" size="sm" className="border-slate-200 text-slate-650 hover:bg-slate-50 h-9 text-xs rounded-xl font-semibold transition-colors cursor-pointer">
+                <i className="fa-regular fa-eye mr-2 text-indigo-600"></i>
                 Pratinjau
               </Button>
             </Link>
             <Button 
               onClick={handleSaveForm} 
               disabled={isPending || isUploadingBanner}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-4 h-9 rounded-xl shadow-lg shadow-primary/10 hover:shadow-primary/20 hover:scale-[1.015] transition-all"
+              className="bg-indigo-600 text-white hover:bg-indigo-750 font-semibold px-4 h-9 rounded-xl shadow-sm transition-all cursor-pointer"
             >
               {isPending ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <i className="fa-solid fa-circle-notch fa-spin mr-2"></i>
                   Menyimpan...
                 </>
               ) : (
                 <>
-                  <Save className="h-4 w-4 mr-2" />
+                  <i className="fa-regular fa-floppy-disk mr-2"></i>
                   Simpan Perubahan
                 </>
               )}
@@ -334,15 +315,17 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-8 pb-36 space-y-6 relative z-10">
         
         {/* Form Meta */}
-        <Card className="bg-neutral-900/10 border-neutral-850/60 shadow-lg overflow-hidden relative backdrop-blur-md rounded-2xl">
-          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary/55 to-transparent" />
+        <Card className="bg-white border-slate-200 shadow-sm rounded-2xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-[4px] h-full bg-indigo-600" />
           <CardHeader className="space-y-1.5 pt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="space-y-1.5">
-              <CardTitle className="text-xl font-bold text-neutral-100 flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary animate-pulse" />
+              <CardTitle className="text-xl font-black tracking-tight text-slate-900 flex items-center gap-2">
+                <i className="fa-solid fa-wand-magic-sparkles text-indigo-600 text-base"></i>
                 Informasi Umum Formulir
               </CardTitle>
-              <CardDescription className="text-neutral-450 text-xs">Edit judul identitas, deskripsi petunjuk pengisian, status aktif, dan banner</CardDescription>
+              <CardDescription className="text-slate-500 text-xs">
+                Edit judul identitas, deskripsi petunjuk pengisian, status aktif, dan banner
+              </CardDescription>
             </div>
             
             {/* Form Active Switch */}
@@ -351,55 +334,55 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
                 id="is-active"
                 checked={isActive}
                 onCheckedChange={(checked) => setIsActive(!!checked)}
-                className="border-neutral-700 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                className="border-slate-350 data-[state=checked]:bg-indigo-600 data-[state=checked]:text-white rounded"
               />
-              <Label htmlFor="is-active" className="text-neutral-300 text-xs font-semibold cursor-pointer">
+              <Label htmlFor="is-active" className="text-slate-700 text-xs font-bold cursor-pointer">
                 Status Formulir Aktif (Terbuka)
               </Label>
             </div>
           </CardHeader>
           <CardContent className="space-y-4 pt-0">
             <div className="space-y-2">
-              <Label htmlFor="form-title" className="text-neutral-400 text-xs font-semibold">Judul Formulir</Label>
+              <Label htmlFor="form-title" className="text-slate-650 text-xs font-bold">Judul Formulir</Label>
               <Input
                 id="form-title"
                 placeholder="Contoh: Formulir Pendaftaran Kegiatan"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="bg-neutral-950/60 border-neutral-850 focus:border-primary text-neutral-200 h-11"
+                className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-800 h-11 rounded-xl transition-all"
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="form-desc" className="text-neutral-400 text-xs font-semibold">Deskripsi / Petunjuk Pengisian (Opsional)</Label>
+              <Label htmlFor="form-desc" className="text-slate-650 text-xs font-bold">Deskripsi / Petunjuk Pengisian (Opsional)</Label>
               <Textarea
                 id="form-desc"
                 placeholder="Tulis informasi tambahan atau aturan bagi pengisi formulir..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="bg-neutral-950/60 border-neutral-850 focus:border-primary text-neutral-200 min-h-[90px] leading-relaxed"
+                className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-800 min-h-[90px] leading-relaxed rounded-xl transition-all"
               />
             </div>
 
             {/* Banner Image Uploader */}
             <div className="space-y-2 pt-2">
-              <Label className="text-neutral-400 text-xs font-semibold">Gambar Banner Formulir (Opsional)</Label>
+              <Label className="text-slate-650 text-xs font-bold">Gambar Banner Formulir (Opsional)</Label>
               <div className="flex flex-col gap-4">
                 {bannerUrl ? (
-                  <div className="relative w-full h-36 rounded-xl border border-neutral-850 overflow-hidden bg-neutral-950 shadow-inner">
+                  <div className="relative w-full h-36 rounded-xl border border-slate-200 overflow-hidden bg-slate-50 shadow-inner">
                      <img src={bannerUrl} alt="Banner Preview" className="w-full h-full object-cover" />
                      <Button
                        type="button"
                        variant="destructive"
                        size="sm"
                        onClick={() => setBannerUrl("")}
-                       className="absolute top-3 right-3 h-7.5 px-3 text-xs bg-red-950/80 text-red-300 border border-red-900/50 hover:bg-red-900 transition-colors"
+                       className="absolute top-3 right-3 h-7.5 px-3 text-xs bg-red-600 text-white hover:bg-red-700 transition-colors shadow-sm rounded-lg cursor-pointer"
                      >
                        Hapus Banner
                      </Button>
                   </div>
                 ) : (
-                  <div className="relative border border-dashed border-neutral-855 rounded-xl p-8 bg-neutral-950/20 text-center w-full group hover:border-primary/45 transition-colors">
+                  <div className="relative border border-dashed border-slate-300 rounded-xl p-8 bg-slate-50/50 text-center w-full group hover:border-indigo-400 transition-colors">
                     <input
                       type="file"
                       accept="image/*"
@@ -407,16 +390,16 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
                       disabled={isUploadingBanner}
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
                     />
-                    <div className="flex flex-col items-center justify-center space-y-2 text-neutral-455">
+                    <div className="flex flex-col items-center justify-center space-y-2 text-slate-400">
                       {isUploadingBanner ? (
-                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                        <i className="fa-solid fa-circle-notch fa-spin text-indigo-650 text-xl"></i>
                       ) : (
-                        <Upload className="h-6 w-6 group-hover:text-primary transition-colors" />
+                        <i className="fa-solid fa-cloud-arrow-up text-xl group-hover:text-indigo-600 transition-colors"></i>
                       )}
-                      <span className="text-xs font-semibold text-neutral-350">
+                      <span className="text-xs font-semibold text-slate-700">
                         {isUploadingBanner ? "Sedang memproses..." : "Klik atau seret gambar banner ke sini"}
                       </span>
-                      <span className="text-[10px] text-neutral-600">Rasio lebar direkomendasikan (misal: 1200x400, Maks. 5MB)</span>
+                      <span className="text-[10px] text-slate-400">Rasio lebar direkomendasikan (misal: 1200x400, Maks. 5MB)</span>
                     </div>
                   </div>
                 )}
@@ -424,14 +407,14 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
             </div>
 
             {/* Form Settings / Limit Responses */}
-            <div className="flex items-center space-x-2.5 pt-4 border-t border-neutral-900/60">
+            <div className="flex items-center space-x-2.5 pt-4 border-t border-slate-100">
               <Checkbox
                 id="limit-responses"
                 checked={limitResponses}
                 onCheckedChange={(checked) => setLimitResponses(!!checked)}
-                className="border-neutral-700 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                className="border-slate-350 data-[state=checked]:bg-indigo-600 data-[state=checked]:text-white rounded"
               />
-              <Label htmlFor="limit-responses" className="text-neutral-350 text-xs font-medium cursor-pointer">
+              <Label htmlFor="limit-responses" className="text-slate-650 text-xs font-semibold cursor-pointer">
                 Batasi 1 Tanggapan per IP Address (Cegah Spam Data Dobel)
               </Label>
             </div>
@@ -439,99 +422,99 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
         </Card>
 
         {/* Advanced Settings */}
-        <Card className="bg-neutral-900/10 border-neutral-850/60 shadow-lg overflow-hidden relative backdrop-blur-md rounded-2xl">
-          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-violet-500/50 to-transparent" />
+        <Card className="bg-white border-slate-200 shadow-sm rounded-2xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-[4px] h-full bg-violet-500" />
           <CardHeader className="space-y-1.5 pt-6">
-            <CardTitle className="text-xl font-bold text-neutral-100 flex items-center gap-2">
-              <Settings className="h-5 w-5 text-violet-400" />
+            <CardTitle className="text-xl font-black tracking-tight text-slate-900 flex items-center gap-2">
+              <i className="fa-solid fa-gear text-violet-600 text-base"></i>
               Konfigurasi Lanjutan
             </CardTitle>
-            <CardDescription className="text-neutral-450 text-xs">
+            <CardDescription className="text-slate-500 text-xs">
               Kustomisasi penutupan deadline otomatis, redirect url, pesan terima kasih kustom, dan email notifikasi
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-0">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="expiry-date" className="text-neutral-400 text-xs font-semibold">Batas Waktu Pengisian (Deadline)</Label>
+                <Label htmlFor="expiry-date" className="text-slate-650 text-xs font-bold">Batas Waktu Pengisian (Deadline)</Label>
                 <Input
                   id="expiry-date"
                   type="datetime-local"
                   value={expiryDate}
                   onChange={(e) => setExpiryDate(e.target.value)}
-                  className="bg-neutral-950/60 border-neutral-850 focus:border-primary text-neutral-200 h-11"
+                  className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-800 h-11 rounded-xl transition-all"
                 />
-                <p className="text-[10px] text-neutral-600">Form otomatis ditutup jika melewati jam ini. Kosongkan jika tanpa deadline.</p>
+                <p className="text-[10px] text-slate-400">Form otomatis ditutup jika melewati jam ini. Kosongkan jika tanpa deadline.</p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="notify-email" className="text-neutral-400 text-xs font-semibold">Notifikasi Tanggapan ke Email (Resend)</Label>
+                <Label htmlFor="notify-email" className="text-slate-650 text-xs font-bold">Notifikasi Tanggapan ke Email (Resend)</Label>
                 <Input
                   id="notify-email"
                   type="email"
                   placeholder="admin@domain.com"
                   value={notifyEmail}
                   onChange={(e) => setNotifyEmail(e.target.value)}
-                  className="bg-neutral-950/60 border-neutral-850 focus:border-primary text-neutral-200 h-11"
+                  className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-800 h-11 rounded-xl transition-all"
                 />
-                <p className="text-[10px] text-neutral-600">Terima email rincian jawaban real-time ke email Anda setiap ada tanggapan masuk.</p>
+                <p className="text-[10px] text-slate-400">Terima email rincian jawaban real-time ke email Anda setiap ada tanggapan masuk.</p>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="custom-success-msg" className="text-neutral-400 text-xs font-semibold">Pesan Sukses Kustom setelah Kirim</Label>
+              <Label htmlFor="custom-success-msg" className="text-slate-650 text-xs font-bold">Pesan Sukses Kustom setelah Kirim</Label>
               <Textarea
                 id="custom-success-msg"
                 placeholder="Tulis instruksi setelah berhasil kirim tanggapan (misal: link grup whatsapp pendaftar)..."
                 value={customSuccessMessage}
                 onChange={(e) => setCustomSuccessMessage(e.target.value)}
-                className="bg-neutral-950/60 border-neutral-850 focus:border-primary text-neutral-200 min-h-[80px]"
+                className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-800 min-h-[80px] rounded-xl transition-all"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="redirect-url" className="text-neutral-400 text-xs font-semibold">Mengarahkan Otomatis (Redirect URL)</Label>
+              <Label htmlFor="redirect-url" className="text-slate-650 text-xs font-bold">Mengarahkan Otomatis (Redirect URL)</Label>
               <Input
                 id="redirect-url"
                 type="url"
                 placeholder="https://e-commerce-anda.com/terima-kasih"
                 value={redirectUrl}
                 onChange={(e) => setRedirectUrl(e.target.value)}
-                className="bg-neutral-950/60 border-neutral-850 focus:border-primary text-neutral-200 h-11"
+                className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-800 h-11 rounded-xl transition-all"
               />
-              <p className="text-[10px] text-neutral-600">Jika diisi, pengguna dialihkan otomatis ke URL ini dalam 3 detik setelah submit.</p>
+              <p className="text-[10px] text-slate-400">Jika diisi, pengguna dialihkan otomatis ke URL ini dalam 3 detik setelah submit.</p>
             </div>
           </CardContent>
         </Card>
 
         {/* Dynamic Fields List */}
         <div className="space-y-4">
-          <h2 className="text-base font-bold text-neutral-250 flex items-center">
+          <h2 className="text-base font-bold text-slate-800 flex items-center">
             Struktur Input Pertanyaan
-            <span className="ml-2.5 px-2 py-0.5 rounded-md text-[10px] bg-neutral-900 border border-neutral-850 text-neutral-450 font-mono">
+            <span className="ml-2.5 px-2.5 py-0.5 rounded-full text-[10px] bg-white border border-slate-200 text-slate-500 font-mono font-bold shadow-sm">
               {fields.length} Pertanyaan
             </span>
           </h2>
 
           {fields.length === 0 ? (
-            <div className="border border-dashed border-neutral-900 rounded-xl p-16 text-center flex flex-col items-center justify-center space-y-3 bg-neutral-950/15">
-              <p className="text-neutral-500 text-sm">Belum ada kolom pertanyaan. Gunakan dock floating menu di bawah untuk menambah kolom.</p>
+            <div className="border border-dashed border-slate-300 rounded-2xl p-16 text-center flex flex-col items-center justify-center space-y-3 bg-white/50">
+              <p className="text-slate-400 text-sm font-semibold">Belum ada kolom pertanyaan. Gunakan dock floating menu di bawah untuk menambah kolom.</p>
             </div>
           ) : (
             <div className="space-y-4">
               {fields.map((field, index) => (
-                <Card key={field.id} className="bg-neutral-900/10 border-neutral-900 relative overflow-hidden group hover:border-neutral-850 transition-all duration-300">
-                  <div className="absolute left-0 top-0 h-full w-[3px] bg-primary/30 group-hover:bg-primary transition-colors" />
+                <Card key={field.id} className="bg-white border-slate-200 relative overflow-hidden group rounded-2xl shadow-sm hover:border-indigo-200 transition-all duration-300">
+                  <div className="absolute left-0 top-0 h-full w-[4px] bg-slate-200 group-hover:bg-indigo-600 transition-colors" />
                   
-                  <CardHeader className="py-3 px-6 flex flex-row items-center justify-between border-b border-neutral-900/60 bg-neutral-950/20">
+                  <CardHeader className="py-3.5 px-6 flex flex-row items-center justify-between border-b border-slate-100 bg-slate-50/50">
                     <div className="flex items-center space-x-3">
-                      <span className="text-xs text-neutral-500 font-mono font-semibold">#{index + 1}</span>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 flex items-center bg-neutral-900 border border-neutral-855 px-2 py-0.5 rounded">
-                        {field.type === "text" && <FileText className="h-3 w-3 mr-1 text-primary" />}
-                        {field.type === "textarea" && <AlignLeft className="h-3 w-3 mr-1 text-primary" />}
-                        {field.type === "select" && <List className="h-3 w-3 mr-1 text-primary" />}
-                        {field.type === "radio" && <Radio className="h-3 w-3 mr-1 text-primary" />}
-                        {field.type === "file" && <Upload className="h-3 w-3 mr-1 text-primary" />}
+                      <span className="text-xs text-slate-400 font-mono font-bold">#{index + 1}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600 flex items-center bg-white border border-slate-200 px-2 py-0.5 rounded-md">
+                        {field.type === "text" && <i className="fa-solid fa-font text-indigo-600 mr-1.5"></i>}
+                        {field.type === "textarea" && <i className="fa-solid fa-paragraph text-indigo-600 mr-1.5"></i>}
+                        {field.type === "select" && <i className="fa-solid fa-caret-down text-indigo-600 mr-1.5"></i>}
+                        {field.type === "radio" && <i className="fa-solid fa-circle-dot text-indigo-600 mr-1.5"></i>}
+                        {field.type === "file" && <i className="fa-solid fa-cloud-arrow-up text-indigo-600 mr-1.5"></i>}
                         {field.type}
                       </span>
                     </div>
@@ -543,27 +526,27 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
                         variant="ghost"
                         onClick={() => handleMoveField(index, "up")}
                         disabled={index === 0}
-                        className="h-7 w-7 text-neutral-555 hover:text-neutral-200 disabled:opacity-20 transition-colors"
+                        className="h-7 w-7 text-slate-400 hover:text-slate-800 disabled:opacity-20 transition-colors cursor-pointer"
                       >
-                        <MoveUp className="h-3.5 w-3.5" />
+                        <i className="fa-solid fa-chevron-up text-xs"></i>
                       </Button>
                       <Button
                         size="icon"
                         variant="ghost"
                         onClick={() => handleMoveField(index, "down")}
                         disabled={index === fields.length - 1}
-                        className="h-7 w-7 text-neutral-555 hover:text-neutral-200 disabled:opacity-20 transition-colors"
+                        className="h-7 w-7 text-slate-400 hover:text-slate-800 disabled:opacity-20 transition-colors cursor-pointer"
                       >
-                        <MoveDown className="h-3.5 w-3.5" />
+                        <i className="fa-solid fa-chevron-down text-xs"></i>
                       </Button>
-                      <span className="text-neutral-700 text-xs px-0.5">|</span>
+                      <span className="text-slate-200 text-xs px-0.5">|</span>
                       <Button
                         size="icon"
                         variant="ghost"
                         onClick={() => handleRemoveField(field.id)}
-                        className="h-7 w-7 text-neutral-555 hover:text-red-400 hover:bg-red-950/20 transition-all"
+                        className="h-7 w-7 text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all cursor-pointer"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <i className="fa-regular fa-trash-can text-xs"></i>
                       </Button>
                     </div>
                   </CardHeader>
@@ -572,13 +555,13 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                       {/* Label Input */}
                       <div className="md:col-span-8 space-y-2">
-                        <Label htmlFor={`label-${field.id}`} className="text-neutral-450 text-[11px] font-semibold">Judul Pertanyaan / Label Input</Label>
+                        <Label htmlFor={`label-${field.id}`} className="text-slate-650 text-[11px] font-bold">Judul Pertanyaan / Label Input</Label>
                         <Input
                           id={`label-${field.id}`}
                           placeholder="Masukkan teks pertanyaan Anda..."
                           value={field.label}
                           onChange={(e) => handleFieldChange(field.id, { label: e.target.value })}
-                          className="bg-neutral-950/45 border-neutral-850 focus:border-primary text-neutral-200 h-9"
+                          className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-800 h-9 rounded-xl transition-all"
                         />
                       </div>
                       
@@ -590,9 +573,9 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
                           onCheckedChange={(checked) => 
                             handleFieldChange(field.id, { required: !!checked })
                           }
-                          className="border-neutral-700 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                          className="border-slate-350 data-[state=checked]:bg-indigo-600 data-[state=checked]:text-white rounded"
                         />
-                        <Label htmlFor={`req-${field.id}`} className="text-neutral-300 text-xs font-semibold cursor-pointer">
+                        <Label htmlFor={`req-${field.id}`} className="text-slate-750 text-xs font-semibold cursor-pointer">
                           Wajib Diisi (Required)
                         </Label>
                       </div>
@@ -600,20 +583,20 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
 
                     {/* File Types Selection */}
                     {field.type === "file" && (
-                      <div className="border-t border-neutral-900/60 pt-4 space-y-2">
-                        <Label className="text-neutral-455 text-[11px] font-semibold">Tipe Berkas yang Diizinkan</Label>
+                      <div className="border-t border-slate-100 pt-4 space-y-2">
+                        <Label className="text-slate-650 text-[11px] font-bold">Tipe Berkas yang Diizinkan</Label>
                         <Select
                           value={field.fileTypes || "*"}
                           onValueChange={(val) => handleFieldChange(field.id, { fileTypes: val ?? undefined })}
                         >
-                          <SelectTrigger className="bg-neutral-950/45 border-neutral-850 text-neutral-200 max-w-sm h-9">
+                          <SelectTrigger className="bg-white border border-slate-200 text-slate-800 max-w-sm h-9 rounded-xl focus:ring-1 focus:ring-indigo-500/20">
                             <SelectValue placeholder="Pilih tipe berkas..." />
                           </SelectTrigger>
-                          <SelectContent className="bg-neutral-900 border-neutral-800 text-neutral-200">
-                            <SelectItem value="*">Semua Berkas (*)</SelectItem>
-                            <SelectItem value="image/*">Hanya Gambar (PNG, JPG, WebP, GIF)</SelectItem>
-                            <SelectItem value="audio/*">Hanya Audio (MP3, WAV, OGG)</SelectItem>
-                            <SelectItem value=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx">Hanya Dokumen (PDF, Word, Excel, PPT)</SelectItem>
+                          <SelectContent className="bg-white border border-slate-250 text-slate-800 rounded-xl">
+                            <SelectItem value="*" className="focus:bg-slate-100 rounded-lg">Semua Berkas (*)</SelectItem>
+                            <SelectItem value="image/*" className="focus:bg-slate-100 rounded-lg">Hanya Gambar (PNG, JPG, WebP, GIF)</SelectItem>
+                            <SelectItem value="audio/*" className="focus:bg-slate-100 rounded-lg">Hanya Audio (MP3, WAV, OGG)</SelectItem>
+                            <SelectItem value=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx" className="focus:bg-slate-100 rounded-lg">Hanya Dokumen (PDF, Word, Excel, PPT)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -621,24 +604,24 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
 
                     {/* Options configuration for Select/Radio types */}
                     {(field.type === "select" || field.type === "radio") && field.options && (
-                      <div className="border-t border-neutral-900/60 pt-4 space-y-3">
-                        <Label className="text-neutral-455 text-[11px] font-semibold">Daftar Opsi Pilihan</Label>
+                      <div className="border-t border-slate-100 pt-4 space-y-3">
+                        <Label className="text-slate-655 text-[11px] font-bold">Daftar Opsi Pilihan</Label>
                         <div className="space-y-2">
                           {field.options.map((option, optIdx) => (
                             <div key={optIdx} className="flex items-center space-x-2">
-                              <span className="text-[10px] text-neutral-500 font-semibold font-mono w-14 shrink-0">Opsi {optIdx + 1}</span>
+                              <span className="text-[10px] text-slate-400 font-semibold font-mono w-14 shrink-0">Opsi {optIdx + 1}</span>
                               <Input
                                 value={option}
                                 onChange={(e) => handleOptionChange(field.id, optIdx, e.target.value)}
-                                className="bg-neutral-950/40 border-neutral-850 focus:border-primary text-neutral-200 max-w-md h-8 text-xs"
+                                className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-800 max-w-md h-8 text-xs rounded-lg transition-all"
                               />
                               <Button
                                 size="icon"
                                 variant="ghost"
                                 onClick={() => handleRemoveOption(field.id, optIdx)}
-                                className="h-8 w-8 text-neutral-555 hover:text-red-400"
+                                className="h-8 w-8 text-slate-400 hover:text-rose-500 cursor-pointer"
                               >
-                                <Trash2 className="h-3.5 w-3.5" />
+                                <i className="fa-regular fa-trash-can text-xs"></i>
                               </Button>
                             </div>
                           ))}
@@ -647,9 +630,9 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
                           size="sm"
                           variant="outline"
                           onClick={() => handleAddOption(field.id)}
-                          className="border-neutral-855 text-neutral-400 hover:text-neutral-250 mt-1 h-8 text-xs"
+                          className="border-slate-200 text-slate-600 hover:bg-slate-50 mt-1 h-8 text-xs rounded-lg font-semibold transition-colors cursor-pointer"
                         >
-                          <Plus className="h-3 w-3 mr-1" />
+                          <i className="fa-solid fa-plus mr-1"></i>
                           Tambah Opsi
                         </Button>
                       </div>
@@ -657,7 +640,7 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
 
                     {/* Conditional Logic (Show only if there are previous fields) */}
                     {index > 0 && (
-                      <div className="border-t border-neutral-900/60 pt-4 space-y-3">
+                      <div className="border-t border-slate-100 pt-4 space-y-3">
                         <div className="flex items-center space-x-2.5">
                           <Checkbox
                             id={`cond-chk-${field.id}`}
@@ -673,9 +656,9 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
                                 });
                               }
                             }}
-                            className="border-neutral-700 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                            className="border-slate-350 data-[state=checked]:bg-indigo-600 data-[state=checked]:text-white rounded"
                           />
-                          <Label htmlFor={`cond-chk-${field.id}`} className="text-neutral-350 text-xs font-semibold cursor-pointer">
+                          <Label htmlFor={`cond-chk-${field.id}`} className="text-slate-650 text-xs font-semibold cursor-pointer">
                             Terapkan Logika Percabangan (Conditional Show)
                           </Label>
                         </div>
@@ -683,7 +666,7 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
                         {field.conditionFieldId && (
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-6 pt-1">
                             <div className="space-y-1.5">
-                              <Label className="text-neutral-455 text-[10px] font-semibold">Tampilkan Hanya Jika Pertanyaan:</Label>
+                              <Label className="text-slate-500 text-[10px] font-bold">Tampilkan Hanya Jika Pertanyaan:</Label>
                               <Select
                                 value={field.conditionFieldId}
                                 onValueChange={(val) => {
@@ -692,12 +675,12 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
                                   handleFieldChange(field.id, { conditionFieldId: val || undefined, conditionValue: defaultVal || undefined });
                                 }}
                               >
-                                <SelectTrigger className="bg-neutral-950/45 border-neutral-850 text-neutral-200 h-9">
+                                <SelectTrigger className="bg-white border border-slate-200 text-slate-800 h-9 rounded-xl focus:ring-1 focus:ring-indigo-500/20">
                                   <SelectValue placeholder="Pilih pertanyaan..." />
                                 </SelectTrigger>
-                                <SelectContent className="bg-neutral-900 border-neutral-800 text-neutral-200">
+                                <SelectContent className="bg-white border border-slate-200 text-slate-850 rounded-xl">
                                   {fields.slice(0, index).map((pf) => (
-                                    <SelectItem key={pf.id} value={pf.id}>
+                                    <SelectItem key={pf.id} value={pf.id} className="focus:bg-slate-100 rounded-lg">
                                       {pf.label || `[Pertanyaan #${fields.indexOf(pf) + 1}]`}
                                     </SelectItem>
                                   ))}
@@ -706,7 +689,7 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
                             </div>
 
                             <div className="space-y-1.5">
-                              <Label className="text-neutral-455 text-[10px] font-semibold">Bernilai Sama Dengan:</Label>
+                              <Label className="text-slate-500 text-[10px] font-bold">Bernilai Sama Dengan:</Label>
                               {(() => {
                                 const triggerField = fields.find(f => f.id === field.conditionFieldId);
                                 if (triggerField && (triggerField.type === "select" || triggerField.type === "radio") && triggerField.options) {
@@ -715,12 +698,12 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
                                       value={field.conditionValue || ""}
                                       onValueChange={(val) => handleFieldChange(field.id, { conditionValue: val || undefined })}
                                     >
-                                      <SelectTrigger className="bg-neutral-950/45 border-neutral-850 text-neutral-200 h-9">
+                                      <SelectTrigger className="bg-white border border-slate-200 text-slate-850 h-9 rounded-xl focus:ring-1 focus:ring-indigo-500/20">
                                         <SelectValue placeholder="Pilih nilai..." />
                                       </SelectTrigger>
-                                      <SelectContent className="bg-neutral-900 border-neutral-800 text-neutral-200">
+                                      <SelectContent className="bg-white border border-slate-200 text-slate-850 rounded-xl">
                                         {triggerField.options.map((opt, idx) => (
-                                          <SelectItem key={idx} value={opt}>
+                                          <SelectItem key={idx} value={opt} className="focus:bg-slate-100 rounded-lg">
                                             {opt}
                                           </SelectItem>
                                         ))}
@@ -733,7 +716,7 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
                                     placeholder="Contoh: Ya"
                                     value={field.conditionValue || ""}
                                     onChange={(e) => handleFieldChange(field.id, { conditionValue: e.target.value })}
-                                    className="bg-neutral-950/45 border-neutral-855 text-neutral-200 h-9"
+                                    className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-850 h-9 rounded-xl transition-all"
                                   />
                                 );
                               })()}
@@ -751,9 +734,9 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
 
         {/* STICKY FLOATING ADD FIELD TOOLBAR AT BOTTOM CENTER */}
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-full max-w-2xl px-4 animate-in fade-in slide-in-from-bottom-5 duration-300">
-          <div className="border border-neutral-850/80 bg-neutral-900/85 backdrop-blur-xl rounded-2xl p-3 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-primary/5">
-            <span className="text-[10px] text-neutral-400 font-extrabold uppercase tracking-wider pl-1.5 shrink-0 flex items-center gap-1.5">
-              <Layers className="h-3.5 w-3.5 text-primary" />
+          <div className="border border-slate-200/85 bg-white/95 backdrop-blur-md rounded-2xl p-3 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 text-slate-850">
+            <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider pl-1.5 shrink-0 flex items-center gap-1.5">
+              <i className="fa-solid fa-layer-group text-indigo-650"></i>
               Tambah Input:
             </span>
             <div className="flex flex-wrap gap-1.5 justify-center">
@@ -761,45 +744,45 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
                 size="sm"
                 variant="outline"
                 onClick={() => handleAddField("text")}
-                className="border-neutral-800 bg-neutral-950/40 text-neutral-350 hover:bg-primary hover:text-primary-foreground text-[11px] h-8 rounded-lg transition-all"
+                className="border-slate-200 bg-white text-slate-700 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 text-[11px] h-8 rounded-lg transition-all font-semibold cursor-pointer shadow-sm"
               >
-                <FileText className="h-3 w-3 mr-1 text-primary group-hover:text-inherit" />
+                <i className="fa-solid fa-font text-indigo-650 mr-1.5 group-hover:text-white"></i>
                 Teks Pendek
               </Button>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => handleAddField("textarea")}
-                className="border-neutral-800 bg-neutral-950/40 text-neutral-350 hover:bg-primary hover:text-primary-foreground text-[11px] h-8 rounded-lg transition-all"
+                className="border-slate-200 bg-white text-slate-700 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 text-[11px] h-8 rounded-lg transition-all font-semibold cursor-pointer shadow-sm"
               >
-                <AlignLeft className="h-3 w-3 mr-1 text-primary group-hover:text-inherit" />
+                <i className="fa-solid fa-paragraph text-indigo-650 mr-1.5 group-hover:text-white"></i>
                 Paragraf
               </Button>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => handleAddField("select")}
-                className="border-neutral-800 bg-neutral-950/40 text-neutral-355 hover:bg-primary hover:text-primary-foreground text-[11px] h-8 rounded-lg transition-all"
+                className="border-slate-200 bg-white text-slate-700 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 text-[11px] h-8 rounded-lg transition-all font-semibold cursor-pointer shadow-sm"
               >
-                <List className="h-3 w-3 mr-1 text-primary group-hover:text-inherit" />
+                <i className="fa-solid fa-caret-down text-indigo-650 mr-1.5 group-hover:text-white"></i>
                 Dropdown
               </Button>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => handleAddField("radio")}
-                className="border-neutral-800 bg-neutral-950/40 text-neutral-355 hover:bg-primary hover:text-primary-foreground text-[11px] h-8 rounded-lg transition-all"
+                className="border-slate-200 bg-white text-slate-700 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 text-[11px] h-8 rounded-lg transition-all font-semibold cursor-pointer shadow-sm"
               >
-                <Radio className="h-3 w-3 mr-1 text-primary group-hover:text-inherit" />
+                <i className="fa-solid fa-circle-dot text-indigo-650 mr-1.5 group-hover:text-white"></i>
                 Pilihan Ganda
               </Button>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => handleAddField("file")}
-                className="border-neutral-800 bg-neutral-950/40 text-neutral-355 hover:bg-primary hover:text-primary-foreground text-[11px] h-8 rounded-lg transition-all"
+                className="border-slate-200 bg-white text-slate-700 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 text-[11px] h-8 rounded-lg transition-all font-semibold cursor-pointer shadow-sm"
               >
-                <Upload className="h-3 w-3 mr-1 text-primary group-hover:text-inherit" />
+                <i className="fa-solid fa-cloud-arrow-up text-indigo-650 mr-1.5 group-hover:text-white"></i>
                 Unggah Berkas
               </Button>
             </div>

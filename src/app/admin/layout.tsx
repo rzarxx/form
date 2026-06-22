@@ -5,15 +5,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { logoutAction } from "@/app/actions/auth";
 import { toast } from "sonner";
-import { 
-  LayoutDashboard, 
-  PlusCircle, 
-  LogOut, 
-  Menu, 
-  X, 
-  User, 
-  FileSpreadsheet
-} from "lucide-react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -38,64 +29,63 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     {
       name: "Dashboard",
       path: "/admin",
-      icon: LayoutDashboard,
+      icon: "fa-solid fa-chart-simple",
     },
     {
       name: "Buat Form Baru",
       path: "/admin/forms/new",
-      icon: PlusCircle,
+      icon: "fa-solid fa-square-plus",
     },
   ];
 
   return (
-    <div className="flex h-screen overflow-hidden bg-neutral-950 text-neutral-100 font-sans">
+    <div className="flex h-screen overflow-hidden bg-[#f1f5f9] text-slate-800 font-sans">
       {/* Sidebar for Desktop & Mobile Toggle */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-[#1c2434] border-r border-[#2e3a4f]/40 transition-all duration-300 xl:translate-x-0 xl:static ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-72.5 flex-col bg-[#1c2434] transition-all duration-300 xl:translate-x-0 xl:static ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Sidebar Header */}
-        <div className="flex items-center justify-between gap-2 px-6 py-5 border-b border-[#2e3a4f]/60">
+        <div className="flex items-center justify-between gap-2 px-6 py-6 border-b border-[#2e3a4f]/40">
           <Link href="/admin" className="flex items-center space-x-3">
-            <div className="h-9 w-9 rounded-lg bg-primary/20 border border-primary/40 flex items-center justify-center text-primary">
-              <FileSpreadsheet className="h-5 w-5" />
+            <div className="h-9 w-9 rounded-lg bg-primary/20 border border-primary/45 flex items-center justify-center text-primary">
+              <i className="fa-solid fa-file-invoice-dollar text-lg"></i>
             </div>
-            <span className="font-bold text-lg text-white tracking-tight">
+            <span className="font-extrabold text-xl text-white tracking-tight">
               TailAdmin
             </span>
           </Link>
 
           <button
             onClick={() => setSidebarOpen(false)}
-            className="block xl:hidden text-neutral-400 hover:text-white"
+            className="block xl:hidden text-slate-400 hover:text-white transition-colors cursor-pointer"
           >
-            <X className="h-5 w-5" />
+            <i className="fa-solid fa-xmark text-lg"></i>
           </button>
         </div>
 
         {/* Sidebar Navigation */}
-        <div className="no-scrollbar flex flex-col overflow-y-auto flex-1 py-4">
-          <nav className="px-4 py-4 space-y-6">
+        <div className="no-scrollbar flex flex-col overflow-y-auto flex-1 py-6">
+          <nav className="px-4 space-y-6">
             <div>
-              <h3 className="mb-4 ml-4 text-xs font-semibold uppercase tracking-wider text-neutral-500">
+              <h3 className="mb-4 ml-4 text-xs font-bold uppercase tracking-wider text-slate-500">
                 Menu Utama
               </h3>
 
-              <ul className="mb-6 flex flex-col gap-1.5">
+              <ul className="flex flex-col gap-1.5">
                 {menuItems.map((item) => {
-                  const Icon = item.icon;
                   const isActive = pathname === item.path;
                   return (
                     <li key={item.path}>
                       <Link
                         href={item.path}
                         onClick={() => setSidebarOpen(false)}
-                        className={`group relative flex items-center gap-2.5 rounded-lg px-4 py-2.5 font-medium duration-300 ease-in-out hover:bg-[#333a48] hover:text-white ${
+                        className={`group relative flex items-center gap-3 rounded-lg px-4 py-3 font-medium duration-200 ease-in-out hover:bg-[#333a48] hover:text-white ${
                           isActive ? "bg-[#333a48] text-white" : "text-[#dee4ee]"
                         }`}
                       >
-                        <Icon className="h-5 w-5" />
+                        <i className={`${item.icon} text-lg shrink-0`}></i>
                         {item.name}
                       </Link>
                     </li>
@@ -107,49 +97,49 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         {/* Sidebar Footer / Logout */}
-        <div className="p-4 border-t border-[#2e3a4f]/60">
+        <div className="p-4 border-t border-[#2e3a4f]/40">
           <button
             onClick={handleLogout}
             disabled={isPending}
-            className="flex w-full items-center gap-2.5 rounded-lg px-4 py-2.5 font-medium text-[#dee4ee] hover:bg-[#333a48] hover:text-rose-455 transition-all duration-200 cursor-pointer"
+            className="flex w-full items-center gap-3 rounded-lg px-4 py-3 font-medium text-[#dee4ee] hover:bg-[#333a48] hover:text-rose-450 transition-all duration-200 cursor-pointer"
           >
-            <LogOut className="h-5 w-5 text-neutral-400 group-hover:text-rose-455 animate-fade-in" />
+            <i className="fa-solid fa-right-from-bracket text-lg text-slate-400 group-hover:text-rose-450"></i>
             Keluar Dasbor
           </button>
         </div>
       </aside>
 
       {/* Main Content Area */}
-      <div className="relative flex flex-1 flex-col overflow-y-auto overflow-x-hidden">
+      <div className="relative flex flex-1 flex-col overflow-y-auto overflow-x-hidden bg-[#f1f5f9]">
         {/* Top Header */}
-        <header className="sticky top-0 z-40 flex w-full bg-neutral-955/80 border-b border-neutral-900 backdrop-blur-md">
+        <header className="sticky top-0 z-40 flex w-full bg-white border-b border-slate-200/80 backdrop-blur-md shadow-sm">
           <div className="flex flex-grow items-center justify-between px-4 py-4 md:px-6 2xl:px-11">
             {/* Hamburger Button for mobile */}
             <div className="flex items-center gap-2 xl:hidden">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="z-50 block rounded-md border border-neutral-800 bg-neutral-900 p-1.5 text-neutral-400 hover:text-white"
+                className="z-50 block rounded-md border border-slate-200 bg-slate-50 p-2 text-slate-650 hover:text-primary transition-colors cursor-pointer"
               >
-                <Menu className="h-5 w-5" />
+                <i className="fa-solid fa-bars text-lg"></i>
               </button>
             </div>
 
-            {/* Logo name/brand showing on desktop top bar */}
+            {/* Logo/Brand Label */}
             <div className="hidden sm:block">
-              <span className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                 Panel Kontrol Admin
               </span>
             </div>
 
-            {/* Right side: User dropdown & info */}
+            {/* Right side: User Profile dropdown & info */}
             <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
-                <span className="block text-sm font-semibold text-white">Administrator</span>
-                <span className="block text-[10px] text-neutral-500 font-medium">rezakusuma1804@gmail.com</span>
+                <span className="block text-sm font-bold text-slate-800">Administrator</span>
+                <span className="block text-[10px] text-slate-400 font-semibold">rezakusuma1804@gmail.com</span>
               </div>
 
-              <div className="h-9 w-9 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center text-primary font-bold">
-                <User className="h-4.5 w-4.5" />
+              <div className="h-9 w-9 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 font-bold">
+                <i className="fa-regular fa-user text-sm"></i>
               </div>
             </div>
           </div>

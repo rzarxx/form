@@ -10,14 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/image-compress";
-import { 
-  Loader2, 
-  CheckCircle2, 
-  Upload, 
-  FileText, 
-  AlertCircle,
-  Paperclip
-} from "lucide-react";
 
 interface FieldSchema {
   id: string;
@@ -328,23 +320,23 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
 
   if (isLoadingForm) {
     return (
-      <div className="min-h-screen bg-neutral-955 text-neutral-100 flex flex-col items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
-        <p className="text-sm text-neutral-450 font-medium">Memuat formulir...</p>
+      <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col items-center justify-center">
+        <i className="fa-solid fa-circle-notch fa-spin text-indigo-600 text-3xl mb-3"></i>
+        <p className="text-sm text-slate-500 font-semibold">Memuat formulir...</p>
       </div>
     );
   }
 
   if (!form) {
     return (
-      <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col items-center justify-center p-4">
-        <div className="w-full max-w-md border border-neutral-850 bg-neutral-900/10 backdrop-blur-md rounded-2xl text-center p-8 relative overflow-hidden shadow-2xl">
-          <div className="absolute top-0 left-0 w-full h-[3px] bg-rose-500" />
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-rose-955/20 border border-rose-900/40 text-rose-450 mb-5 shadow-[0_0_20px_rgba(244,63,94,0.08)]">
-            <AlertCircle className="h-6 w-6" />
+      <div className="min-h-screen bg-gradient-to-tr from-slate-50 via-indigo-50/30 to-blue-50/50 text-slate-800 flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md border border-white/60 bg-white/70 backdrop-blur-xl rounded-2xl text-center p-8 relative overflow-hidden shadow-lg">
+          <div className="absolute top-0 left-0 w-full h-[4px] bg-rose-500" />
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-rose-50 border border-rose-100 text-rose-500 mb-5 shadow-sm">
+            <i className="fa-solid fa-circle-exclamation text-2xl"></i>
           </div>
-          <h2 className="text-xl font-bold text-neutral-200">Formulir Tidak Ditemukan</h2>
-          <p className="text-neutral-455 text-sm mt-3 leading-relaxed">
+          <h2 className="text-xl font-bold text-slate-900">Formulir Tidak Ditemukan</h2>
+          <p className="text-slate-500 text-sm mt-3 leading-relaxed">
             Tautan yang Anda ikuti mungkin rusak, atau formulir ini telah dihapus oleh pengelolanya.
           </p>
         </div>
@@ -356,21 +348,21 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
   const isExpired = form.expiry_date ? new Date() > new Date(form.expiry_date) : false;
   if (isExpired || !form.is_active) {
     return (
-      <div className="min-h-screen bg-neutral-955 text-neutral-100 flex flex-col items-center justify-center p-4">
-        <div className="w-full max-w-md border border-neutral-850 bg-neutral-900/10 backdrop-blur-md rounded-2xl text-center p-8 relative overflow-hidden shadow-2xl">
-          <div className="absolute top-0 left-0 w-full h-[3px] bg-amber-500" />
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-amber-955/20 border border-amber-900/40 text-amber-500 mb-5 shadow-[0_0_20px_rgba(245,158,11,0.08)]">
-            <AlertCircle className="h-6 w-6" />
+      <div className="min-h-screen bg-gradient-to-tr from-slate-50 via-indigo-50/30 to-blue-50/50 text-slate-800 flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md border border-white/60 bg-white/70 backdrop-blur-xl rounded-2xl text-center p-8 relative overflow-hidden shadow-lg">
+          <div className="absolute top-0 left-0 w-full h-[4px] bg-amber-500" />
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-amber-50 border border-amber-100 text-amber-500 mb-5 shadow-sm">
+            <i className="fa-solid fa-circle-exclamation text-2xl"></i>
           </div>
-          <h2 className="text-xl font-bold text-neutral-205">Formulir Ditutup</h2>
-          <p className="text-neutral-450 text-sm mt-3 leading-relaxed">
+          <h2 className="text-xl font-bold text-slate-900">Formulir Ditutup</h2>
+          <p className="text-slate-550 text-sm mt-3 leading-relaxed">
             {isExpired ? (
               <>
-                Formulir <strong className="text-neutral-300">"{form.title}"</strong> sudah melewati batas waktu pengisian ({new Date(form.expiry_date!).toLocaleString("id-ID")}) dan tidak menerima tanggapan baru.
+                Formulir <strong className="text-slate-800">"{form.title}"</strong> sudah melewati batas waktu pengisian ({new Date(form.expiry_date!).toLocaleString("id-ID")}) dan tidak menerima tanggapan baru.
               </>
             ) : (
               <>
-                Formulir <strong className="text-neutral-300">"{form.title}"</strong> sudah ditutup oleh pemiliknya dan tidak menerima tanggapan baru.
+                Formulir <strong className="text-slate-800">"{form.title}"</strong> sudah ditutup oleh pemiliknya dan tidak menerima tanggapan baru.
               </>
             )}
           </p>
@@ -381,15 +373,15 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
 
   if (isAlreadySubmitted) {
     return (
-      <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col items-center justify-center p-4">
-        <div className="w-full max-w-md border border-neutral-855 bg-neutral-900/10 backdrop-blur-md rounded-2xl text-center p-8 relative overflow-hidden shadow-2xl">
-          <div className="absolute top-0 left-0 w-full h-[3px] bg-rose-500" />
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-rose-955/20 border border-rose-900/40 text-rose-450 mb-5 shadow-[0_0_20px_rgba(244,63,94,0.08)]">
-            <AlertCircle className="h-6 w-6" />
+      <div className="min-h-screen bg-gradient-to-tr from-slate-50 via-indigo-50/30 to-blue-50/50 text-slate-800 flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md border border-white/60 bg-white/70 backdrop-blur-xl rounded-2xl text-center p-8 relative overflow-hidden shadow-lg">
+          <div className="absolute top-0 left-0 w-full h-[4px] bg-rose-500" />
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-rose-50 border border-rose-100 text-rose-500 mb-5 shadow-sm">
+            <i className="fa-solid fa-circle-exclamation text-2xl"></i>
           </div>
-          <h2 className="text-xl font-bold text-neutral-200">Tanggapan Dibatasi</h2>
-          <p className="text-neutral-450 text-sm mt-3 leading-relaxed">
-            Anda sudah mengirimkan tanggapan untuk formulir <strong className="text-neutral-300">"{form.title}"</strong> sebelumnya. Formulir ini dikonfigurasi untuk hanya menerima 1 tanggapan per orang (IP Address).
+          <h2 className="text-xl font-bold text-slate-900">Tanggapan Dibatasi</h2>
+          <p className="text-slate-500 text-sm mt-3 leading-relaxed">
+            Anda sudah mengirimkan tanggapan untuk formulir <strong className="text-slate-800">"{form.title}"</strong> sebelumnya. Formulir ini dikonfigurasi untuk hanya menerima 1 tanggapan per orang (IP Address).
           </p>
         </div>
       </div>
@@ -398,30 +390,30 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col items-center justify-center p-4">
-        <div className="w-full max-w-lg border border-neutral-850 bg-neutral-900/10 backdrop-blur-md rounded-2xl text-center p-8 relative overflow-hidden shadow-2xl space-y-6">
-          <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-emerald-500/20 via-emerald-500 to-emerald-500/20" />
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-955/20 border border-emerald-900/40 text-emerald-450 shadow-[0_0_20px_rgba(16,185,129,0.08)]">
-            <CheckCircle2 className="h-8 w-8" />
+      <div className="min-h-screen bg-gradient-to-tr from-slate-50 via-indigo-50/30 to-blue-50/50 text-slate-800 flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-lg border border-white/60 bg-white/70 backdrop-blur-xl rounded-2xl text-center p-8 relative overflow-hidden shadow-lg space-y-6">
+          <div className="absolute top-0 left-0 w-full h-[4px] bg-gradient-to-r from-emerald-500/20 via-emerald-500 to-emerald-500/20" />
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-500 shadow-sm">
+            <i className="fa-solid fa-circle-check text-3xl"></i>
           </div>
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold tracking-tight text-neutral-100">
+            <h2 className="text-2xl font-black tracking-tight text-slate-900">
               Tanggapan Dikirim!
             </h2>
-            <p className="text-neutral-400 text-sm leading-relaxed whitespace-pre-line max-w-md mx-auto">
+            <p className="text-slate-500 text-sm leading-relaxed whitespace-pre-line max-w-md mx-auto">
               {form.custom_success_message || `Terima kasih, tanggapan Anda untuk formulir "${form.title}" telah berhasil disimpan di database kami.`}
             </p>
           </div>
           
           {form.redirect_url && (
-            <div className="text-xs text-neutral-500 pt-2 flex items-center justify-center gap-2 animate-pulse">
-              <Loader2 className="h-3 w-3 animate-spin text-primary" />
+            <div className="text-xs text-slate-400 pt-2 flex items-center justify-center gap-2">
+              <i className="fa-solid fa-circle-notch fa-spin text-indigo-500 text-[10px]"></i>
               <span>Mengalihkan Anda ke tautan luar dalam beberapa detik...</span>
             </div>
           )}
 
           {!form.redirect_url && (
-            <div className="pt-4 border-t border-neutral-900/60">
+            <div className="pt-4 border-t border-slate-100">
               <Button
                 type="button"
                 onClick={() => {
@@ -429,7 +421,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                   setUploadedFiles({});
                   setIsSubmitted(false);
                 }}
-                className="bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-850 rounded-xl px-6"
+                className="bg-white border border-slate-200 text-slate-650 hover:bg-slate-50 rounded-xl px-6 shadow-sm h-10 font-semibold transition-all"
               >
                 Kirim Tanggapan Lain
               </Button>
@@ -441,28 +433,28 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col items-center py-12 px-4 sm:px-6 relative overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-tr from-slate-50 via-indigo-50/30 to-blue-50/50 text-slate-800 flex flex-col items-center py-12 px-4 sm:px-6 relative overflow-x-hidden">
       {/* Background glow decoration */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[250px] bg-gradient-to-b from-primary/5 to-transparent rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[250px] bg-gradient-to-b from-indigo-500/5 to-transparent rounded-full blur-[100px] pointer-events-none" />
 
       <div className="w-full max-w-2xl space-y-6 relative">
         
         {/* Form Banner */}
         {form.banner_url && (
-          <div className="w-full h-44 sm:h-60 rounded-2xl border border-neutral-900 overflow-hidden relative shadow-lg">
+          <div className="w-full h-44 sm:h-60 rounded-2xl border border-slate-200/80 overflow-hidden relative shadow-sm">
             <img src={form.banner_url} alt="Form Banner" className="w-full h-full object-cover" />
           </div>
         )}
 
         {/* Form Meta Header */}
-        <div className="relative overflow-hidden rounded-2xl border border-neutral-800/40 bg-neutral-900/10 p-6 sm:p-8 backdrop-blur-md shadow-xl">
-          <div className="absolute top-0 left-0 w-full h-[4px] bg-gradient-to-r from-primary/30 via-primary to-primary/30" />
+        <div className="relative overflow-hidden rounded-2xl border border-white/60 bg-white/70 p-6 sm:p-8 backdrop-blur-xl shadow-md">
+          <div className="absolute top-0 left-0 w-full h-[4px] bg-gradient-to-r from-indigo-500/20 via-indigo-500 to-indigo-500/20" />
           <div className="space-y-3">
-            <h1 className="text-2xl font-bold tracking-tight text-neutral-100 sm:text-3xl">
+            <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
               {form.title}
             </h1>
             {form.description && (
-              <p className="text-neutral-400 text-sm leading-relaxed whitespace-pre-line">
+              <p className="text-slate-550 text-sm leading-relaxed whitespace-pre-line">
                 {form.description}
               </p>
             )}
@@ -496,13 +488,13 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                 id={`container-${field.id}`}
                 className={`relative overflow-hidden rounded-2xl border transition-all duration-300 p-6 backdrop-blur-sm ${
                   errors[field.id] 
-                    ? "border-rose-900/50 bg-rose-955/5 shadow-[0_0_15px_rgba(239,68,68,0.02)]" 
-                    : "border-neutral-800/40 bg-neutral-900/10 hover:border-neutral-800/80 shadow-md"
+                    ? "border-rose-300 bg-rose-50/20 shadow-[0_0_15px_rgba(239,68,68,0.01)]" 
+                    : "border-white/60 bg-white/70 hover:border-slate-200/80 shadow-sm"
                 }`}
               >
                 <div className="space-y-3">
                   <div className="flex items-center space-x-1.5">
-                    <Label className="text-neutral-200 text-sm font-semibold tracking-wide">
+                    <Label className="text-slate-750 text-sm font-bold tracking-wide">
                       {field.label}
                     </Label>
                     {field.required && (
@@ -517,7 +509,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                       value={answers[field.id] || ""}
                       onChange={(e) => handleInputChange(field.id, e.target.value)}
                       disabled={isPending}
-                      className="bg-neutral-950/40 border-neutral-800/80 text-neutral-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 h-10 rounded-xl transition-all"
+                      className="bg-white/60 border border-slate-200 text-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 focus:bg-white h-10 rounded-xl transition-all"
                       placeholder="Jawaban Anda..."
                     />
                   )}
@@ -528,7 +520,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                       value={answers[field.id] || ""}
                       onChange={(e) => handleInputChange(field.id, e.target.value)}
                       disabled={isPending}
-                      className="bg-neutral-950/40 border-neutral-800/80 text-neutral-200 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 min-h-[100px] rounded-xl transition-all resize-y"
+                      className="bg-white/60 border border-slate-200 text-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 focus:bg-white min-h-[100px] rounded-xl transition-all resize-y"
                       placeholder="Jawaban Anda..."
                     />
                   )}
@@ -540,12 +532,12 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                       onValueChange={(val) => handleInputChange(field.id, val)}
                       disabled={isPending}
                     >
-                      <SelectTrigger className="bg-neutral-955/40 border-neutral-800/80 text-neutral-200 focus:ring-1 focus:ring-primary/20 h-10 rounded-xl">
+                      <SelectTrigger className="bg-white/60 border border-slate-200 text-slate-800 focus:ring-1 focus:ring-indigo-500/20 h-10 rounded-xl">
                         <SelectValue placeholder="Pilih salah satu..." />
                       </SelectTrigger>
-                      <SelectContent className="bg-neutral-900 border-neutral-800 text-neutral-200 rounded-xl">
+                      <SelectContent className="bg-white/95 border border-slate-200 text-slate-800 rounded-xl backdrop-blur-md">
                         {field.options.map((opt, idx) => (
-                          <SelectItem key={idx} value={opt} className="focus:bg-neutral-800 focus:text-neutral-100 rounded-lg">
+                          <SelectItem key={idx} value={opt} className="focus:bg-slate-100 focus:text-slate-900 rounded-lg text-slate-700">
                             {opt}
                           </SelectItem>
                         ))}
@@ -564,15 +556,15 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                             onClick={() => !isPending && handleInputChange(field.id, opt)}
                             className={`flex items-center px-4 py-3 rounded-xl border cursor-pointer transition-all duration-200 select-none ${
                               isSelected 
-                                ? "border-primary/50 bg-primary/10 text-neutral-100 shadow-[0_0_15px_rgba(139,92,246,0.05)]" 
-                                : "border-neutral-800/60 bg-neutral-950/20 text-neutral-300 hover:border-neutral-700 hover:bg-neutral-950/50"
+                                ? "border-indigo-500/50 bg-indigo-50/50 text-indigo-950 shadow-[0_0_15px_rgba(99,102,241,0.02)]" 
+                                : "border-slate-200 bg-white/50 text-slate-750 hover:border-slate-300 hover:bg-white"
                             }`}
                           >
                             <div className={`h-4.5 w-4.5 rounded-full border flex items-center justify-center mr-3 shrink-0 transition-all ${
-                              isSelected ? "border-primary bg-primary/20" : "border-neutral-700 bg-transparent"
+                              isSelected ? "border-indigo-650 bg-indigo-50/80" : "border-slate-300 bg-white"
                             }`}>
                               {isSelected && (
-                                <div className="h-2.5 w-2.5 rounded-full bg-primary" />
+                                <div className="h-2.5 w-2.5 rounded-full bg-indigo-600" />
                               )}
                             </div>
                             <span className="text-sm font-medium">{opt}</span>
@@ -586,7 +578,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                   {field.type === "file" && (
                     <div className="space-y-3 pt-1">
                       {!uploadedFiles[field.id] ? (
-                        <div className="relative border border-dashed border-neutral-800 hover:border-neutral-700 rounded-2xl p-6 bg-neutral-955/20 text-center flex flex-col items-center justify-center space-y-3 group transition-all duration-300 cursor-pointer">
+                        <div className="relative border border-dashed border-slate-300 hover:border-indigo-400 rounded-2xl p-6 bg-white/40 text-center flex flex-col items-center justify-center space-y-3 group transition-all duration-300 cursor-pointer">
                           <input
                             id={`file-input-${field.id}`}
                             type="file"
@@ -595,18 +587,18 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                             disabled={isPending || uploadingFields[field.id]}
                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                           />
-                          <div className="h-10 w-10 rounded-xl bg-neutral-900/60 flex items-center justify-center border border-neutral-800 text-neutral-400 group-hover:text-neutral-250 transition-all duration-300">
+                          <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-200 text-slate-400 group-hover:text-indigo-650 transition-all duration-300">
                             {uploadingFields[field.id] ? (
-                              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                              <i className="fa-solid fa-circle-notch fa-spin text-indigo-600"></i>
                             ) : (
-                              <Upload className="h-5 w-5 text-neutral-450 group-hover:text-primary transition-colors" />
+                              <i className="fa-solid fa-cloud-arrow-up text-slate-400 group-hover:text-indigo-600"></i>
                             )}
                           </div>
                           <div className="space-y-1">
-                            <p className="text-xs text-neutral-300 font-semibold">
+                            <p className="text-xs text-slate-700 font-semibold">
                               {uploadingFields[field.id] ? "Mengunggah..." : "Klik atau seret berkas ke sini"}
                             </p>
-                            <p className="text-[10px] text-neutral-500 max-w-xs mx-auto leading-relaxed">
+                            <p className="text-[10px] text-slate-400 max-w-xs mx-auto leading-relaxed">
                               {field.fileTypes === "image/*" && "Hanya Gambar (PNG, JPG, WebP, GIF) (Maks. 5MB)"}
                               {field.fileTypes === "audio/*" && "Hanya Audio (MP3, WAV, OGG) (Maks. 5MB)"}
                               {field.fileTypes && field.fileTypes.includes(".") && `Hanya Dokumen (${field.fileTypes.replace(/\./g, "").toUpperCase()}) (Maks. 5MB)`}
@@ -617,25 +609,25 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                           {/* Progress indicator */}
                           {uploadingFields[field.id] && (
                             <div className="w-full max-w-xs mt-2 space-y-1.5">
-                              <div className="h-1.5 w-full bg-neutral-950 rounded-full overflow-hidden border border-neutral-900/60">
+                              <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200">
                                 <div 
-                                  className="h-full bg-primary transition-all duration-150 rounded-full" 
+                                  className="h-full bg-indigo-600 transition-all duration-150 rounded-full" 
                                   style={{ width: `${uploadProgress[field.id] || 0}%` }}
                                 />
                               </div>
-                              <span className="text-[10px] text-neutral-450 font-semibold block text-center">
+                              <span className="text-[10px] text-slate-550 font-bold block text-center">
                                 Mengunggah: {uploadProgress[field.id] || 0}%
                               </span>
                             </div>
                           )}
                         </div>
                       ) : (
-                        <div className="flex items-center justify-between p-3.5 rounded-xl border border-neutral-800 bg-neutral-950/60 text-xs shadow-inner">
+                        <div className="flex items-center justify-between p-3.5 rounded-xl border border-slate-250 bg-white/80 text-xs shadow-inner">
                           <div className="flex items-center space-x-3 truncate max-w-sm">
-                            <div className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
-                              <Paperclip className="h-4 w-4" />
+                            <div className="h-8 w-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
+                              <i className="fa-solid fa-paperclip"></i>
                             </div>
-                            <span className="text-neutral-200 font-semibold truncate font-mono text-[11px]">
+                            <span className="text-slate-700 font-semibold truncate font-mono text-[11px]">
                               {uploadedFiles[field.id].name}
                             </span>
                           </div>
@@ -651,7 +643,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                               });
                               handleInputChange(field.id, "");
                             }}
-                            className="h-8 px-3 text-neutral-450 hover:text-rose-455 hover:bg-rose-955/15 rounded-lg transition-colors cursor-pointer animate-fade-in"
+                            className="h-8 px-3 text-slate-500 hover:text-rose-650 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                           >
                             Ganti File
                           </Button>
@@ -662,8 +654,8 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
 
                   {/* Individual Field Validation Error */}
                   {errors[field.id] && (
-                    <p className="text-xs text-rose-500 font-semibold flex items-center pt-1 animate-pulse">
-                      <AlertCircle className="h-3.5 w-3.5 mr-1 shrink-0" />
+                    <p className="text-xs text-rose-600 font-semibold flex items-center pt-1">
+                      <i className="fa-solid fa-circle-exclamation mr-1 shrink-0 text-rose-500"></i>
                       {errors[field.id]}
                     </p>
                   )}
@@ -674,17 +666,17 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
 
           {/* Form Submit Button */}
           <div className="flex flex-col sm:flex-row gap-3 justify-between items-center pt-4">
-            <span className="text-[11px] text-neutral-500 font-medium">
+            <span className="text-[11px] text-slate-400 font-medium">
               Formulir ini aman & terenkripsi oleh Personal Form Builder.
             </span>
             <Button
               type="submit"
               disabled={isPending || Object.values(uploadingFields).some(Boolean)}
-              className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-8 h-11 rounded-xl shadow-lg shadow-primary/10 hover:shadow-primary/20 hover:-translate-y-[1px] transition-all duration-300"
+              className="w-full sm:w-auto bg-indigo-600 text-white hover:bg-indigo-700 font-bold px-8 h-11 rounded-xl shadow-md transition-all"
             >
               {isPending ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <i className="fa-solid fa-circle-notch fa-spin mr-2"></i>
                   Mengirim...
                 </>
               ) : (

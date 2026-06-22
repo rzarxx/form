@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Lock, ArrowRight, Loader2 } from "lucide-react";
 
 function LoginForm() {
   const router = useRouter();
@@ -42,22 +41,22 @@ function LoginForm() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen items-center justify-center bg-gradient-to-b from-neutral-950 via-neutral-900 to-neutral-950 p-4 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-primary/5 blur-[120px] pointer-events-none" />
+    <div className="flex flex-col min-h-screen items-center justify-center bg-gradient-to-tr from-indigo-50 via-slate-50 to-blue-50/50 p-4 relative overflow-hidden text-slate-800">
+      {/* Background glow decoration */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-indigo-500/5 blur-[120px] pointer-events-none" />
 
-      <Card className="w-full max-w-md border-neutral-900 bg-neutral-900/40 backdrop-blur-xl shadow-2xl relative overflow-hidden transition-all duration-300 hover:border-primary/20 hover:shadow-primary/5 group">
-        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary/60 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
+      <Card className="w-full max-w-md border-white/60 bg-white/70 backdrop-blur-xl shadow-xl relative overflow-hidden transition-all duration-300 hover:shadow-indigo-500/5 group rounded-2xl">
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-indigo-500/40 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
         
         <CardHeader className="space-y-3 text-center pt-8">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-neutral-950 border border-neutral-850 text-primary shadow-inner">
-            <Lock className="h-5 w-5" />
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600 shadow-inner">
+            <i className="fa-solid fa-lock text-base"></i>
           </div>
           <div className="space-y-1">
-            <CardTitle className="text-2xl font-bold tracking-tight text-neutral-100">
+            <CardTitle className="text-2xl font-black tracking-tight text-slate-900">
               Panel Administrator
             </CardTitle>
-            <CardDescription className="text-neutral-450 text-xs">
+            <CardDescription className="text-slate-500 text-xs">
               Masukkan kata sandi akses untuk mengelola formulir dinamis
             </CardDescription>
           </div>
@@ -66,7 +65,7 @@ function LoginForm() {
         <form onSubmit={handleLogin}>
           <CardContent className="space-y-4 pt-2">
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-neutral-400 text-xs font-semibold">
+              <Label htmlFor="password" className="text-slate-600 text-xs font-semibold">
                 Kata Sandi Admin
               </Label>
               <Input
@@ -76,7 +75,7 @@ function LoginForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isPending}
-                className="bg-neutral-950/60 border-neutral-850 text-neutral-200 placeholder-neutral-700 focus:border-primary/80 focus:ring-1 focus:ring-primary/40 h-11"
+                className="bg-white/60 border border-slate-200 text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 focus:bg-white h-11 rounded-xl transition-all"
               />
             </div>
           </CardContent>
@@ -85,17 +84,17 @@ function LoginForm() {
             <Button
               type="submit"
               disabled={isPending}
-              className="w-full h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-medium transition-all duration-200 shadow-md shadow-primary/10 hover:shadow-primary/25 hover:scale-[1.015]"
+              className="w-full h-11 bg-indigo-600 text-white hover:bg-indigo-700 font-semibold transition-all duration-200 shadow-sm hover:shadow-indigo-500/10 hover:scale-[1.015] rounded-xl cursor-pointer"
             >
               {isPending ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <i className="fa-solid fa-circle-notch fa-spin mr-2"></i>
                   Memverifikasi...
                 </>
               ) : (
                 <>
                   Masuk ke Dasbor
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                  <i className="fa-solid fa-arrow-right ml-2 text-sm"></i>
                 </>
               )}
             </Button>
@@ -109,8 +108,8 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-radial from-neutral-900 to-neutral-950 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-gradient-to-tr from-indigo-50 via-slate-50 to-blue-50/50 flex items-center justify-center">
+        <i className="fa-solid fa-circle-notch fa-spin text-indigo-600 text-3xl"></i>
       </div>
     }>
       <LoginForm />
