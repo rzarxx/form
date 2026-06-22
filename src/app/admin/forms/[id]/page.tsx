@@ -303,7 +303,7 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col">
       {/* Header */}
       <header className="border-b border-neutral-900 bg-neutral-950/50 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
           <Link href="/admin">
             <Button variant="ghost" size="sm" className="text-neutral-400 hover:text-neutral-200">
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -311,7 +311,7 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
             </Button>
           </Link>
           
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-wrap items-center justify-center gap-2">
             <Button 
               variant="outline" 
               size="sm" 

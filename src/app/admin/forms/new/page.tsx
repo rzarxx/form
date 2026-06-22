@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { compressImage } from "@/lib/image-compress";
 import { 
   Plus, 
   Trash2, 
@@ -135,8 +136,19 @@ export default function NewFormBuilder() {
     setIsUploadingBanner(true);
     toast.info("Mengunggah banner...");
 
+    let fileToUpload = file;
+    if (file.type.startsWith("image/") && file.type !== "image/gif") {
+      try {
+        const loadingToast = toast.loading("Mengompresi banner untuk menghemat storage...");
+        fileToUpload = await compressImage(file, 1600, 1600, 0.8);
+        toast.dismiss(loadingToast);
+      } catch (compressErr) {
+        console.error("Banner compression failed, uploading original:", compressErr);
+      }
+    }
+
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", fileToUpload);
 
     try {
       const response = await fetch("/api/upload", {
@@ -205,7 +217,7 @@ export default function NewFormBuilder() {
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col">
       {/* Header */}
       <header className="border-b border-neutral-900 bg-neutral-950/50 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="max-w-4xl mx-auto px-4 min-h-16 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
           <Link href="/admin">
             <Button variant="ghost" size="sm" className="text-neutral-400 hover:text-neutral-200">
               <ArrowLeft className="h-4 w-4 mr-2" />

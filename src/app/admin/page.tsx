@@ -95,7 +95,7 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col">
       {/* Header */}
       <header className="border-b border-neutral-900 bg-neutral-950/50 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center space-x-2">
             <div className="h-9 w-9 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center">
               <FileSpreadsheet className="h-5 w-5 text-primary" />

@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { compressImage } from "@/lib/image-compress";
 import { 
   Loader2, 
   CheckCircle2, 
@@ -173,13 +174,25 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
       }
     }
 
+    // Compress the image before uploading if applicable
+    let fileToUpload = file;
+    if (file.type.startsWith("image/") && file.type !== "image/gif") {
+      try {
+        const loadingToast = toast.loading("Mengompresi gambar untuk menghemat storage...");
+        fileToUpload = await compressImage(file);
+        toast.dismiss(loadingToast);
+      } catch (compressErr) {
+        console.error("Compression failed, uploading original:", compressErr);
+      }
+    }
+
     // Use XHR to upload files with a progress bar
     setUploadingFields((prev) => ({ ...prev, [fieldId]: true }));
     setUploadProgress((prev) => ({ ...prev, [fieldId]: 0 }));
-    toast.info(`Mengunggah ${file.name}...`);
+    toast.info(`Mengunggah ${fileToUpload.name}...`);
 
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", fileToUpload);
 
     try {
       const xhr = new XMLHttpRequest();
