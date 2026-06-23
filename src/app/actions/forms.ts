@@ -478,7 +478,11 @@ export async function submitResponseAction(
           const verifyData = await verifyRes.json();
           if (!verifyData.success) {
             console.error("[Turnstile Debug] Cloudflare verification failed. Response data:", verifyData);
-            return { success: false, error: "Gagal memverifikasi Turnstile Captcha. Silakan coba lagi." };
+            const errorCodes = verifyData["error-codes"] ? verifyData["error-codes"].join(", ") : "unknown-error";
+            return { 
+              success: false, 
+              error: `Gagal memverifikasi Turnstile Captcha (Kode: ${errorCodes}). Silakan periksa kembali konfigurasi Site Key & Secret Key Anda.` 
+            };
           }
           console.log("[Turnstile Debug] Verification successful.");
         } catch (err) {
