@@ -209,6 +209,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
           setPaymentStatus(res.status);
           if (res.status === "paid") {
             toast.success("Pembayaran Lunas! Tanggapan Anda telah resmi disimpan. Terima kasih! 🎉");
+            setIsCheckingOutPaidForm(false);
             setIsSubmitted(true);
             setResponseId(res.responseId);
             if (typeof window !== "undefined") {
@@ -797,7 +798,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                   <CardTitle className="text-lg">Tagihan Pembayaran</CardTitle>
                   <CardDescription>Segera selesaikan pembayaran Anda untuk mengirim tanggapan.</CardDescription>
                 </div>
-                <Button variant="ghost" size="sm" onClick={handleResetFormPayment} className="text-slate-450 hover:text-slate-655 cursor-pointer">
+                <Button variant="ghost" size="sm" onClick={() => setIsCheckingOutPaidForm(false)} className="text-slate-450 hover:text-slate-655 cursor-pointer">
                   <i className="fa-solid fa-xmark text-lg"></i>
                 </Button>
               </CardHeader>
@@ -932,6 +933,9 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                   setUploadedFiles({});
                   setIsSubmitted(false);
                   setResponseId(undefined);
+                  setCheckoutData(null);
+                  setPaymentStatus("unpaid");
+                  setIsCheckingOutPaidForm(false);
                 }}
                 className="bg-white border border-slate-200 text-slate-650 hover:bg-slate-50 rounded-xl px-6 shadow-sm h-10 font-semibold transition-all cursor-pointer"
               >
