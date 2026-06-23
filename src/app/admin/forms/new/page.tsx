@@ -449,11 +449,13 @@ export default function NewFormBuilder() {
                         onChange={(e) => handleSaveModel(e.target.value)}
                         className="w-full bg-white border border-slate-250 text-slate-800 h-9 px-3 rounded-lg text-xs focus:outline-none focus:border-indigo-505 transition-colors cursor-pointer"
                       >
+                        <option value="openrouter/free">openrouter/free (Auto Routing Gratis)</option>
                         <option value="google/gemini-2.5-flash">google/gemini-2.5-flash (Direkomendasikan)</option>
                         <option value="google/gemini-2.5-pro">google/gemini-2.5-pro</option>
-                        <option value="google/gemma-2-9b-it:free">google/gemma-2-9b-it:free</option>
-                        <option value="meta-llama/llama-3.1-8b-instruct:free">meta-llama/llama-3.1-8b-instruct:free</option>
-                        <option value="qwen/qwen-2.5-72b-instruct:free">qwen/qwen-2.5-72b-instruct:free</option>
+                        <option value="google/gemma-2-9b-it:free">google/gemma-2-9b-it:free (Gratis)</option>
+                        <option value="meta-llama/llama-3.1-8b-instruct:free">meta-llama/llama-3.1-8b-instruct:free (Gratis)</option>
+                        <option value="meta-llama/llama-3-8b-instruct:free">meta-llama/llama-3-8b-instruct:free (Gratis)</option>
+                        <option value="qwen/qwen-2.5-72b-instruct:free">qwen/qwen-2.5-72b-instruct:free (Gratis)</option>
                       </select>
                     </div>
                   </div>
