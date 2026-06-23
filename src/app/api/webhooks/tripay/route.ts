@@ -50,12 +50,14 @@ export async function POST(req: Request) {
     const payload = JSON.parse(rawBody);
     console.log("[Tripay Webhook] Signature verified. Received callback payload:", payload);
 
-    const { reference, status } = payload;
+    const { reference, merchant_ref, status } = payload;
 
-    // Cari transaksi di database
+    // Cari transaksi di database berdasarkan merchant_ref atau tripay_reference
     const txRes = await sql`
       SELECT id, user_id, form_id, status, type, form_response_answers, payer_name, payer_email
-      FROM transactions WHERE reference = ${reference} LIMIT 1
+      FROM transactions 
+      WHERE reference = ${merchant_ref || ""} OR tripay_reference = ${reference}
+      LIMIT 1
     `;
 
     if (txRes.length === 0) {
