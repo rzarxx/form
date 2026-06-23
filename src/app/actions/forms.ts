@@ -6,6 +6,7 @@ import { initDatabase } from "@/lib/db-init";
 import { verifyAdminSession, getSessionUser } from "@/lib/auth-helper";
 import { getSetting } from "@/lib/settings";
 import { del } from "@vercel/blob";
+import { triggerResponseNotifications } from "@/lib/notifications";
 import { promises as fs } from "fs";
 import path from "path";
 
@@ -114,7 +115,10 @@ export async function createFormAction(
   maxTotalResponses: number = 0,
   accessPassword?: string | null,
   webhookUrl?: string | null,
-  enableTurnstile: boolean = false
+  enableTurnstile: boolean = false,
+  isPaidForm: boolean = false,
+  formPrice: number = 0,
+  formPaymentDescription?: string | null
 ) {
   try {
     const userId = await requireAuth();
@@ -124,6 +128,41 @@ export async function createFormAction(
       return { success: false, error: "Judul formulir wajib diisi." };
     }
 
+    // Check if user is premium
+    const userRes = await sql`
+      SELECT is_premium, role FROM users WHERE id = ${userId} LIMIT 1
+    `;
+    const user = userRes[0];
+    const isPremium = user ? (!!user.is_premium || user.role === "super_admin") : false;
+
+    if (!isPremium) {
+      // Check active forms count limit
+      const countRes = await sql`
+        SELECT COUNT(*)::int as count FROM forms WHERE user_id = ${userId}
+      `;
+      if (countRes[0].count >= 3) {
+        return { success: false, error: "Batas formulir aktif tercapai. Akun Free dibatasi maksimal 3 formulir. Silakan upgrade ke Premium." };
+      }
+
+      // Restrict premium features
+      if (enableTurnstile) {
+        return { success: false, error: "Fitur Cloudflare Turnstile hanya tersedia untuk anggota Premium." };
+      }
+      if (redirectUrl) {
+        return { success: false, error: "Fitur Custom Redirect URL hanya tersedia untuk anggota Premium." };
+      }
+      if (webhookUrl) {
+        return { success: false, error: "Fitur Webhook hanya tersedia untuk anggota Premium." };
+      }
+      const hasFileField = fields.some((f: any) => f.type === "file");
+      if (hasFileField) {
+        return { success: false, error: "Tipe pertanyaan Unggah Berkas hanya tersedia untuk anggota Premium." };
+      }
+      if (isPaidForm) {
+        return { success: false, error: "Fitur Formulir Berbayar hanya tersedia untuk anggota Premium." };
+      }
+    }
+
     const fieldsJson = JSON.stringify(fields);
 
     const result = await sql`
@@ -131,14 +170,14 @@ export async function createFormAction(
         title, description, fields, banner_url, max_responses, is_active,
         custom_success_message, redirect_url, expiry_date, notify_email,
         limit_one_per_ip, max_total_responses, access_password, webhook_url, enable_turnstile,
-        user_id
+        user_id, is_paid_form, form_price, form_payment_description
       )
       VALUES (
         ${title}, ${description || null}, ${fieldsJson}, ${bannerUrl || null}, ${maxResponses}, ${isActive},
         ${customSuccessMessage || null}, ${redirectUrl || null}, 
         ${expiryDate ? new Date(expiryDate) : null}, ${notifyEmail || null},
         ${limitOnePerIp}, ${maxTotalResponses}, ${accessPassword || null}, ${webhookUrl || null}, ${enableTurnstile},
-        ${userId}
+        ${userId}, ${isPaidForm}, ${formPrice}, ${formPaymentDescription || null}
       )
       RETURNING id, title, created_at
     `;
@@ -166,7 +205,10 @@ export async function updateFormAction(
   maxTotalResponses: number = 0,
   accessPassword?: string | null,
   webhookUrl?: string | null,
-  enableTurnstile: boolean = false
+  enableTurnstile: boolean = false,
+  isPaidForm: boolean = false,
+  formPrice: number = 0,
+  formPaymentDescription?: string | null
 ) {
   try {
     const userId = await requireAuth();
@@ -189,6 +231,33 @@ export async function updateFormAction(
       return { success: false, error: "Judul formulir wajib diisi." };
     }
 
+    // Check if user is premium
+    const userRes = await sql`
+      SELECT is_premium, role FROM users WHERE id = ${userId} LIMIT 1
+    `;
+    const user = userRes[0];
+    const isPremium = user ? (!!user.is_premium || user.role === "super_admin") : false;
+
+    if (!isPremium) {
+      // Restrict premium features
+      if (enableTurnstile) {
+        return { success: false, error: "Fitur Cloudflare Turnstile hanya tersedia untuk anggota Premium." };
+      }
+      if (redirectUrl) {
+        return { success: false, error: "Fitur Custom Redirect URL hanya tersedia untuk anggota Premium." };
+      }
+      if (webhookUrl) {
+        return { success: false, error: "Fitur Webhook hanya tersedia untuk anggota Premium." };
+      }
+      const hasFileField = fields.some((f: any) => f.type === "file");
+      if (hasFileField) {
+        return { success: false, error: "Tipe pertanyaan Unggah Berkas hanya tersedia untuk anggota Premium." };
+      }
+      if (isPaidForm) {
+        return { success: false, error: "Fitur Formulir Berbayar hanya tersedia untuk anggota Premium." };
+      }
+    }
+
     const fieldsJson = JSON.stringify(fields);
 
     await sql`
@@ -208,7 +277,10 @@ export async function updateFormAction(
         max_total_responses = ${maxTotalResponses},
         access_password = ${accessPassword || null},
         webhook_url = ${webhookUrl || null},
-        enable_turnstile = ${enableTurnstile}
+        enable_turnstile = ${enableTurnstile},
+        is_paid_form = ${isPaidForm},
+        form_price = ${formPrice},
+        form_payment_description = ${formPaymentDescription || null}
       WHERE id = ${formId}
     `;
 
@@ -252,7 +324,8 @@ export async function getFormDetailAction(formId: string) {
     const formResult = await sql`
       SELECT id, title, description, created_at, fields, banner_url, max_responses, is_active,
              custom_success_message, redirect_url, expiry_date, notify_email,
-             limit_one_per_ip, max_total_responses, access_password, webhook_url, enable_turnstile
+             limit_one_per_ip, max_total_responses, access_password, webhook_url, enable_turnstile,
+             is_paid_form, form_price, form_payment_description
       FROM forms
       WHERE id = ${formId} AND (user_id = ${userId} OR (user_id IS NULL AND ${userId} = '00000000-0000-0000-0000-000000000000'))
     `;
@@ -424,7 +497,8 @@ export async function submitResponseAction(
     // 3. Fetch form details to verify if active, limits, and expiry
     const formResult = await sql`
       SELECT title, is_active, max_responses, expiry_date, notify_email, fields,
-             limit_one_per_ip, max_total_responses, access_password, webhook_url, enable_turnstile
+             limit_one_per_ip, max_total_responses, access_password, webhook_url, enable_turnstile,
+             is_paid_form, form_price, form_payment_description, user_id
       FROM forms WHERE id = ${formId}
     `;
 
@@ -494,7 +568,25 @@ export async function submitResponseAction(
       }
     }
 
-    // 8. Check if total responses exceeded
+    // 8. Enforce Non-Premium Response Limits (Max 100 Responses)
+    const ownerRes = await sql`
+      SELECT u.is_premium, u.role FROM forms f
+      LEFT JOIN users u ON f.user_id = u.id
+      WHERE f.id = ${formId}
+    `;
+    const isOwnerPremium = ownerRes[0] ? (!!ownerRes[0].is_premium || ownerRes[0].role === "super_admin") : false;
+
+    if (!isOwnerPremium) {
+      const responseCountResult = await sql`
+        SELECT COUNT(id)::int as count FROM form_responses WHERE form_id = ${formId}
+      `;
+      const count = responseCountResult[0]?.count || 0;
+      if (count >= 100) {
+        return { success: false, error: "Batas kuota tanggapan untuk formulir gratis (Non-Premium) telah tercapai (Maksimal 100 tanggapan). Silakan upgrade ke Premium untuk menerima lebih banyak tanggapan." };
+      }
+    }
+
+    // 9. Check if total responses exceeded (custom quota set by creator)
     if (form.max_total_responses && form.max_total_responses > 0) {
       const responseCountResult = await sql`
         SELECT COUNT(id)::int as count FROM form_responses WHERE form_id = ${formId}
@@ -505,7 +597,7 @@ export async function submitResponseAction(
       }
     }
 
-    // 9. Check if max responses per IP is limited (limit_one_per_ip or max_responses === 1)
+    // 10. Check if max responses per IP is limited (limit_one_per_ip or max_responses === 1)
     if (form.limit_one_per_ip || form.max_responses === 1) {
       const existingResponse = await sql`
         SELECT id FROM form_responses 
@@ -517,7 +609,18 @@ export async function submitResponseAction(
       }
     }
 
-    // 10. Insert response (using sql.json helper for proper JSONB serialization)
+    // 11. Check if paid form checkout is required
+    if (form.is_paid_form) {
+      return {
+        success: true,
+        requiresPayment: true,
+        formPrice: form.form_price,
+        formTitle: form.title,
+        formPaymentDescription: form.form_payment_description,
+      };
+    }
+
+    // 12. Insert response (using sql.json helper for proper JSONB serialization)
     const insertResult = await sql`
       INSERT INTO form_responses (form_id, answers, ip_address)
       VALUES (${formId}, ${sql.json(answers)}, ${ip})
@@ -525,162 +628,18 @@ export async function submitResponseAction(
     `;
     const newResponse = insertResult[0];
 
-    // 11. Send real-time webhook notification if configured (Discord/Slack/Custom)
-    if (form.webhook_url && form.webhook_url.trim()) {
-      const formFields = Array.isArray(form.fields)
-        ? form.fields
-        : typeof form.fields === "string"
-          ? JSON.parse(form.fields)
-          : [];
-
-      const fieldsList = Object.entries(answers).map(([key, value]) => {
-        const field = formFields.find((f: any) => f.id === key);
-        const label = field ? field.label : key;
-        let strVal = String(value);
-        if (Array.isArray(value)) {
-          strVal = value.join(", ");
-        }
-        return { label, value: strVal };
-      });
-
-      const url = form.webhook_url.trim();
-      let payload: any = {};
-
-      if (url.includes("discord.com/api/webhooks")) {
-        payload = {
-          embeds: [
-            {
-              title: `🎯 Tanggapan Baru: ${form.title}`,
-              description: `Seseorang baru saja mengisi formulir Anda.`,
-              color: 5814783, // blurple color
-              fields: fieldsList.map(item => ({
-                name: item.label,
-                value: item.value || "-",
-                inline: false
-              })),
-              timestamp: new Date().toISOString(),
-              footer: {
-                text: `Personal Form Builder • IP: ${ip}`
-              }
-            }
-          ]
-        };
-      } else if (url.includes("hooks.slack.com")) {
-        payload = {
-          text: `🎯 *Tanggapan Baru untuk Formulir: ${form.title}*`,
-          blocks: [
-            {
-              type: "section",
-              text: {
-                type: "mrkdwn",
-                text: `*🎯 Tanggapan Baru untuk Formulir: ${form.title}*\nSeseorang baru saja mengisi formulir Anda.`
-              }
-            },
-            {
-              type: "divider"
-            },
-            ...fieldsList.map(item => ({
-              type: "section",
-              text: {
-                type: "mrkdwn",
-                text: `*${item.label}*\n${item.value || "-"}`
-              }
-            })),
-            {
-              type: "divider"
-            },
-            {
-              type: "context",
-              elements: [
-                {
-                  type: "mrkdwn",
-                  text: `Dikirim pada ${new Date().toLocaleString("id-ID")} • IP: ${ip}`
-                }
-              ]
-            }
-          ]
-        };
-      } else {
-        payload = {
-          event: "form.submitted",
-          form_id: formId,
-          form_title: form.title,
-          submitted_at: new Date().toISOString(),
-          ip_address: ip,
-          answers: answers
-        };
-      }
-
-      try {
-        await fetch(url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(payload)
-        });
-      } catch (webhookErr) {
-        console.error("Error sending webhook notification:", webhookErr);
-      }
-    }
-
-    // 12. Send real-time email notification if notify_email is configured
-    if (form.notify_email && form.notify_email.trim()) {
-      const formFields = Array.isArray(form.fields)
-        ? form.fields
-        : typeof form.fields === "string"
-          ? JSON.parse(form.fields)
-          : [];
-
-      const resendApiKey = await getSetting("resend_api_key");
-      if (resendApiKey) {
-        try {
-          const res = await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${resendApiKey}`,
-            },
-            body: JSON.stringify({
-              from: "Personal Form Builder <onboarding@resend.dev>",
-              to: form.notify_email,
-              subject: `Tanggapan Baru: ${form.title}`,
-              html: `
-                <h3>Tanggapan Baru untuk Formulir: ${form.title}</h3>
-                <p>Seseorang baru saja mengisi formulir Anda pada ${new Date().toLocaleString("id-ID")}.</p>
-                <h4>Detail Jawaban:</h4>
-                <ul>
-                  ${Object.entries(answers)
-                    .map(([key, value]) => {
-                      const field = formFields.find((f: any) => f.id === key);
-                      const label = field ? field.label : key;
-                      return `<li><strong>${label}:</strong> ${value}</li>`;
-                    })
-                    .join("")}
-                </ul>
-                <hr />
-                <p>IP Address Pengisi: <code>${ip}</code></p>
-              `,
-            }),
-          });
-          if (!res.ok) {
-            const errText = await res.text();
-            console.error("Resend API error response:", errText);
-          } else {
-            console.log("Email notification sent to:", form.notify_email);
-          }
-        } catch (emailErr) {
-          console.error("Error sending email notification via Resend:", emailErr);
-        }
-      } else {
-        console.log("-----------------------------------------");
-        console.log("FALLBACK EMAIL LOG (resend_api_key not set):");
-        console.log("To:", form.notify_email);
-        console.log("Subject: Tanggapan Baru: " + form.title);
-        console.log("Answers:", answers);
-        console.log("-----------------------------------------");
-      }
-    }
+    // 13. Trigger notifications (webhook and email)
+    await triggerResponseNotifications({
+      form: {
+        id: formId,
+        title: form.title,
+        fields: form.fields,
+        webhook_url: form.webhook_url,
+        notify_email: form.notify_email,
+      },
+      answers: answers,
+      ip: ip,
+    });
 
     return { success: true, responseId: newResponse?.id };
   } catch (error: any) {
@@ -697,6 +656,7 @@ export async function getPublicFormAction(formId: string) {
       SELECT id, title, description, fields, banner_url, max_responses, is_active,
              custom_success_message, redirect_url, expiry_date, notify_email,
              limit_one_per_ip, max_total_responses, enable_turnstile,
+             is_paid_form, form_price, form_payment_description,
              (access_password IS NOT NULL AND access_password != '') as has_password
       FROM forms
       WHERE id = ${formId}
@@ -935,6 +895,35 @@ Aturan penting:
   } catch (error: any) {
     console.error("Error in generateFormWithAIAction:", error);
     return { success: false, error: error.message || "Terjadi kesalahan internal saat memanggil AI." };
+  }
+}
+
+export async function getUserFormCreationStatusAction() {
+  try {
+    const cookieStore = await cookies();
+    const sessionToken = cookieStore.get("admin_session")?.value;
+    const user = await getSessionUser(sessionToken);
+    
+    if (!user) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const isPremium = !!user.is_premium || user.role === "super_admin";
+    
+    const countRes = await sql`
+      SELECT COUNT(*)::int as count FROM forms WHERE user_id = ${user.id}
+    `;
+    const count = countRes[0]?.count || 0;
+
+    return {
+      success: true,
+      isPremium,
+      activeFormsCount: count,
+      limitExceeded: !isPremium && count >= 3,
+    };
+  } catch (err: any) {
+    console.error("Gagal mendapatkan status pembuatan form:", err);
+    return { success: false, error: err.message || "Gagal mendapatkan status." };
   }
 }
 

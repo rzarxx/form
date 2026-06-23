@@ -107,6 +107,46 @@ export async function initDatabase() {
       ALTER TABLE forms ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id) ON DELETE CASCADE;
     `;
 
+    // Add premium status columns to users
+    await sql`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS is_premium BOOLEAN DEFAULT FALSE;
+    `;
+    await sql`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_expires_at TIMESTAMP WITH TIME ZONE;
+    `;
+
+    // Add paid form columns to forms
+    await sql`
+      ALTER TABLE forms ADD COLUMN IF NOT EXISTS is_paid_form BOOLEAN DEFAULT FALSE;
+    `;
+    await sql`
+      ALTER TABLE forms ADD COLUMN IF NOT EXISTS form_price INT DEFAULT 0;
+    `;
+    await sql`
+      ALTER TABLE forms ADD COLUMN IF NOT EXISTS form_payment_description TEXT;
+    `;
+
+    // Create transactions table
+    await sql`
+      CREATE TABLE IF NOT EXISTS transactions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+        form_id UUID REFERENCES forms(id) ON DELETE SET NULL,
+        reference VARCHAR(100) UNIQUE NOT NULL,
+        tripay_reference VARCHAR(100),
+        payment_method VARCHAR(50) NOT NULL,
+        amount INT NOT NULL,
+        status VARCHAR(50) DEFAULT 'unpaid',
+        type VARCHAR(50) NOT NULL,
+        payer_name VARCHAR(255),
+        payer_email VARCHAR(255),
+        form_response_answers JSONB,
+        form_response_id INT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
     isInitialized = true;
     console.log("Database initialization check completed successfully.");
   } catch (error) {

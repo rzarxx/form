@@ -12,24 +12,29 @@ export async function hashPassword(password: string): Promise<string> {
  * Mendapatkan data pengguna yang sedang aktif berdasarkan token sesi.
  * Mendukung sesi database (UUID) dan legacy admin (SHA-256 hash).
  */
-export async function getSessionUser(sessionToken: string | undefined): Promise<{ id: string, email: string, role: string } | null> {
+export async function getSessionUser(sessionToken: string | undefined): Promise<{ id: string, email: string, role: string, is_premium?: boolean, premium_expires_at?: string | null } | null> {
   if (!sessionToken) return null;
 
   // 1. Cek sesi database (Panjang UUID standard adalah 36)
   if (sessionToken.length === 36 && sessionToken.includes("-")) {
     try {
       const sessionRes = await sql`
-        SELECT s.user_id, u.email, u.role
+        SELECT s.user_id, u.email, u.role, u.is_premium, u.premium_expires_at
         FROM sessions s
         JOIN users u ON s.user_id = u.id
         WHERE s.id = ${sessionToken} AND s.expires_at > CURRENT_TIMESTAMP
         LIMIT 1
       `;
       if (sessionRes.length > 0) {
+        const dbUser = sessionRes[0];
+        const isPremiumActive = dbUser.is_premium === true && (dbUser.premium_expires_at === null || new Date(dbUser.premium_expires_at) > new Date());
+        
         return {
-          id: sessionRes[0].user_id,
-          email: sessionRes[0].email,
-          role: sessionRes[0].role || "user",
+          id: dbUser.user_id,
+          email: dbUser.email,
+          role: dbUser.role || "user",
+          is_premium: isPremiumActive,
+          premium_expires_at: dbUser.premium_expires_at ? new Date(dbUser.premium_expires_at).toISOString() : null,
         };
       }
     } catch (error) {
@@ -45,6 +50,8 @@ export async function getSessionUser(sessionToken: string | undefined): Promise<
       id: "00000000-0000-0000-0000-000000000000",
       email: "admin@form.com",
       role: "super_admin",
+      is_premium: true,
+      premium_expires_at: null,
     };
   }
 

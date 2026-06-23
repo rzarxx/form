@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useTransition, use } from "react";
 import { getPublicFormAction, submitResponseAction, checkIpSubmissionAction, verifyFormPasswordAction } from "@/app/actions/forms";
+import { getPremiumPricingAndChannelsAction, createPaymentAction, checkTransactionStatusAction } from "@/app/actions/tripay";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,6 +54,9 @@ interface FormSchema {
   enable_turnstile?: boolean;
   has_password?: boolean;
   turnstile_site_key?: string;
+  is_paid_form?: boolean;
+  form_price?: number;
+  form_payment_description?: string;
 }
 
 export default function PublicFormPage({ params }: { params: Promise<{ id: string }> }) {
@@ -83,6 +87,27 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
   // Password Verification state
   const [isPasswordVerified, setIsPasswordVerified] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
+
+  // Paid Form Checkout States
+  const [isCheckingOutPaidForm, setIsCheckingOutPaidForm] = useState(false);
+  const [paidFormPrice, setPaidFormPrice] = useState(0);
+  const [paidFormTitle, setPaidFormTitle] = useState("");
+  const [paidFormDescription, setPaidFormDescription] = useState("");
+  const [payerName, setPayerName] = useState("");
+  const [payerEmail, setPayerEmail] = useState("");
+  const [paymentChannels, setPaymentChannels] = useState<any[]>([]);
+  const [selectedChannel, setSelectedChannel] = useState<string>("");
+  const [pendingAnswers, setPendingAnswers] = useState<Record<string, any>>({});
+  
+  const [checkoutData, setCheckoutData] = useState<{
+    reference: string;
+    payCode: string | null;
+    qrUrl: string | null;
+    qrString: string | null;
+    instructions: any[];
+  } | null>(null);
+  
+  const [paymentStatus, setPaymentStatus] = useState<string>("unpaid");
 
   const fields: FieldSchema[] = form
     ? (Array.isArray(form.fields)
@@ -152,6 +177,56 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
 
     fetchForm();
   }, [formId]);
+
+  // Load payment channels on mount
+  useEffect(() => {
+    async function loadChannels() {
+      try {
+        const res = await getPremiumPricingAndChannelsAction();
+        if (res.success && res.channels) {
+          setPaymentChannels(res.channels);
+          if (res.channels.length > 0) {
+            setSelectedChannel(res.channels[0].code);
+          }
+        }
+      } catch (err) {
+        console.error("Gagal memuat metode pembayaran:", err);
+      }
+    }
+    loadChannels();
+  }, []);
+
+  // Poll transaction status if payment is initiated and unpaid
+  useEffect(() => {
+    if (!checkoutData || paymentStatus === "paid" || paymentStatus === "expired" || paymentStatus === "failed") {
+      return;
+    }
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await checkTransactionStatusAction(checkoutData.reference);
+        if (res.success && res.status) {
+          setPaymentStatus(res.status);
+          if (res.status === "paid") {
+            toast.success("Pembayaran Lunas! Tanggapan Anda telah resmi disimpan. Terima kasih! 🎉");
+            setIsSubmitted(true);
+            setResponseId(res.responseId);
+            if (typeof window !== "undefined") {
+              localStorage.removeItem(`form_draft_${formId}`);
+            }
+            clearInterval(interval);
+          } else if (res.status === "failed" || res.status === "expired") {
+            toast.error("Transaksi kedaluwarsa atau gagal.");
+            clearInterval(interval);
+          }
+        }
+      } catch (err) {
+        console.error("Polling error:", err);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [checkoutData, paymentStatus, formId]);
 
   // Turnstile script loading is handled dynamically inside TurnstileWidget component below
 
@@ -421,16 +496,71 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
     startTransition(async () => {
       const result = await submitResponseAction(formId, visibleAnswers, passwordInput || undefined, turnstileToken || undefined);
       if (result.success) {
-        setResponseId(result.responseId);
-        setIsSubmitted(true);
-        if (typeof window !== "undefined") {
-          localStorage.removeItem(`form_draft_${formId}`);
+        if (result.requiresPayment) {
+          setIsCheckingOutPaidForm(true);
+          setPaidFormPrice(result.formPrice || 0);
+          setPaidFormTitle(result.formTitle || "");
+          setPaidFormDescription(result.formPaymentDescription || "");
+          setPendingAnswers(visibleAnswers);
+          toast.info("Formulir mewajibkan pembayaran. Silakan selesaikan transaksi.");
+        } else {
+          setResponseId(result.responseId);
+          setIsSubmitted(true);
+          if (typeof window !== "undefined") {
+            localStorage.removeItem(`form_draft_${formId}`);
+          }
+          toast.success("Tanggapan berhasil dikirim!");
         }
-        toast.success("Tanggapan berhasil dikirim!");
       } else {
         toast.error(result.error || "Gagal mengirim tanggapan.");
       }
     });
+  };
+
+  const handleFormPayment = () => {
+    if (!selectedChannel) {
+      toast.error("Silakan pilih metode pembayaran.");
+      return;
+    }
+    if (!payerName.trim() || !payerEmail.trim()) {
+      toast.error("Nama dan Email pembayar wajib diisi.");
+      return;
+    }
+
+    startTransition(async () => {
+      try {
+        const res = await createPaymentAction({
+          type: "form_payment",
+          method: selectedChannel,
+          payerName,
+          payerEmail,
+          formId,
+          formResponseAnswers: pendingAnswers,
+        });
+
+        if (res.success && res.reference) {
+          toast.success("Tagihan pembayaran berhasil dibuat!");
+          setCheckoutData({
+            reference: res.reference,
+            payCode: res.payCode || null,
+            qrUrl: res.qrUrl || null,
+            qrString: res.qrString || null,
+            instructions: res.instructions || [],
+          });
+          setPaymentStatus("unpaid");
+        } else {
+          toast.error(res.error || "Gagal membuat tagihan pembayaran.");
+        }
+      } catch (err) {
+        console.error(err);
+        toast.error("Terjadi kesalahan sistem saat membuat pembayaran.");
+      }
+    });
+  };
+
+  const handleResetFormPayment = () => {
+    setCheckoutData(null);
+    setPaymentStatus("unpaid");
   };
 
   if (isLoadingForm) {
@@ -542,6 +672,203 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
               </>
             )}
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isCheckingOutPaidForm) {
+    return (
+      <div className="min-h-screen bg-gradient-to-tr from-slate-50 via-indigo-50/30 to-blue-50/50 text-slate-800 flex flex-col items-center py-12 px-4">
+        <div className="w-full max-w-xl space-y-6">
+          
+          {/* Form Header Info */}
+          <div className="rounded-2xl border border-white/60 bg-white/70 p-6 sm:p-8 backdrop-blur-xl shadow-lg relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-[4px] bg-gradient-to-r from-indigo-500 to-purple-500" />
+            <h2 className="text-2xl font-black tracking-tight text-slate-900">
+              Checkout Pembayaran Formulir
+            </h2>
+            <p className="text-slate-500 text-sm mt-1">
+              Formulir <strong className="text-slate-850">"{paidFormTitle}"</strong> mewajibkan pembayaran untuk dapat memproses tanggapan.
+            </p>
+          </div>
+
+          {!checkoutData ? (
+            <Card className="shadow-lg border border-white/60 bg-white/80 backdrop-blur-md">
+              <CardHeader className="bg-slate-50/60 border-b">
+                <CardTitle className="text-lg">Rincian Pembayaran</CardTitle>
+                <CardDescription>{paidFormDescription || "Silakan lengkapi info pembayaran di bawah ini."}</CardDescription>
+                <div className="mt-3 text-3xl font-extrabold text-slate-950">
+                  Rp {paidFormPrice.toLocaleString("id-ID")}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-5">
+                <div className="space-y-2">
+                  <Label htmlFor="payerName">Nama Lengkap Pembayar</Label>
+                  <Input
+                    id="payerName"
+                    placeholder="Masukkan nama lengkap Anda"
+                    value={payerName}
+                    onChange={(e) => setPayerName(e.target.value)}
+                    className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-850 h-11 rounded-xl"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="payerEmail">Alamat Email Pembayar</Label>
+                  <Input
+                    id="payerEmail"
+                    type="email"
+                    placeholder="Masukkan email Anda"
+                    value={payerEmail}
+                    onChange={(e) => setPayerEmail(e.target.value)}
+                    className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-855 h-11 rounded-xl"
+                  />
+                  <p className="text-[10px] text-slate-400">Status pembayaran & instruksi transfer akan dikirimkan ke email ini.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Pilih Metode Pembayaran</Label>
+                  {paymentChannels.length === 0 ? (
+                    <div className="text-xs p-3 bg-rose-50 border border-rose-200 text-rose-650 rounded-xl">
+                      Tidak ada metode pembayaran aktif. Silakan hubungi admin pengelola form.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[220px] overflow-y-auto pr-1">
+                      {paymentChannels.map((ch) => (
+                        <label
+                          key={ch.code}
+                          className={`flex items-center space-x-3 rounded-xl border p-3 cursor-pointer select-none transition-all duration-200 ${
+                            selectedChannel === ch.code 
+                              ? "border-indigo-650 bg-indigo-50/40 font-semibold shadow-sm" 
+                              : "border-slate-200 bg-white hover:bg-slate-50"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="payment_method"
+                            value={ch.code}
+                            checked={selectedChannel === ch.code}
+                            onChange={() => setSelectedChannel(ch.code)}
+                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-semibold text-slate-800 truncate">{ch.name}</div>
+                            <div className="text-[9px] text-slate-400 uppercase tracking-wider">{ch.code}</div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-4 flex flex-col sm:flex-row gap-3 border-t">
+                  <Button
+                    onClick={() => setIsCheckingOutPaidForm(false)}
+                    variant="outline"
+                    className="flex-1 rounded-xl h-11"
+                  >
+                    Kembali Mengisi Form
+                  </Button>
+                  
+                  <Button
+                    onClick={handleFormPayment}
+                    disabled={isPending || paymentChannels.length === 0}
+                    className="flex-1 py-3 bg-gradient-to-r from-indigo-650 to-indigo-750 text-white font-semibold rounded-xl shadow hover:from-indigo-700 hover:to-indigo-800 transition duration-200 cursor-pointer h-11"
+                  >
+                    {isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Membuat Invoice...
+                      </>
+                    ) : (
+                      <>
+                        Bayar Sekarang & Kirim
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="shadow-lg border border-white/60 bg-white/80 backdrop-blur-md">
+              <CardHeader className="bg-slate-50/60 border-b flex flex-row items-center justify-between space-y-0">
+                <div>
+                  <CardTitle className="text-lg">Tagihan Pembayaran</CardTitle>
+                  <CardDescription>Segera selesaikan pembayaran Anda untuk mengirim tanggapan.</CardDescription>
+                </div>
+                <Button variant="ghost" size="sm" onClick={handleResetFormPayment} className="text-slate-450 hover:text-slate-655 cursor-pointer">
+                  <i className="fa-solid fa-xmark text-lg"></i>
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-5">
+                {/* Status Indicator */}
+                <div className="rounded-xl p-3.5 bg-amber-50 border border-amber-200 text-center space-y-1">
+                  <div className="text-[9px] font-extrabold text-amber-700 uppercase tracking-widest">Status Pembayaran</div>
+                  <div className="text-sm font-semibold text-amber-800 flex items-center justify-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+                    MENUNGGU PEMBAYARAN
+                  </div>
+                  <p className="text-[10px] text-slate-400">Status akan terupdate otomatis secara real-time</p>
+                </div>
+
+                {/* QR Code / Pay Code */}
+                {checkoutData.qrUrl ? (
+                  <div className="flex flex-col items-center justify-center p-4 bg-white border rounded-xl shadow-inner">
+                    <p className="text-xs font-semibold text-slate-500 mb-2">Scan QR Code di bawah</p>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={checkoutData.qrUrl} alt="QRIS QR Code" className="w-52 h-52 shadow-md rounded-lg" />
+                    <p className="text-[9px] text-slate-400 mt-2">Dukungan QRIS: GoPay, OVO, Dana, LinkAja, BCA Mobile, ShopeePay</p>
+                  </div>
+                ) : checkoutData.payCode ? (
+                  <div className="rounded-xl p-4 bg-slate-50 border text-center space-y-1.5 shadow-inner">
+                    <p className="text-xs font-semibold text-slate-500">Kode Pembayaran / Nomor Virtual Account</p>
+                    <div className="text-2xl font-extrabold text-slate-900 tracking-wider bg-white py-2.5 px-4 rounded-xl border select-all border-slate-200 shadow-sm">
+                      {checkoutData.payCode}
+                    </div>
+                    <p className="text-[10px] text-slate-400">Salin nomor di atas untuk melakukan transfer</p>
+                  </div>
+                ) : null}
+
+                {/* Pricing Details */}
+                <div className="flex items-center justify-between text-sm py-2 border-b">
+                  <span className="font-semibold text-slate-500">Total Biaya</span>
+                  <span className="font-extrabold text-slate-900">Rp {paidFormPrice.toLocaleString("id-ID")}</span>
+                </div>
+
+                {/* Instructions */}
+                {checkoutData.instructions && checkoutData.instructions.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase text-slate-500">Cara Pembayaran</Label>
+                    <div className="max-h-[220px] overflow-y-auto space-y-2 pr-1">
+                      {checkoutData.instructions.map((inst, i) => (
+                        <details key={i} className="group border rounded-xl bg-white overflow-hidden" open={i === 0}>
+                          <summary className="flex items-center justify-between p-3 text-xs font-bold text-slate-700 bg-slate-50/55 cursor-pointer select-none">
+                            <span>{inst.title}</span>
+                            <i className="fa-solid fa-chevron-down text-slate-400 group-open:rotate-180 transition-transform duration-250"></i>
+                          </summary>
+                          <ol className="p-3.5 text-xs text-slate-650 list-decimal list-inside space-y-2 border-t">
+                            {inst.steps.map((step: any, idx: number) => (
+                              <li key={idx} dangerouslySetInnerHTML={{ __html: step }} className="leading-relaxed"></li>
+                            ))}
+                          </ol>
+                        </details>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <Button
+                  onClick={handleResetFormPayment}
+                  variant="outline"
+                  className="w-full text-xs rounded-xl"
+                >
+                  Batal & Pilih Metode Pembayaran Lain
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
         </div>
       </div>
     );
@@ -731,9 +1058,16 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
         <div className="relative overflow-hidden rounded-2xl border border-white/60 bg-white/70 p-6 sm:p-8 backdrop-blur-xl shadow-md">
           <div className="absolute top-0 left-0 w-full h-[4px] bg-gradient-to-r from-indigo-500/20 via-indigo-500 to-indigo-500/20" />
           <div className="space-y-3">
-            <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
-              {form.title}
-            </h1>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+                {form.title}
+              </h1>
+              {form.is_paid_form && (
+                <div className="shrink-0 flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black tracking-wide bg-indigo-50 border border-indigo-200 text-indigo-700 shadow-sm self-start sm:self-center">
+                  <i className="fa-solid fa-wallet"></i> Rp {form.form_price?.toLocaleString("id-ID")}
+                </div>
+              )}
+            </div>
             {form.description && (
               <p className="text-slate-550 text-sm leading-relaxed whitespace-pre-line">
                 {form.description}

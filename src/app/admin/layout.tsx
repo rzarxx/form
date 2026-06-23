@@ -11,7 +11,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [user, setUser] = useState<{ email: string; role: string } | null>(null);
+  const [user, setUser] = useState<{ email: string; role: string; is_premium?: boolean } | null>(null);
   const [isImpersonating, setIsImpersonating] = useState(false);
 
   useEffect(() => {
@@ -21,6 +21,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         setUser({
           email: res.user.email,
           role: res.user.role || "user",
+          is_premium: !!res.user.is_premium,
         });
         setIsImpersonating(!!res.is_impersonating);
       } else {
@@ -78,6 +79,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         icon: "fa-solid fa-gears",
       },
       {
+        name: "Setelan Tripay",
+        path: "/admin/settings/tripay",
+        icon: "fa-solid fa-credit-card",
+      },
+      {
         name: "Kelola Pengguna",
         path: "/admin/users",
         icon: "fa-solid fa-users",
@@ -88,6 +94,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       name: "Setelan AI Akun",
       path: "/admin/profile",
       icon: "fa-solid fa-user-gear",
+    });
+    menuItems.push({
+      name: user?.is_premium ? "Premium Aktif" : "Upgrade Premium",
+      path: "/admin/premium",
+      icon: "fa-solid fa-crown text-amber-500",
     });
   }
 
@@ -187,8 +198,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {/* Right side: User Profile dropdown & info */}
             <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
-                <span className="block text-sm font-bold text-slate-800">
+                <span className="block text-sm font-bold text-slate-800 flex items-center justify-end gap-1.5">
                   {user ? (user.role === "super_admin" ? "Super Admin" : "User") : "Memuat..."}
+                  {user?.is_premium && (
+                    <i className="fa-solid fa-crown text-amber-500 text-xs" title="Premium Member"></i>
+                  )}
                 </span>
                 <span className="block text-[10px] text-slate-405 font-semibold">
                   {user ? user.email : "..."}

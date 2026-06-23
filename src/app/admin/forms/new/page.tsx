@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createFormAction, generateFormWithAIAction } from "@/app/actions/forms";
+import { createFormAction, generateFormWithAIAction, getUserFormCreationStatusAction } from "@/app/actions/forms";
 import { getGlobalSettingsAction } from "@/app/actions/settings";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,14 @@ export default function NewFormBuilder() {
   const [customSuccessMessage, setCustomSuccessMessage] = useState("");
   const [redirectUrl, setRedirectUrl] = useState("");
 
+  // Premium & Paid Form Configuration State
+  const [isPremium, setIsPremium] = useState(true);
+  const [limitExceeded, setLimitExceeded] = useState(false);
+  const [activeFormsCount, setActiveFormsCount] = useState(0);
+  const [isPaidForm, setIsPaidForm] = useState(false);
+  const [formPrice, setFormPrice] = useState(0);
+  const [formPaymentDescription, setFormPaymentDescription] = useState("");
+
   // AI Form Generator State
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiApiKey, setAiApiKey] = useState("");
@@ -89,6 +97,20 @@ export default function NewFormBuilder() {
       } catch {
         setAiModel(localModel || "google/gemini-2.5-flash");
         setAiApiKey(localKey);
+      }
+
+      try {
+        const statusRes = await getUserFormCreationStatusAction();
+        if (statusRes.success) {
+          setIsPremium(!!statusRes.isPremium);
+          setLimitExceeded(!!statusRes.limitExceeded);
+          setActiveFormsCount(statusRes.activeFormsCount || 0);
+          if (statusRes.limitExceeded) {
+            toast.error("Batas formulir aktif Anda telah tercapai (maksimal 3 untuk akun gratis).");
+          }
+        }
+      } catch (err) {
+        console.error("Gagal memuat status pembuatan form:", err);
       }
 
       if (typeof window !== "undefined") {
@@ -159,6 +181,11 @@ export default function NewFormBuilder() {
   };
 
   const handleAddField = (type: FieldSchema["type"]) => {
+    if (type === "file" && !isPremium) {
+      toast.error("Tipe pertanyaan Unggah Berkas hanya tersedia untuk anggota Premium. Silakan upgrade akun Anda.");
+      return;
+    }
+
     const newField: FieldSchema = {
       id: `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       label: "",
@@ -278,6 +305,11 @@ export default function NewFormBuilder() {
   };
 
   const handleSaveForm = () => {
+    if (limitExceeded) {
+      toast.error("Batas pembuatan form tercapai (Maksimal 3 untuk akun Non-Premium). Silakan upgrade ke Premium.");
+      return;
+    }
+
     if (!title) {
       toast.error("Judul formulir wajib diisi.");
       return;
@@ -310,7 +342,10 @@ export default function NewFormBuilder() {
         maxTotalResponses,
         accessPassword || null,
         webhookUrl || null,
-        enableTurnstile
+        enableTurnstile,
+        isPaidForm,
+        formPrice,
+        formPaymentDescription
       );
       
       if (result.success) {
@@ -361,6 +396,22 @@ export default function NewFormBuilder() {
 
       {/* Main Content */}
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-8 pb-36 space-y-6 relative z-10">
+
+        {limitExceeded && (
+          <div className="rounded-2xl border border-rose-250 bg-rose-50 p-4 text-rose-700 shadow-sm flex items-start gap-3">
+            <i className="fa-solid fa-triangle-exclamation text-xl shrink-0 mt-0.5"></i>
+            <div className="flex-1">
+              <h4 className="font-bold text-sm">Batas Pembuatan Formulir Tercapai</h4>
+              <p className="text-xs mt-1">
+                Anda saat ini menggunakan akun gratis (Non-Premium) dan sudah memiliki {activeFormsCount} formulir aktif. 
+                Anda tidak dapat membuat formulir baru sebelum menghapus salah satu formulir Anda yang sudah ada atau melakukan upgrade akun ke Premium.
+              </p>
+              <Link href="/admin/premium" className="inline-flex items-center gap-1 mt-2.5 text-xs font-bold text-indigo-700 hover:underline">
+                Upgrade ke Premium Sekarang <i className="fa-solid fa-arrow-right"></i>
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* AI Assistant Panel */}
         <Card className="bg-indigo-50/40 border border-indigo-205/60 shadow-sm rounded-2xl relative overflow-hidden backdrop-blur-md">
@@ -670,14 +721,18 @@ export default function NewFormBuilder() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="redirect-url" className="text-slate-650 text-xs font-bold">Mengarahkan Otomatis (Redirect URL)</Label>
+              <Label htmlFor="redirect-url" className="text-slate-650 text-xs font-bold flex items-center gap-1.5">
+                Mengarahkan Otomatis (Redirect URL)
+                {!isPremium && <span className="text-[9px] text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.25 rounded-full font-bold">👑 Premium</span>}
+              </Label>
               <Input
                 id="redirect-url"
                 type="url"
-                placeholder="https://e-commerce-anda.com/terima-kasih"
+                placeholder={isPremium ? "https://e-commerce-anda.com/terima-kasih" : "🔒 Fitur ini hanya untuk Premium"}
                 value={redirectUrl}
+                disabled={!isPremium}
                 onChange={(e) => setRedirectUrl(e.target.value)}
-                className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-800 h-11 rounded-xl transition-all"
+                className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-800 h-11 rounded-xl transition-all disabled:opacity-60"
               />
               <p className="text-[10px] text-slate-400">Jika diisi, pengguna dialihkan otomatis ke URL ini dalam 3 detik setelah submit.</p>
             </div>
@@ -733,11 +788,19 @@ export default function NewFormBuilder() {
                   <Checkbox
                     id="enable-turnstile"
                     checked={enableTurnstile}
-                    onCheckedChange={(checked) => setEnableTurnstile(!!checked)}
+                    disabled={!isPremium}
+                    onCheckedChange={(checked) => {
+                      if (!isPremium) {
+                        toast.error("Fitur Cloudflare Turnstile hanya tersedia untuk anggota Premium.");
+                        return;
+                      }
+                      setEnableTurnstile(!!checked);
+                    }}
                     className="border-slate-350 data-[state=checked]:bg-indigo-600 data-[state=checked]:text-white rounded"
                   />
-                  <Label htmlFor="enable-turnstile" className="text-slate-650 text-xs font-semibold cursor-pointer">
+                  <Label htmlFor="enable-turnstile" className="text-slate-650 text-xs font-semibold cursor-pointer flex items-center gap-1.5">
                     Aktifkan Cloudflare Turnstile Captcha (Anti-Bot)
+                    {!isPremium && <span className="text-[9px] text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.25 rounded-full font-bold">👑 Premium</span>}
                   </Label>
                 </div>
               </div>
@@ -748,17 +811,81 @@ export default function NewFormBuilder() {
               <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                 <i className="fa-solid fa-link text-indigo-650"></i>
                 Integrasi Webhook
+                {!isPremium && <span className="text-[9px] text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.25 rounded-full font-bold">👑 Premium</span>}
               </h3>
               <Label htmlFor="webhook-url" className="text-slate-650 text-xs font-bold">URL Webhook Notifikasi (Discord / Slack / Custom API)</Label>
               <Input
                 id="webhook-url"
                 type="url"
-                placeholder="https://discord.com/api/webhooks/... atau https://hooks.slack.com/services/..."
+                placeholder={isPremium ? "https://discord.com/api/webhooks/... atau https://hooks.slack.com/services/..." : "🔒 Fitur ini hanya untuk Premium"}
                 value={webhookUrl}
+                disabled={!isPremium}
                 onChange={(e) => setWebhookUrl(e.target.value)}
-                className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-800 h-11 rounded-xl transition-all"
+                className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-800 h-11 rounded-xl transition-all disabled:opacity-60"
               />
               <p className="text-[10px] text-slate-400">Setiap ada tanggapan baru masuk, data jawaban akan dikirimkan otomatis ke tautan webhook.</p>
+            </div>
+
+            {/* Sistem Pembayaran Form (Event Berbayar) */}
+            <div className="border-t border-slate-100 pt-4 space-y-4">
+              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                <i className="fa-solid fa-wallet text-indigo-650"></i>
+                Sistem Pembayaran Form (Event Berbayar)
+                {!isPremium && <span className="text-[9px] text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.25 rounded-full font-bold">👑 Premium</span>}
+              </h3>
+              
+              <div className="flex items-center space-x-2.5">
+                <Checkbox
+                  id="is-paid-form"
+                  checked={isPaidForm}
+                  disabled={!isPremium}
+                  onCheckedChange={(checked) => {
+                    if (!isPremium) {
+                      toast.error("Fitur Formulir Berbayar hanya tersedia untuk anggota Premium.");
+                      return;
+                    }
+                    setIsPaidForm(!!checked);
+                  }}
+                  className="border-slate-350 data-[state=checked]:bg-indigo-600 data-[state=checked]:text-white rounded"
+                />
+                <Label htmlFor="is-paid-form" className="text-slate-650 text-xs font-semibold cursor-pointer">
+                  Aktifkan Tarif Pembayaran untuk Mengisi Form ini
+                </Label>
+              </div>
+
+              {isPaidForm && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-250">
+                  <div className="space-y-2">
+                    <Label htmlFor="form-price" className="text-slate-650 text-xs font-bold">Tarif Pengisian Form (Nominal Rupiah)</Label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 font-semibold text-sm">
+                        Rp
+                      </span>
+                      <Input
+                        id="form-price"
+                        type="number"
+                        placeholder="10000"
+                        value={formPrice || ""}
+                        onChange={(e) => setFormPrice(Number(e.target.value) || 0)}
+                        className="pl-9 bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-850 h-11 rounded-xl transition-all"
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-400">Pengisi formulir wajib melunasi tagihan sejumlah ini sebelum data disimpan.</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="form-payment-description" className="text-slate-650 text-xs font-bold">Deskripsi / Detail Pembayaran (Merchant Ref)</Label>
+                    <Input
+                      id="form-payment-description"
+                      placeholder="Contoh: Tiket Masuk Event Musik Kampus"
+                      value={formPaymentDescription}
+                      onChange={(e) => setFormPaymentDescription(e.target.value)}
+                      className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-850 h-11 rounded-xl transition-all"
+                    />
+                    <p className="text-[10px] text-slate-400">Akan ditampilkan pada struk tagihan checkout Tripay.</p>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -1128,10 +1255,11 @@ export default function NewFormBuilder() {
                 size="sm"
                 variant="outline"
                 onClick={() => handleAddField("file")}
-                className="border-slate-200 bg-white text-slate-700 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 text-[11px] h-8 rounded-lg transition-all font-semibold cursor-pointer shadow-sm"
+                className="border-slate-200 bg-white text-slate-700 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 text-[11px] h-8 rounded-lg transition-all font-semibold cursor-pointer shadow-sm relative"
               >
                 <i className="fa-solid fa-cloud-arrow-up text-indigo-650 mr-1.5 group-hover:text-white"></i>
                 Unggah Berkas
+                {!isPremium && <span className="absolute -top-1.5 -right-1 text-[8px] bg-amber-500 text-white rounded px-1 py-0.25 font-bold shadow-sm">👑</span>}
               </Button>
             </div>
           </div>
