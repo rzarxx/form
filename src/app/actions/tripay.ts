@@ -312,3 +312,43 @@ export async function getPremiumPricingAndChannelsAction() {
     return { success: false, error: "Gagal mengambil data paket premium." };
   }
 }
+
+/**
+ * Sinkronisasi/mengambil daftar metode pembayaran dari API Tripay secara langsung (untuk Admin settings)
+ */
+export async function syncTripayPaymentChannelsAction(tempApiKey?: string, tempMode?: string) {
+  await requireAdmin();
+
+  try {
+    let apiKey = tempApiKey;
+    if (!apiKey || apiKey.includes("••••")) {
+      apiKey = await getSetting("tripay_api_key");
+    }
+
+    if (!apiKey) {
+      return { success: false, error: "Kunci API (API Key) belum dikonfigurasi." };
+    }
+
+    const mode = tempMode || await getSetting("tripay_mode") || "sandbox";
+    const baseUrl = mode === "production"
+      ? "https://tripay.co.id/api"
+      : "https://tripay.co.id/api-sandbox";
+
+    const res = await fetch(`${baseUrl}/merchant/payment-channel`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+    });
+
+    const data = await res.json();
+    if (data.success && Array.isArray(data.data)) {
+      const activeChannels = data.data.filter((item: any) => item.active === true);
+      return { success: true, data: activeChannels };
+    }
+    return { success: false, error: data.message || "Gagal mengambil payment channels dari Tripay." };
+  } catch (err: any) {
+    console.error("Gagal sinkronisasi payment channels:", err);
+    return { success: false, error: err.message || "Gagal sinkronisasi data dari Tripay." };
+  }
+}

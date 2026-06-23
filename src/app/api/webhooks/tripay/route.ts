@@ -26,6 +26,22 @@ export async function POST(req: Request) {
       .update(rawBody)
       .digest("hex");
 
+    // Collect headers for debugging
+    const headersObj: Record<string, string> = {};
+    req.headers.forEach((val, key) => {
+      headersObj[key] = val;
+    });
+
+    // Log to DB for debugging
+    try {
+      await sql`
+        INSERT INTO webhook_debug_logs (headers, raw_body, received_signature, computed_signature, private_key_length, private_key_value, status)
+        VALUES (${sql.json(headersObj)}, ${rawBody}, ${signature || null}, ${computedSignature || null}, ${privateKey ? privateKey.length : 0}, ${privateKey || null}, ${computedSignature === signature ? 'success' : 'signature_mismatch'})
+      `;
+    } catch (logErr) {
+      console.error("[Tripay Webhook Debug Log] Failed to insert log:", logErr);
+    }
+
     if (computedSignature !== signature) {
       console.warn("[Tripay Webhook] Signature verification failed. Computed:", computedSignature, "Received:", signature);
       return new Response("Invalid signature", { status: 401 });

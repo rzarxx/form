@@ -219,7 +219,7 @@ export async function getUsersAction() {
     await initDatabase();
 
     const users = await sql`
-      SELECT id, email, role, created_at
+      SELECT id, email, role, is_premium, premium_expires_at, created_at
       FROM users
       ORDER BY created_at DESC
     `;
@@ -228,6 +228,126 @@ export async function getUsersAction() {
   } catch (err: any) {
     console.error("Get users error:", err);
     return { success: false, error: err.message || "Gagal mengambil daftar pengguna." };
+  }
+}
+
+/**
+ * Menambahkan pengguna baru (Hanya untuk Super Admin).
+ */
+export async function createUserAction(formData: {
+  email: string;
+  password?: string;
+  role: string;
+  is_premium: boolean;
+  premium_expires_at?: string | null;
+}) {
+  try {
+    await requireSuperAdmin();
+    await initDatabase();
+
+    const email = formData.email.trim().toLowerCase();
+    if (!email) {
+      return { success: false, error: "Email wajib diisi." };
+    }
+
+    const existing = await sql`SELECT id FROM users WHERE email = ${email} LIMIT 1`;
+    if (existing.length > 0) {
+      return { success: false, error: "Email sudah digunakan oleh pengguna lain." };
+    }
+
+    const password = formData.password || "user123";
+    const passwordHash = await hashPassword(password);
+
+    const expiresAt = formData.premium_expires_at ? new Date(formData.premium_expires_at) : null;
+
+    await sql`
+      INSERT INTO users (email, password_hash, role, is_premium, premium_expires_at)
+      VALUES (${email}, ${passwordHash}, ${formData.role}, ${formData.is_premium}, ${expiresAt})
+    `;
+
+    return { success: true };
+  } catch (err: any) {
+    console.error("Gagal menambahkan pengguna:", err);
+    return { success: false, error: err.message || "Gagal menambahkan pengguna." };
+  }
+}
+
+/**
+ * Memperbarui data pengguna (Hanya untuk Super Admin).
+ */
+export async function updateUserAction(
+  userId: string,
+  formData: {
+    email: string;
+    password?: string;
+    role: string;
+    is_premium: boolean;
+    premium_expires_at?: string | null;
+  }
+) {
+  try {
+    await requireSuperAdmin();
+    await initDatabase();
+
+    const email = formData.email.trim().toLowerCase();
+    if (!email) {
+      return { success: false, error: "Email wajib diisi." };
+    }
+
+    const existing = await sql`
+      SELECT id FROM users WHERE email = ${email} AND id != ${userId} LIMIT 1
+    `;
+    if (existing.length > 0) {
+      return { success: false, error: "Email sudah digunakan oleh pengguna lain." };
+    }
+
+    const expiresAt = formData.premium_expires_at ? new Date(formData.premium_expires_at) : null;
+
+    if (formData.password && formData.password.trim() !== "") {
+      const passwordHash = await hashPassword(formData.password);
+      await sql`
+        UPDATE users
+        SET email = ${email}, role = ${formData.role}, password_hash = ${passwordHash},
+            is_premium = ${formData.is_premium}, premium_expires_at = ${expiresAt}
+        WHERE id = ${userId}
+      `;
+    } else {
+      await sql`
+        UPDATE users
+        SET email = ${email}, role = ${formData.role},
+            is_premium = ${formData.is_premium}, premium_expires_at = ${expiresAt}
+        WHERE id = ${userId}
+      `;
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    console.error("Gagal memperbarui pengguna:", err);
+    return { success: false, error: err.message || "Gagal memperbarui pengguna." };
+  }
+}
+
+/**
+ * Menghapus pengguna (Hanya untuk Super Admin).
+ */
+export async function deleteUserAction(userId: string) {
+  try {
+    await requireSuperAdmin();
+    await initDatabase();
+
+    const cookieStore = await cookies();
+    const sessionToken = cookieStore.get("admin_session")?.value;
+    const currentUser = await getSessionUser(sessionToken);
+    if (currentUser && currentUser.id === userId) {
+      return { success: false, error: "Anda tidak bisa menghapus akun Anda sendiri." };
+    }
+
+    await sql`DELETE FROM users WHERE id = ${userId}`;
+
+    return { success: true };
+  } catch (err: any) {
+    console.error("Gagal menghapus pengguna:", err);
+    return { success: false, error: err.message || "Gagal menghapus pengguna." };
   }
 }
 

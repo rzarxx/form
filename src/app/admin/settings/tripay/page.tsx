@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useTransition } from "react";
-import { getTripaySettingsAction, saveTripaySettingsAction } from "@/app/actions/tripay";
+import { getTripaySettingsAction, saveTripaySettingsAction, syncTripayPaymentChannelsAction } from "@/app/actions/tripay";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +32,25 @@ export default function TripaySettingsPage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSyncChannels = async () => {
+    setIsSyncing(true);
+    try {
+      const res = await syncTripayPaymentChannelsAction(settings.tripay_api_key, settings.tripay_mode);
+      if (res.success && res.data) {
+        setAvailableChannels(res.data);
+        toast.success(`Berhasil menyinkronkan ${res.data.length} metode pembayaran aktif dari Tripay!`);
+      } else {
+        toast.error(res.error || "Gagal menyinkronkan metode pembayaran.");
+      }
+    } catch (err) {
+      console.error("Sync error:", err);
+      toast.error("Terjadi kesalahan sistem saat menyinkronkan.");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   useEffect(() => {
     async function loadSettings() {
@@ -262,14 +281,34 @@ export default function TripaySettingsPage() {
                 Pilih metode pembayaran yang ingin Anda aktifkan untuk transaksi di sistem ini.
               </CardDescription>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSelectAllChannels}
-              className="text-xs"
-            >
-              {enabledChannels.length === availableChannels.length ? "Batal Semua" : "Pilih Semua"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSyncChannels}
+                disabled={isSyncing}
+                className="text-xs border-indigo-200 text-indigo-650 hover:bg-indigo-50 font-semibold cursor-pointer"
+              >
+                {isSyncing ? (
+                  <>
+                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-indigo-650 border-t-transparent mr-1"></div>
+                    Menyinkronkan...
+                  </>
+                ) : (
+                  <>
+                    <i className="fa-solid fa-rotate mr-1"></i> Sinkronisasi
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSelectAllChannels}
+                className="text-xs cursor-pointer"
+              >
+                {enabledChannels.length === availableChannels.length ? "Batal Semua" : "Pilih Semua"}
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {availableChannels.length === 0 ? (
