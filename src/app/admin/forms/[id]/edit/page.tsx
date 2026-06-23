@@ -62,6 +62,7 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
   // AI Form Generator State
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiApiKey, setAiApiKey] = useState("");
+  const [aiModel, setAiModel] = useState("google/gemini-2.5-flash");
   const [showAiSettings, setShowAiSettings] = useState(false);
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [aiMergeMode, setAiMergeMode] = useState<"replace" | "append">("replace");
@@ -72,7 +73,9 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
   useEffect(() => {
     if (typeof window !== "undefined") {
       const savedKey = localStorage.getItem("openrouter_api_key") || "";
+      const savedModel = localStorage.getItem("openrouter_ai_model") || "google/gemini-2.5-flash";
       setAiApiKey(savedKey);
+      setAiModel(savedModel);
     }
   }, []);
 
@@ -80,6 +83,13 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
     setAiApiKey(key);
     if (typeof window !== "undefined") {
       localStorage.setItem("openrouter_api_key", key);
+    }
+  };
+
+  const handleSaveModel = (modelVal: string) => {
+    setAiModel(modelVal);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("openrouter_ai_model", modelVal);
     }
   };
 
@@ -93,7 +103,7 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
     const loadingToast = toast.loading("AI sedang merancang formulir Anda...");
 
     try {
-      const result = await generateFormWithAIAction(aiPrompt, aiApiKey || undefined);
+      const result = await generateFormWithAIAction(aiPrompt, aiApiKey || undefined, aiModel);
       toast.dismiss(loadingToast);
       
       if (result.success && result.data) {
@@ -474,30 +484,51 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
               </div>
 
               {showAiSettings && (
-                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2 mt-2">
-                  <Label htmlFor="ai-api-key" className="text-slate-700 text-xs font-bold flex items-center justify-between">
-                    <span>OpenRouter API Key (Opsional jika sudah diset di server)</span>
-                    <span className="text-[9px] text-slate-400">Tersimpan aman di peramban Anda (localStorage)</span>
-                  </Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="ai-api-key"
-                      type="password"
-                      placeholder="sk-or-v1-..."
-                      value={aiApiKey}
-                      onChange={(e) => handleSaveApiKey(e.target.value)}
-                      className="bg-white border border-slate-250 focus:border-indigo-500 text-slate-800 h-9 rounded-lg text-xs"
-                    />
-                    {aiApiKey && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={() => handleSaveApiKey("")}
-                        className="text-red-500 hover:text-red-700 border border-slate-200/60 bg-white h-9 px-2 rounded-lg text-xs cursor-pointer"
+                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl mt-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="ai-api-key" className="text-slate-700 text-xs font-bold flex items-center justify-between">
+                        <span>OpenRouter API Key (Opsional jika sudah diset di server)</span>
+                      </Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="ai-api-key"
+                          type="password"
+                          placeholder="sk-or-v1-..."
+                          value={aiApiKey}
+                          onChange={(e) => handleSaveApiKey(e.target.value)}
+                          className="bg-white border border-slate-250 focus:border-indigo-500 text-slate-800 h-9 rounded-lg text-xs"
+                        />
+                        {aiApiKey && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => handleSaveApiKey("")}
+                            className="text-red-500 hover:text-red-700 border border-slate-200/60 bg-white h-9 px-2.5 rounded-lg text-xs cursor-pointer"
+                          >
+                            Hapus
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="ai-model-select" className="text-slate-700 text-xs font-bold">
+                        Model AI OpenRouter
+                      </Label>
+                      <select
+                        id="ai-model-select"
+                        value={aiModel}
+                        onChange={(e) => handleSaveModel(e.target.value)}
+                        className="w-full bg-white border border-slate-250 text-slate-800 h-9 px-3 rounded-lg text-xs focus:outline-none focus:border-indigo-505 transition-colors cursor-pointer"
                       >
-                        Bersihkan
-                      </Button>
-                    )}
+                        <option value="google/gemini-2.5-flash">google/gemini-2.5-flash (Direkomendasikan)</option>
+                        <option value="google/gemini-2.5-pro">google/gemini-2.5-pro</option>
+                        <option value="google/gemma-2-9b-it:free">google/gemma-2-9b-it:free</option>
+                        <option value="meta-llama/llama-3.1-8b-instruct:free">meta-llama/llama-3.1-8b-instruct:free</option>
+                        <option value="qwen/qwen-2.5-72b-instruct:free">qwen/qwen-2.5-72b-instruct:free</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
               )}

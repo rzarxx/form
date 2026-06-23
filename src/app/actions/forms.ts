@@ -512,12 +512,14 @@ export async function toggleFormActiveAction(formId: string, isActive: boolean) 
   }
 }
 
-export async function generateFormWithAIAction(prompt: string, userApiKey?: string) {
+export async function generateFormWithAIAction(prompt: string, userApiKey?: string, userModel?: string) {
   try {
     const apiKey = (process.env.OPENROUTER_API_KEY || userApiKey || "").trim();
     if (!apiKey) {
       return { success: false, error: "Kunci API OpenRouter tidak ditemukan. Silakan masukkan API Key di Pengaturan AI terlebih dahulu." };
     }
+
+    const model = (userModel || process.env.OPENROUTER_MODEL || "google/gemini-2.5-flash").trim();
 
     const systemPrompt = `Anda adalah asisten pembuat formulir AI yang handal.
 Tugas Anda adalah merancang formulir berdasarkan deskripsi/prompt pengguna dalam format JSON.
@@ -553,7 +555,7 @@ Aturan penting:
         "X-Title": "Personal Form Builder",
       },
       body: JSON.stringify({
-        model: "google/gemma-4-31b-it:free",
+        model: model,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: prompt }
