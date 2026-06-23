@@ -142,20 +142,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
     fetchForm();
   }, [formId]);
 
-  // Turnstile script dynamic loader
-  useEffect(() => {
-    if (form?.enable_turnstile) {
-      const scriptId = "cloudflare-turnstile-script";
-      if (!document.getElementById(scriptId)) {
-        const script = document.createElement("script");
-        script.id = scriptId;
-        script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
-        script.async = true;
-        script.defer = true;
-        document.body.appendChild(script);
-      }
-    }
-  }, [form]);
+  // Turnstile script loading is handled dynamically inside TurnstileWidget component below
 
   // Save answers to localStorage on change (Autosave)
   useEffect(() => {
@@ -951,10 +938,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
           {form.enable_turnstile && (
             <div className="relative overflow-hidden rounded-2xl border border-white/60 bg-white/70 p-6 backdrop-blur-sm shadow-sm flex flex-col items-center justify-center space-y-3">
               <Label className="text-slate-750 text-sm font-bold tracking-wide self-start">Verifikasi Keamanan (Anti-Bot)</Label>
-              <div 
-                className="cf-turnstile" 
-                data-sitekey={form.turnstile_site_key || "0x4AAAAAAAxgf3w7tWexJp15"}
-              />
+              <TurnstileWidget siteKey={form.turnstile_site_key || "0x4AAAAAAAxgf3w7tWexJp15"} />
             </div>
           )}
 
@@ -981,5 +965,70 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
         </form>
       </div>
     </div>
+  );
+}
+
+// Custom self-contained component for Cloudflare Turnstile with explicit rendering
+function TurnstileWidget({ siteKey }: { siteKey: string }) {
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const scriptId = "cloudflare-turnstile-script";
+
+    // Inject the Turnstile script dynamically if not present
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement("script");
+      script.id = scriptId;
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+      script.async = true;
+      script.defer = true;
+      document.body.appendChild(script);
+    }
+
+    let widgetId: string | null = null;
+
+    const renderWidget = () => {
+      if (typeof window !== "undefined" && (window as any).turnstile && containerRef.current) {
+        try {
+          containerRef.current.innerHTML = "";
+          widgetId = (window as any).turnstile.render(containerRef.current, {
+            sitekey: siteKey,
+          });
+        } catch (e) {
+          console.error("Turnstile render error:", e);
+        }
+      }
+    };
+
+    // Render Turnstile once it is available in window
+    if (typeof window !== "undefined" && (window as any).turnstile) {
+      renderWidget();
+    } else {
+      const interval = setInterval(() => {
+        if (typeof window !== "undefined" && (window as any).turnstile) {
+          clearInterval(interval);
+          renderWidget();
+        }
+      }, 100);
+      return () => clearInterval(interval);
+    }
+
+    // Cleanup on unmount or siteKey change
+    return () => {
+      if (widgetId && typeof window !== "undefined" && (window as any).turnstile) {
+        try {
+          (window as any).turnstile.remove(widgetId);
+        } catch (e) {
+          console.error("Error cleaning up Turnstile widget:", e);
+        }
+      }
+    };
+  }, [siteKey]);
+
+  return (
+    <div 
+      ref={containerRef} 
+      className="min-h-[65px] flex items-center justify-center md:justify-start" 
+    />
   );
 }
