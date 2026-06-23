@@ -463,21 +463,24 @@ export async function submitResponseAction(
           return { success: false, error: "Verifikasi Turnstile diperlukan." };
         }
         try {
+          console.log("[Turnstile Debug] Verifying token for IP:", ip, "token length:", turnstileToken.length);
           const verifyRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
             method: "POST",
             headers: {
-              "Content-Type": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded",
             },
-            body: JSON.stringify({
+            body: new URLSearchParams({
               secret: secretKey,
               response: turnstileToken,
-              remoteip: ip,
-            }),
+              remoteip: ip || "",
+            }).toString(),
           });
           const verifyData = await verifyRes.json();
           if (!verifyData.success) {
+            console.error("[Turnstile Debug] Cloudflare verification failed. Response data:", verifyData);
             return { success: false, error: "Gagal memverifikasi Turnstile Captcha. Silakan coba lagi." };
           }
+          console.log("[Turnstile Debug] Verification successful.");
         } catch (err) {
           console.error("Turnstile verification failed:", err);
           return { success: false, error: "Terjadi kesalahan saat memverifikasi Turnstile Captcha." };

@@ -10,6 +10,17 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/image-compress";
+import { 
+  AlertCircle, 
+  AlertTriangle, 
+  Lock, 
+  ArrowRight, 
+  CloudUpload, 
+  CheckCircle2, 
+  Loader2, 
+  Printer, 
+  Paperclip 
+} from "lucide-react";
 
 interface FieldSchema {
   id: string;
@@ -453,7 +464,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
         <div className="w-full max-w-md border border-white/60 bg-white/70 backdrop-blur-xl rounded-2xl text-center p-8 relative overflow-hidden shadow-lg">
           <div className="absolute top-0 left-0 w-full h-[4px] bg-rose-500" />
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-rose-50 border border-rose-100 text-rose-500 mb-5 shadow-sm">
-            <i className="fa-solid fa-circle-exclamation text-2xl"></i>
+            <AlertTriangle className="h-7 w-7" />
           </div>
           <h2 className="text-xl font-bold text-slate-900">Formulir Tidak Ditemukan</h2>
           <p className="text-slate-500 text-sm mt-3 leading-relaxed">
@@ -471,7 +482,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
         <div className="w-full max-w-md border border-white/60 bg-white/70 backdrop-blur-xl rounded-2xl text-center p-8 relative overflow-hidden shadow-lg space-y-5">
           <div className="absolute top-0 left-0 w-full h-[4px] bg-indigo-600" />
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 shadow-sm">
-            <i className="fa-solid fa-lock text-xl"></i>
+            <Lock className="h-6 w-6" />
           </div>
           <div className="space-y-2">
             <h2 className="text-xl font-bold text-slate-900">Formulir Terproteksi</h2>
@@ -517,7 +528,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
         <div className="w-full max-w-md border border-white/60 bg-white/70 backdrop-blur-xl rounded-2xl text-center p-8 relative overflow-hidden shadow-lg">
           <div className="absolute top-0 left-0 w-full h-[4px] bg-amber-500" />
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-amber-50 border border-amber-100 text-amber-500 mb-5 shadow-sm">
-            <i className="fa-solid fa-circle-exclamation text-2xl"></i>
+            <AlertTriangle className="h-7 w-7" />
           </div>
           <h2 className="text-xl font-bold text-slate-900">Formulir Ditutup</h2>
           <p className="text-slate-550 text-sm mt-3 leading-relaxed">
@@ -542,7 +553,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
         <div className="w-full max-w-md border border-white/60 bg-white/70 backdrop-blur-xl rounded-2xl text-center p-8 relative overflow-hidden shadow-lg">
           <div className="absolute top-0 left-0 w-full h-[4px] bg-rose-500" />
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-rose-50 border border-rose-100 text-rose-500 mb-5 shadow-sm">
-            <i className="fa-solid fa-circle-exclamation text-2xl"></i>
+            <AlertTriangle className="h-7 w-7" />
           </div>
           <h2 className="text-xl font-bold text-slate-900">Tanggapan Dibatasi</h2>
           <p className="text-slate-500 text-sm mt-3 leading-relaxed">
@@ -559,7 +570,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
         <div className="w-full max-w-lg border border-white/60 bg-white/70 backdrop-blur-xl rounded-2xl text-center p-8 relative overflow-hidden shadow-lg space-y-6">
           <div className="absolute top-0 left-0 w-full h-[4px] bg-gradient-to-r from-emerald-500/20 via-emerald-500 to-emerald-500/20" />
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-500 shadow-sm">
-            <i className="fa-solid fa-circle-check text-3xl"></i>
+            <CheckCircle2 className="h-8 w-8 text-emerald-500" />
           </div>
           <div className="space-y-2">
             <h2 className="text-2xl font-black tracking-tight text-slate-900">
@@ -572,7 +583,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
           
           {form.redirect_url && (
             <div className="text-xs text-slate-400 pt-2 flex items-center justify-center gap-2">
-              <i className="fa-solid fa-circle-notch fa-spin text-indigo-500 text-[10px]"></i>
+              <Loader2 className="h-3 w-3 animate-spin text-indigo-500" />
               <span>Mengalihkan Anda ke tautan luar dalam beberapa detik...</span>
             </div>
           )}
@@ -584,7 +595,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                 onClick={() => window.print()}
                 className="bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl px-6 shadow-sm h-10 font-semibold transition-all cursor-pointer flex items-center justify-center gap-2"
               >
-                <i className="fa-solid fa-print"></i>
+                <Printer className="h-4 w-4 mr-2" />
                 Cetak Bukti Pengisian (PDF)
               </Button>
               <Button
@@ -700,7 +711,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
           </div>
-          <i className="fa-solid fa-cloud-arrow-up text-emerald-600 text-xs"></i>
+          <CloudUpload className="h-3.5 w-3.5 text-emerald-600" />
           <span className="text-[10px] font-bold tracking-tight">
             Draf disimpan otomatis ({lastSavedTime.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" })})
           </span>
@@ -859,9 +870,9 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                           />
                           <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-200 text-slate-400 group-hover:text-indigo-650 transition-all duration-300">
                             {uploadingFields[field.id] ? (
-                              <i className="fa-solid fa-circle-notch fa-spin text-indigo-600"></i>
+                              <Loader2 className="h-5 w-5 animate-spin text-indigo-600" />
                             ) : (
-                              <i className="fa-solid fa-cloud-arrow-up text-slate-400 group-hover:text-indigo-600"></i>
+                              <CloudUpload className="h-5 w-5 text-slate-400 group-hover:text-indigo-600 transition-colors" />
                             )}
                           </div>
                           <div className="space-y-1">
@@ -895,7 +906,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                         <div className="flex items-center justify-between p-3.5 rounded-xl border border-slate-250 bg-white/80 text-xs shadow-inner">
                           <div className="flex items-center space-x-3 truncate max-w-sm">
                             <div className="h-8 w-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
-                              <i className="fa-solid fa-paperclip"></i>
+                              <Paperclip className="h-4 w-4" />
                             </div>
                             <span className="text-slate-700 font-semibold truncate font-mono text-[11px]">
                               {uploadedFiles[field.id].name}
@@ -925,7 +936,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                   {/* Individual Field Validation Error */}
                   {errors[field.id] && (
                     <p className="text-xs text-rose-600 font-semibold flex items-center pt-1">
-                      <i className="fa-solid fa-circle-exclamation mr-1 shrink-0 text-rose-500"></i>
+                      <AlertCircle className="h-3.5 w-3.5 mr-1 shrink-0 text-rose-500" />
                       {errors[field.id]}
                     </p>
                   )}
@@ -954,7 +965,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
             >
               {isPending ? (
                 <>
-                  <i className="fa-solid fa-circle-notch fa-spin mr-2"></i>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
                   Mengirim...
                 </>
               ) : (

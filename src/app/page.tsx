@@ -1,6 +1,15 @@
 import React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { 
+  TableProperties, 
+  SlidersHorizontal, 
+  ArrowRight, 
+  Layers, 
+  FileSpreadsheet, 
+  CheckCircle2, 
+  Lock 
+} from "lucide-react";
 
 export default function Home() {
   return (
@@ -14,7 +23,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-2.5">
             <div className="h-9 w-9 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center shadow-sm">
-              <i className="fa-solid fa-table-list text-indigo-600 text-lg"></i>
+              <TableProperties className="h-5 w-5 text-indigo-600" />
             </div>
             <span className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
               Personal Form Builder
@@ -23,7 +32,7 @@ export default function Home() {
           
           <Link href="/admin">
             <Button variant="outline" className="border-slate-200 text-slate-650 hover:bg-slate-50 hover:text-slate-900 h-9 text-xs rounded-xl font-semibold transition-colors">
-              <i className="fa-solid fa-sliders text-xs mr-1.5 text-slate-400"></i>
+              <SlidersHorizontal className="h-3.5 w-3.5 mr-1.5 text-slate-400" />
               Kelola Form
             </Button>
           </Link>
@@ -51,7 +60,7 @@ export default function Home() {
           <Link href="/admin" className="w-full sm:w-auto">
             <Button className="w-full sm:w-auto bg-indigo-600 text-white hover:bg-indigo-700 font-semibold px-8 h-12 shadow-md hover:shadow-indigo-500/15 transition-all duration-200 text-sm rounded-xl">
               Masuk ke Dasbor Admin
-              <i className="fa-solid fa-arrow-right ml-2 text-sm"></i>
+              <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </Link>
           <a href="https://github.com/rzarxx/form" target="_blank" rel="noreferrer" className="w-full sm:w-auto">
@@ -66,7 +75,7 @@ export default function Home() {
           
           <div className="border border-white/80 bg-white/50 backdrop-blur-md rounded-2xl p-6 space-y-3.5 hover:border-indigo-200 hover:shadow-md transition-all duration-300">
             <div className="h-10 w-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm">
-              <i className="fa-solid fa-layer-group text-base"></i>
+              <Layers className="h-5 w-5" />
             </div>
             <h3 className="font-bold text-slate-800 text-base">Builder Dinamis</h3>
             <p className="text-slate-500 text-sm leading-relaxed">
@@ -76,7 +85,7 @@ export default function Home() {
 
           <div className="border border-white/80 bg-white/50 backdrop-blur-md rounded-2xl p-6 space-y-3.5 hover:border-indigo-200 hover:shadow-md transition-all duration-300">
             <div className="h-10 w-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm">
-              <i className="fa-solid fa-file-excel text-base"></i>
+              <FileSpreadsheet className="h-5 w-5" />
             </div>
             <h3 className="font-bold text-slate-800 text-base">Unduh Data CSV</h3>
             <p className="text-slate-500 text-sm leading-relaxed">
@@ -86,7 +95,7 @@ export default function Home() {
 
           <div className="border border-white/80 bg-white/50 backdrop-blur-md rounded-2xl p-6 space-y-3.5 hover:border-indigo-200 hover:shadow-md transition-all duration-300">
             <div className="h-10 w-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm">
-              <i className="fa-solid fa-circle-check text-base"></i>
+              <CheckCircle2 className="h-5 w-5" />
             </div>
             <h3 className="font-bold text-slate-800 text-base">Validasi & Keamanan</h3>
             <p className="text-slate-500 text-sm leading-relaxed">
@@ -102,7 +111,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p>© {new Date().getFullYear()} Personal Form Builder. Hak Cipta Dilindungi.</p>
           <p className="flex items-center justify-center text-[10px] font-semibold text-slate-400">
-            <i className="fa-solid fa-lock text-[9px] mr-1.5 text-slate-400"></i>
+            <Lock className="h-2.5 w-2.5 mr-1.5 text-slate-400" />
             Sandi Admin Tersimpan Aman di Environment Variables (.env)
           </p>
         </div>
