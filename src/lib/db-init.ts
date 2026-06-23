@@ -54,6 +54,21 @@ export async function initDatabase() {
     await sql`
       ALTER TABLE forms ADD COLUMN IF NOT EXISTS notify_email VARCHAR(255);
     `;
+    await sql`
+      ALTER TABLE forms ADD COLUMN IF NOT EXISTS limit_one_per_ip BOOLEAN DEFAULT FALSE;
+    `;
+    await sql`
+      ALTER TABLE forms ADD COLUMN IF NOT EXISTS max_total_responses INT DEFAULT 0;
+    `;
+    await sql`
+      ALTER TABLE forms ADD COLUMN IF NOT EXISTS access_password VARCHAR(255);
+    `;
+    await sql`
+      ALTER TABLE forms ADD COLUMN IF NOT EXISTS webhook_url TEXT;
+    `;
+    await sql`
+      ALTER TABLE forms ADD COLUMN IF NOT EXISTS enable_turnstile BOOLEAN DEFAULT FALSE;
+    `;
 
     isInitialized = true;
     console.log("Database initialization check completed successfully.");

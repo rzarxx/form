@@ -267,6 +267,34 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
     }).sort((a, b) => b.count - a.count);
   };
 
+  const getDailyTrend = () => {
+    const trend: Record<string, number> = {};
+    responses.forEach(res => {
+      const dateStr = new Date(res.created_at).toISOString().split("T")[0];
+      trend[dateStr] = (trend[dateStr] || 0) + 1;
+    });
+
+    const sortedDates = Object.keys(trend).sort();
+    if (sortedDates.length === 0) return [];
+
+    if (sortedDates.length === 1) {
+      const singleDate = sortedDates[0];
+      const prevDate = new Date(singleDate);
+      prevDate.setDate(prevDate.getDate() - 1);
+      const prevStr = prevDate.toISOString().split("T")[0];
+      
+      return [
+        { date: new Date(prevStr).toLocaleDateString("id-ID", { day: "2-digit", month: "short" }), count: 0 },
+        { date: new Date(singleDate).toLocaleDateString("id-ID", { day: "2-digit", month: "short" }), count: trend[singleDate] }
+      ];
+    }
+
+    return sortedDates.map(date => ({
+      date: new Date(date).toLocaleDateString("id-ID", { day: "2-digit", month: "short" }),
+      count: trend[date]
+    }));
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#f1f5f9] text-slate-800 flex flex-col items-center justify-center">
@@ -710,133 +738,243 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
 
         {/* TAB 2: ANALYTICS CHARTS */}
         {activeTab === "analytics" && (
-          <div className="space-y-6">
+          <div className="space-y-6 animate-fade-in">
             {responses.length === 0 ? (
               <Card className="border border-slate-200 bg-white p-16 text-center text-slate-450 text-xs font-semibold shadow-sm">
                 Belum ada tanggapan masuk untuk dianalisis.
               </Card>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {fields.map((field) => {
-                  // CHOICE FIELDS: radio and select rendering visual charts
-                  if (field.type === "radio" || field.type === "select") {
-                    const stats = getFieldStats(field);
-                    return (
-                      <Card key={field.id} className="bg-white border border-slate-200 shadow-sm rounded-2xl relative overflow-hidden transition-all duration-300 hover:border-slate-300">
-                        <div className="py-4 px-6 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-0.5">
-                          <h3 className="text-sm font-bold text-slate-800 leading-tight">{field.label}</h3>
-                          <span className="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-bold">
-                            Visual Chart ({field.type})
-                          </span>
-                        </div>
-                        <div className="p-6 space-y-4">
-                          {stats.length === 0 ? (
-                            <p className="text-xs text-slate-400 italic">Tidak ada opsi.</p>
-                          ) : (
-                            stats.map((item, idx) => (
-                              <div key={idx} className="space-y-2">
-                                <div className="flex justify-between items-center text-xs">
-                                  <span className="text-slate-700 font-semibold">{item.option}</span>
-                                  <span className="text-slate-450 font-bold">{item.count} tanggapan ({item.percentage}%)</span>
-                                </div>
-                                <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200 shadow-inner">
-                                  <div 
-                                    className="h-full bg-gradient-to-r from-indigo-500/80 via-indigo-650 to-violet-500/90 rounded-full transition-all duration-500 shadow-sm"
-                                    style={{ width: `${item.percentage}%` }}
-                                  />
-                                </div>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </Card>
-                    );
-                  }
+              <>
+                {/* Daily Submissions Line Chart */}
+                <Card className="bg-white border border-slate-200 shadow-sm rounded-2xl relative overflow-hidden transition-all duration-300 hover:border-slate-350">
+                  <div className="py-4 px-6 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-0.5">
+                    <h3 className="text-sm font-bold text-slate-800 leading-tight">Tren Tanggapan Harian</h3>
+                    <span className="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-bold">
+                      Grafik Garis Kunjungan & Pengisian
+                    </span>
+                  </div>
+                  <CardContent className="p-6">
+                    {(() => {
+                      const trendData = getDailyTrend();
+                      if (trendData.length === 0) {
+                        return <p className="text-xs text-slate-400 italic">Tidak ada data tren harian.</p>;
+                      }
+                      const maxCount = Math.max(...trendData.map(d => d.count), 1);
+                      const width = 600;
+                      const height = 200;
+                      const paddingLeft = 40;
+                      const paddingRight = 20;
+                      const paddingTop = 20;
+                      const paddingBottom = 30;
+                      
+                      const chartWidth = width - paddingLeft - paddingRight;
+                      const chartHeight = height - paddingTop - paddingBottom;
+                      
+                      const points = trendData.map((d, i) => {
+                        const x = paddingLeft + (i / Math.max(trendData.length - 1, 1)) * chartWidth;
+                        const y = height - paddingBottom - (d.count / maxCount) * chartHeight;
+                        return `${x},${y}`;
+                      }).join(" ");
 
-                  // TEXT FIELDS: text and textarea listing recent text responses
-                  if (field.type === "text" || field.type === "textarea") {
-                    const textAnswers = responses
-                      .map(r => {
-                        const parsedAnswers = typeof r.answers === "string" ? JSON.parse(r.answers) : r.answers;
-                        return parsedAnswers[field.id];
-                      })
-                      .filter(val => val !== undefined && val !== null && String(val).trim() !== "")
-                      .slice(0, 5); // get latest 5
+                      const fillPoints = `${paddingLeft},${height - paddingBottom} ${points} ${paddingLeft + chartWidth},${height - paddingBottom}`;
 
-                    return (
-                      <Card key={field.id} className="bg-white border border-slate-200 shadow-sm rounded-2xl relative overflow-hidden transition-all duration-300 hover:border-slate-300">
-                        <div className="py-4 px-6 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-0.5">
-                          <h3 className="text-sm font-bold text-slate-800 leading-tight">{field.label}</h3>
-                          <span className="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-bold">
-                            Teks Masuk Terkini (Maks. 5)
-                          </span>
-                        </div>
-                        <div className="p-2 divide-y divide-slate-100">
-                          {textAnswers.length === 0 ? (
-                            <p className="text-xs text-slate-400 italic p-6 text-center font-semibold">Belum ada jawaban teks.</p>
-                          ) : (
-                            textAnswers.map((ans, idx) => (
-                              <div key={idx} className="py-3.5 px-4 hover:bg-slate-50/40 transition-colors">
-                                <p className="text-xs text-slate-650 leading-relaxed font-semibold">
-                                  {String(ans)}
-                                </p>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </Card>
-                    );
-                  }
-
-                  // FILE FIELDS: list latest uploaded files
-                  if (field.type === "file") {
-                    const uploadedFilesList = responses
-                      .map(r => {
-                        const parsedAnswers = typeof r.answers === "string" ? JSON.parse(r.answers) : r.answers;
-                        return parsedAnswers[field.id];
-                      })
-                      .filter(val => val !== undefined && val !== null && isUrl(val))
-                      .slice(0, 5); // get latest 5
-
-                    return (
-                      <Card key={field.id} className="bg-white border border-slate-200 shadow-sm rounded-2xl relative overflow-hidden transition-all duration-300 hover:border-slate-300">
-                        <div className="py-4 px-6 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-0.5">
-                          <h3 className="text-sm font-bold text-slate-800 leading-tight">{field.label}</h3>
-                          <span className="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-bold">
-                            Berkas Terkini (Maks. 5)
-                          </span>
-                        </div>
-                        <div className="p-2 divide-y divide-slate-100">
-                          {uploadedFilesList.length === 0 ? (
-                            <p className="text-xs text-slate-400 italic p-6 text-center font-semibold">Belum ada berkas terunggah.</p>
-                          ) : (
-                            uploadedFilesList.map((url, idx) => {
-                              const filename = url.split("/").pop() || "Unduh File";
+                      return (
+                        <div className="w-full overflow-x-auto">
+                          <svg className="w-full min-w-[500px]" viewBox={`0 0 ${width} ${height}`} height={height}>
+                            <defs>
+                              <linearGradient id="chart-grad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#6366f1" stopOpacity="0.3" />
+                                <stop offset="100%" stopColor="#6366f1" stopOpacity="0" />
+                              </linearGradient>
+                            </defs>
+                            
+                            {/* Horizontal Gridlines */}
+                            {[0, 0.25, 0.5, 0.75, 1].map((ratio, idx) => {
+                              const y = paddingTop + ratio * chartHeight;
+                              const gridVal = Math.round(maxCount * (1 - ratio));
                               return (
-                                <div key={idx} className="py-3 px-4 flex items-center justify-between text-xs hover:bg-slate-50/40 transition-colors">
-                                  <span className="text-slate-500 font-semibold truncate max-w-[200px] font-mono text-[11px]" title={filename}>
-                                    {filename}
-                                  </span>
-                                  <Link 
-                                    href={url} 
-                                    target="_blank" 
-                                    className="inline-flex items-center gap-1.5 text-indigo-650 hover:text-indigo-750 font-bold transition-colors"
+                                <g key={idx}>
+                                  <line 
+                                    x1={paddingLeft} 
+                                    y1={y} 
+                                    x2={width - paddingRight} 
+                                    y2={y} 
+                                    className="stroke-slate-100" 
+                                    strokeWidth="1" 
+                                  />
+                                  <text 
+                                    x={paddingLeft - 10} 
+                                    y={y + 3} 
+                                    className="text-[9px] fill-slate-400 font-semibold font-mono text-right" 
+                                    textAnchor="end"
                                   >
-                                    Buka Berkas
-                                    <i className="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-                                  </Link>
-                                </div>
+                                    {gridVal}
+                                  </text>
+                                </g>
                               );
-                            })
-                          )}
-                        </div>
-                      </Card>
-                    );
-                  }
+                            })}
 
-                  return null;
-                })}
-              </div>
+                            {/* Area Fill under line */}
+                            <polygon points={fillPoints} fill="url(#chart-grad)" />
+
+                            {/* The Trend Line */}
+                            <polyline 
+                              fill="none" 
+                              stroke="#6366f1" 
+                              strokeWidth="3" 
+                              points={points} 
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+
+                            {/* Interactive Data Dots & Labels */}
+                            {trendData.map((d, i) => {
+                              const x = paddingLeft + (i / Math.max(trendData.length - 1, 1)) * chartWidth;
+                              const y = height - paddingBottom - (d.count / maxCount) * chartHeight;
+                              return (
+                                <g key={i}>
+                                  <circle 
+                                    cx={x} 
+                                    cy={y} 
+                                    r="4.5" 
+                                    className="fill-indigo-600 stroke-white stroke-2 shadow-sm" 
+                                  />
+                                  <text 
+                                    x={x} 
+                                    y={y - 8} 
+                                    className="text-[10px] fill-slate-800 font-black font-mono" 
+                                    textAnchor="middle"
+                                  >
+                                    {d.count}
+                                  </text>
+                                  <text 
+                                    x={x} 
+                                    y={height - paddingBottom + 18} 
+                                    className="text-[9px] fill-slate-450 font-bold" 
+                                    textAnchor="middle"
+                                  >
+                                    {d.date}
+                                  </text>
+                                </g>
+                              );
+                            })}
+                          </svg>
+                        </div>
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
+
+                {/* Question Analytics Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {fields.map((field) => {
+                    // CHOICE FIELDS: radio and select rendering visual donut charts
+                    if (field.type === "radio" || field.type === "select") {
+                      const stats = getFieldStats(field);
+                      return (
+                        <Card key={field.id} className="bg-white border border-slate-200 shadow-sm rounded-2xl relative overflow-hidden transition-all duration-300 hover:border-slate-350">
+                          <div className="py-4 px-6 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-0.5">
+                            <h3 className="text-sm font-bold text-slate-800 leading-tight">{field.label}</h3>
+                            <span className="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-bold">
+                              Diagram Persentase Opsi ({field.type})
+                            </span>
+                          </div>
+                          <div className="p-6">
+                            {stats.length === 0 ? (
+                              <p className="text-xs text-slate-400 italic">Tidak ada opsi.</p>
+                            ) : (
+                              <DonutChart stats={stats} />
+                            )}
+                          </div>
+                        </Card>
+                      );
+                    }
+
+                    // TEXT FIELDS: text and textarea listing recent text responses
+                    if (field.type === "text" || field.type === "textarea") {
+                      const textAnswers = responses
+                        .map(r => {
+                          const parsedAnswers = typeof r.answers === "string" ? JSON.parse(r.answers) : r.answers;
+                          return parsedAnswers[field.id];
+                        })
+                        .filter(val => val !== undefined && val !== null && String(val).trim() !== "")
+                        .slice(0, 5); // get latest 5
+
+                      return (
+                        <Card key={field.id} className="bg-white border border-slate-200 shadow-sm rounded-2xl relative overflow-hidden transition-all duration-300 hover:border-slate-300">
+                          <div className="py-4 px-6 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-0.5">
+                            <h3 className="text-sm font-bold text-slate-800 leading-tight">{field.label}</h3>
+                            <span className="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-bold">
+                              Teks Masuk Terkini (Maks. 5)
+                            </span>
+                          </div>
+                          <div className="p-2 divide-y divide-slate-100">
+                            {textAnswers.length === 0 ? (
+                              <p className="text-xs text-slate-400 italic p-6 text-center font-semibold">Belum ada jawaban teks.</p>
+                            ) : (
+                              textAnswers.map((ans, idx) => (
+                                <div key={idx} className="py-3.5 px-4 hover:bg-slate-50/40 transition-colors">
+                                  <p className="text-xs text-slate-650 leading-relaxed font-semibold">
+                                    {String(ans)}
+                                  </p>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </Card>
+                      );
+                    }
+
+                    // FILE FIELDS: list latest uploaded files
+                    if (field.type === "file") {
+                      const uploadedFilesList = responses
+                        .map(r => {
+                          const parsedAnswers = typeof r.answers === "string" ? JSON.parse(r.answers) : r.answers;
+                          return parsedAnswers[field.id];
+                        })
+                        .filter(val => val !== undefined && val !== null && isUrl(val))
+                        .slice(0, 5); // get latest 5
+
+                      return (
+                        <Card key={field.id} className="bg-white border border-slate-200 shadow-sm rounded-2xl relative overflow-hidden transition-all duration-300 hover:border-slate-300">
+                          <div className="py-4 px-6 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-0.5">
+                            <h3 className="text-sm font-bold text-slate-800 leading-tight">{field.label}</h3>
+                            <span className="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-bold">
+                              Berkas Terkini (Maks. 5)
+                            </span>
+                          </div>
+                          <div className="p-2 divide-y divide-slate-100">
+                            {uploadedFilesList.length === 0 ? (
+                              <p className="text-xs text-slate-400 italic p-6 text-center font-semibold">Belum ada berkas terunggah.</p>
+                            ) : (
+                              uploadedFilesList.map((url, idx) => {
+                                const filename = url.split("/").pop() || "Unduh File";
+                                return (
+                                  <div key={idx} className="py-3 px-4 flex items-center justify-between text-xs hover:bg-slate-50/40 transition-colors">
+                                    <span className="text-slate-500 font-semibold truncate max-w-[200px] font-mono text-[11px]" title={filename}>
+                                      {filename}
+                                    </span>
+                                    <Link 
+                                      href={url} 
+                                      target="_blank" 
+                                      className="inline-flex items-center gap-1.5 text-indigo-650 hover:text-indigo-750 font-bold transition-colors"
+                                    >
+                                      Buka Berkas
+                                      <i className="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                                    </Link>
+                                  </div>
+                                );
+                              })
+                            )}
+                          </div>
+                        </Card>
+                      );
+                    }
+
+                    return null;
+                  })}
+                </div>
+              </>
             )}
           </div>
         )}
@@ -880,3 +1018,83 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
     </div>
   );
 }
+
+const DonutChart = ({ stats }: { stats: { option: string; count: number; percentage: number }[] }) => {
+  const r = 35;
+  const C = 2 * Math.PI * r;
+  let accumulatedOffset = 0;
+  const colors = [
+    "#6366f1", // indigo
+    "#8b5cf6", // violet
+    "#ec4899", // pink
+    "#10b981", // emerald
+    "#f59e0b", // amber
+    "#3b82f6", // blue
+    "#ef4444", // red
+  ];
+  const total = stats.reduce((acc, curr) => acc + curr.count, 0);
+
+  return (
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+      {/* Donut circle */}
+      <div className="relative w-28 h-28 shrink-0">
+        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+          <circle
+            cx="50"
+            cy="50"
+            r={r}
+            className="stroke-slate-100"
+            strokeWidth="8"
+            fill="transparent"
+          />
+          {stats.map((item, idx) => {
+            const strokeLength = (item.percentage / 100) * C;
+            const strokeOffset = C - strokeLength + accumulatedOffset;
+            accumulatedOffset -= strokeLength;
+            const color = colors[idx % colors.length];
+
+            if (item.percentage === 0) return null;
+
+            return (
+              <circle
+                key={idx}
+                cx="50"
+                cy="50"
+                r={r}
+                stroke={color}
+                strokeWidth="10"
+                strokeDasharray={C}
+                strokeDashoffset={strokeOffset}
+                strokeLinecap="round"
+                fill="transparent"
+                className="transition-all duration-500 ease-out"
+              />
+            );
+          })}
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+          <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Total</span>
+          <span className="text-base font-black text-slate-800">{total}</span>
+        </div>
+      </div>
+
+      {/* Legend table */}
+      <div className="flex-1 space-y-2 w-full">
+        {stats.map((item, idx) => {
+          const color = colors[idx % colors.length];
+          return (
+            <div key={idx} className="flex justify-between items-center text-xs">
+              <div className="flex items-center space-x-2 min-w-0">
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                <span className="text-slate-650 font-bold truncate" title={item.option}>{item.option}</span>
+              </div>
+              <span className="text-slate-450 font-bold shrink-0 pl-2">
+                {item.count} ({item.percentage}%)
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};

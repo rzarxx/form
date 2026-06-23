@@ -107,7 +107,12 @@ export async function createFormAction(
   redirectUrl?: string | null,
   expiryDate?: string | null,
   notifyEmail?: string | null,
-  isActive: boolean = true
+  isActive: boolean = true,
+  limitOnePerIp: boolean = false,
+  maxTotalResponses: number = 0,
+  accessPassword?: string | null,
+  webhookUrl?: string | null,
+  enableTurnstile: boolean = false
 ) {
   try {
     await requireAuth();
@@ -122,12 +127,14 @@ export async function createFormAction(
     const result = await sql`
       INSERT INTO forms (
         title, description, fields, banner_url, max_responses, is_active,
-        custom_success_message, redirect_url, expiry_date, notify_email
+        custom_success_message, redirect_url, expiry_date, notify_email,
+        limit_one_per_ip, max_total_responses, access_password, webhook_url, enable_turnstile
       )
       VALUES (
         ${title}, ${description || null}, ${fieldsJson}, ${bannerUrl || null}, ${maxResponses}, ${isActive},
         ${customSuccessMessage || null}, ${redirectUrl || null}, 
-        ${expiryDate ? new Date(expiryDate) : null}, ${notifyEmail || null}
+        ${expiryDate ? new Date(expiryDate) : null}, ${notifyEmail || null},
+        ${limitOnePerIp}, ${maxTotalResponses}, ${accessPassword || null}, ${webhookUrl || null}, ${enableTurnstile}
       )
       RETURNING id, title, created_at
     `;
@@ -150,7 +157,12 @@ export async function updateFormAction(
   redirectUrl?: string | null,
   expiryDate?: string | null,
   notifyEmail?: string | null,
-  isActive: boolean = true
+  isActive: boolean = true,
+  limitOnePerIp: boolean = false,
+  maxTotalResponses: number = 0,
+  accessPassword?: string | null,
+  webhookUrl?: string | null,
+  enableTurnstile: boolean = false
 ) {
   try {
     await requireAuth();
@@ -177,7 +189,12 @@ export async function updateFormAction(
         redirect_url = ${redirectUrl || null},
         expiry_date = ${expiryDate ? new Date(expiryDate) : null},
         notify_email = ${notifyEmail || null},
-        is_active = ${isActive}
+        is_active = ${isActive},
+        limit_one_per_ip = ${limitOnePerIp},
+        max_total_responses = ${maxTotalResponses},
+        access_password = ${accessPassword || null},
+        webhook_url = ${webhookUrl || null},
+        enable_turnstile = ${enableTurnstile}
       WHERE id = ${formId}
     `;
 
@@ -219,7 +236,8 @@ export async function getFormDetailAction(formId: string) {
     // Fetch form configuration
     const formResult = await sql`
       SELECT id, title, description, created_at, fields, banner_url, max_responses, is_active,
-             custom_success_message, redirect_url, expiry_date, notify_email
+             custom_success_message, redirect_url, expiry_date, notify_email,
+             limit_one_per_ip, max_total_responses, access_password, webhook_url, enable_turnstile
       FROM forms
       WHERE id = ${formId}
     `;
@@ -327,7 +345,38 @@ export async function deleteResponseAction(responseId: number) {
   }
 }
 
-export async function submitResponseAction(formId: string, answers: Record<string, any>) {
+export async function verifyFormPasswordAction(formId: string, password?: string) {
+  try {
+    await initDatabase();
+    if (!formId) {
+      return { success: false, error: "ID formulir tidak valid." };
+    }
+    const formResult = await sql`
+      SELECT access_password FROM forms WHERE id = ${formId}
+    `;
+    if (formResult.length === 0) {
+      return { success: false, error: "Formulir tidak ditemukan." };
+    }
+    const form = formResult[0];
+    if (!form.access_password || form.access_password.trim() === "") {
+      return { success: true };
+    }
+    if (form.access_password === password) {
+      return { success: true };
+    }
+    return { success: false, error: "Kata sandi akses salah." };
+  } catch (error: any) {
+    console.error("Error verifying form password:", error);
+    return { success: false, error: error.message || "Gagal memverifikasi kata sandi." };
+  }
+}
+
+export async function submitResponseAction(
+  formId: string,
+  answers: Record<string, any>,
+  password?: string,
+  turnstileToken?: string
+) {
   try {
     await initDatabase();
 
@@ -347,7 +396,9 @@ export async function submitResponseAction(formId: string, answers: Record<strin
 
     // 3. Fetch form details to verify if active, limits, and expiry
     const formResult = await sql`
-      SELECT title, is_active, max_responses, expiry_date, notify_email, fields FROM forms WHERE id = ${formId}
+      SELECT title, is_active, max_responses, expiry_date, notify_email, fields,
+             limit_one_per_ip, max_total_responses, access_password, webhook_url, enable_turnstile
+      FROM forms WHERE id = ${formId}
     `;
 
     if (formResult.length === 0) {
@@ -370,8 +421,58 @@ export async function submitResponseAction(formId: string, answers: Record<strin
       }
     }
 
-    // 6. Check if max responses per IP is limited
-    if (form.max_responses === 1) {
+    // 6. Check Password Protection
+    if (form.access_password && form.access_password.trim() !== "") {
+      if (form.access_password !== password) {
+        return { success: false, error: "Kata sandi akses formulir salah atau tidak disertakan." };
+      }
+    }
+
+    // 7. Check Cloudflare Turnstile Captcha
+    if (form.enable_turnstile) {
+      const secretKey = process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY;
+      if (secretKey) {
+        if (!turnstileToken) {
+          return { success: false, error: "Verifikasi Turnstile diperlukan." };
+        }
+        try {
+          const verifyRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              secret: secretKey,
+              response: turnstileToken,
+              remoteip: ip,
+            }),
+          });
+          const verifyData = await verifyRes.json();
+          if (!verifyData.success) {
+            return { success: false, error: "Gagal memverifikasi Turnstile Captcha. Silakan coba lagi." };
+          }
+        } catch (err) {
+          console.error("Turnstile verification failed:", err);
+          return { success: false, error: "Terjadi kesalahan saat memverifikasi Turnstile Captcha." };
+        }
+      } else {
+        console.warn("CLOUDFLARE_TURNSTILE_SECRET_KEY is not defined in environment variables. Skipping Turnstile verification.");
+      }
+    }
+
+    // 8. Check if total responses exceeded
+    if (form.max_total_responses && form.max_total_responses > 0) {
+      const responseCountResult = await sql`
+        SELECT COUNT(id)::int as count FROM form_responses WHERE form_id = ${formId}
+      `;
+      const count = responseCountResult[0]?.count || 0;
+      if (count >= form.max_total_responses) {
+        return { success: false, error: `Batas kuota tanggapan formulir ini telah terpenuhi (${form.max_total_responses} tanggapan).` };
+      }
+    }
+
+    // 9. Check if max responses per IP is limited (limit_one_per_ip or max_responses === 1)
+    if (form.limit_one_per_ip || form.max_responses === 1) {
       const existingResponse = await sql`
         SELECT id FROM form_responses 
         WHERE form_id = ${formId} AND ip_address = ${ip} 
@@ -382,13 +483,114 @@ export async function submitResponseAction(formId: string, answers: Record<strin
       }
     }
 
-    // 7. Insert response (using sql.json helper for proper JSONB serialization)
-    await sql`
+    // 10. Insert response (using sql.json helper for proper JSONB serialization)
+    const insertResult = await sql`
       INSERT INTO form_responses (form_id, answers, ip_address)
       VALUES (${formId}, ${sql.json(answers)}, ${ip})
+      RETURNING id, created_at
     `;
+    const newResponse = insertResult[0];
 
-    // 8. Send real-time email notification if notify_email is configured
+    // 11. Send real-time webhook notification if configured (Discord/Slack/Custom)
+    if (form.webhook_url && form.webhook_url.trim()) {
+      const formFields = Array.isArray(form.fields)
+        ? form.fields
+        : typeof form.fields === "string"
+          ? JSON.parse(form.fields)
+          : [];
+
+      const fieldsList = Object.entries(answers).map(([key, value]) => {
+        const field = formFields.find((f: any) => f.id === key);
+        const label = field ? field.label : key;
+        let strVal = String(value);
+        if (Array.isArray(value)) {
+          strVal = value.join(", ");
+        }
+        return { label, value: strVal };
+      });
+
+      const url = form.webhook_url.trim();
+      let payload: any = {};
+
+      if (url.includes("discord.com/api/webhooks")) {
+        payload = {
+          embeds: [
+            {
+              title: `🎯 Tanggapan Baru: ${form.title}`,
+              description: `Seseorang baru saja mengisi formulir Anda.`,
+              color: 5814783, // blurple color
+              fields: fieldsList.map(item => ({
+                name: item.label,
+                value: item.value || "-",
+                inline: false
+              })),
+              timestamp: new Date().toISOString(),
+              footer: {
+                text: `Personal Form Builder • IP: ${ip}`
+              }
+            }
+          ]
+        };
+      } else if (url.includes("hooks.slack.com")) {
+        payload = {
+          text: `🎯 *Tanggapan Baru untuk Formulir: ${form.title}*`,
+          blocks: [
+            {
+              type: "section",
+              text: {
+                type: "mrkdwn",
+                text: `*🎯 Tanggapan Baru untuk Formulir: ${form.title}*\nSeseorang baru saja mengisi formulir Anda.`
+              }
+            },
+            {
+              type: "divider"
+            },
+            ...fieldsList.map(item => ({
+              type: "section",
+              text: {
+                type: "mrkdwn",
+                text: `*${item.label}*\n${item.value || "-"}`
+              }
+            })),
+            {
+              type: "divider"
+            },
+            {
+              type: "context",
+              elements: [
+                {
+                  type: "mrkdwn",
+                  text: `Dikirim pada ${new Date().toLocaleString("id-ID")} • IP: ${ip}`
+                }
+              ]
+            }
+          ]
+        };
+      } else {
+        payload = {
+          event: "form.submitted",
+          form_id: formId,
+          form_title: form.title,
+          submitted_at: new Date().toISOString(),
+          ip_address: ip,
+          answers: answers
+        };
+      }
+
+      try {
+        await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+      } catch (webhookErr) {
+        console.error("Error sending webhook notification:", webhookErr);
+      }
+    }
+
+    // 12. Send real-time email notification if notify_email is configured
     if (form.notify_email && form.notify_email.trim()) {
       const formFields = Array.isArray(form.fields)
         ? form.fields
@@ -445,7 +647,7 @@ export async function submitResponseAction(formId: string, answers: Record<strin
       }
     }
 
-    return { success: true };
+    return { success: true, responseId: newResponse?.id };
   } catch (error: any) {
     console.error("Error submitting response:", error);
     return { success: false, error: error.message || "Gagal mengirim tanggapan." };
@@ -458,7 +660,9 @@ export async function getPublicFormAction(formId: string) {
 
     const formResult = await sql`
       SELECT id, title, description, fields, banner_url, max_responses, is_active,
-             custom_success_message, redirect_url, expiry_date, notify_email
+             custom_success_message, redirect_url, expiry_date, notify_email,
+             limit_one_per_ip, max_total_responses, enable_turnstile,
+             (access_password IS NOT NULL AND access_password != '') as has_password
       FROM forms
       WHERE id = ${formId}
     `;
@@ -467,7 +671,16 @@ export async function getPublicFormAction(formId: string) {
       return { success: false, error: "Formulir tidak ditemukan." };
     }
 
-    return { success: true, data: formResult[0] };
+    const form = formResult[0];
+    const turnstileSiteKey = process.env.CLOUDFLARE_TURNSTILE_SITE_KEY || "0x4AAAAAAAxgf3w7tWexJp15";
+
+    return { 
+      success: true, 
+      data: { 
+        ...form, 
+        turnstile_site_key: turnstileSiteKey 
+      } 
+    };
   } catch (error: any) {
     console.error("Error fetching public form:", error);
     return { success: false, error: error.message || "Gagal memuat formulir." };

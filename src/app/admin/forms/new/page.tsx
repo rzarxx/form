@@ -23,6 +23,10 @@ interface FieldSchema {
   fileTypes?: string;
   conditionFieldId?: string;
   conditionValue?: string;
+  validationType?: "none" | "number" | "phone" | "regex";
+  validationMin?: number;
+  validationMax?: number;
+  validationPattern?: string;
 }
 
 export default function NewFormBuilder() {
@@ -32,7 +36,11 @@ export default function NewFormBuilder() {
   const [bannerUrl, setBannerUrl] = useState("");
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
   const [fields, setFields] = useState<FieldSchema[]>([]);
-  const [limitResponses, setLimitResponses] = useState(false);
+  const [limitOnePerIp, setLimitOnePerIp] = useState(false);
+  const [maxTotalResponses, setMaxTotalResponses] = useState(0);
+  const [accessPassword, setAccessPassword] = useState("");
+  const [webhookUrl, setWebhookUrl] = useState("");
+  const [enableTurnstile, setEnableTurnstile] = useState(false);
   
   // Advanced Settings State
   const [expiryDate, setExpiryDate] = useState("");
@@ -264,12 +272,17 @@ export default function NewFormBuilder() {
         description,
         fields,
         bannerUrl || null,
-        limitResponses ? 1 : 0,
+        limitOnePerIp ? 1 : 0,
         customSuccessMessage || null,
         redirectUrl || null,
         expiryDate || null,
         notifyEmail || null,
-        true
+        true,
+        limitOnePerIp,
+        maxTotalResponses,
+        accessPassword || null,
+        webhookUrl || null,
+        enableTurnstile
       );
       
       if (result.success) {
@@ -566,8 +579,8 @@ export default function NewFormBuilder() {
             <div className="flex items-center space-x-2.5 pt-4 border-t border-slate-100">
               <Checkbox
                 id="limit-responses"
-                checked={limitResponses}
-                onCheckedChange={(checked) => setLimitResponses(!!checked)}
+                checked={limitOnePerIp}
+                onCheckedChange={(checked) => setLimitOnePerIp(!!checked)}
                 className="border-slate-350 data-[state=checked]:bg-indigo-600 data-[state=checked]:text-white rounded"
               />
               <Label htmlFor="limit-responses" className="text-slate-650 text-xs font-semibold cursor-pointer">
@@ -586,7 +599,7 @@ export default function NewFormBuilder() {
               Konfigurasi Lanjutan
             </CardTitle>
             <CardDescription className="text-slate-500 text-xs">
-              Kustomisasi penutupan deadline otomatis, redirect url, pesan terima kasih kustom, dan notifikasi email
+              Kustomisasi penutupan deadline otomatis, redirect url, pesan terima kasih kustom, notifikasi email, keamanan, dan webhook
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-0">
@@ -639,6 +652,85 @@ export default function NewFormBuilder() {
                 className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-800 h-11 rounded-xl transition-all"
               />
               <p className="text-[10px] text-slate-400">Jika diisi, pengguna dialihkan otomatis ke URL ini dalam 3 detik setelah submit.</p>
+            </div>
+
+            {/* Keamanan & Pembatasan Akses */}
+            <div className="border-t border-slate-100 pt-4 space-y-4">
+              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                <i className="fa-solid fa-shield-halved text-indigo-650"></i>
+                Keamanan & Pembatasan Akses
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="access-password" className="text-slate-650 text-xs font-bold">Kata Sandi Akses Formulir (Password Protection)</Label>
+                  <Input
+                    id="access-password"
+                    type="text"
+                    placeholder="Kosongkan jika ingin publik tanpa password"
+                    value={accessPassword}
+                    onChange={(e) => setAccessPassword(e.target.value)}
+                    className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-800 h-11 rounded-xl transition-all"
+                  />
+                  <p className="text-[10px] text-slate-400">Pengisi wajib memasukkan sandi ini sebelum bisa melihat/mengisi formulir.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="max-total-responses" className="text-slate-650 text-xs font-bold">Batas Maksimal Total Tanggapan (Kuota)</Label>
+                  <Input
+                    id="max-total-responses"
+                    type="number"
+                    placeholder="0"
+                    value={maxTotalResponses || ""}
+                    onChange={(e) => setMaxTotalResponses(e.target.value !== "" ? Number(e.target.value) : 0)}
+                    className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-800 h-11 rounded-xl transition-all"
+                  />
+                  <p className="text-[10px] text-slate-400">Form otomatis ditutup jika total tanggapan mencapai batas ini. Isi 0 jika tanpa batas.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                <div className="flex items-center space-x-2.5">
+                  <Checkbox
+                    id="limit-one-per-ip-adv"
+                    checked={limitOnePerIp}
+                    onCheckedChange={(checked) => setLimitOnePerIp(!!checked)}
+                    className="border-slate-350 data-[state=checked]:bg-indigo-600 data-[state=checked]:text-white rounded"
+                  />
+                  <Label htmlFor="limit-one-per-ip-adv" className="text-slate-650 text-xs font-semibold cursor-pointer">
+                    Batasi 1 Tanggapan per IP Address (Cegah Spam Data)
+                  </Label>
+                </div>
+
+                <div className="flex items-center space-x-2.5">
+                  <Checkbox
+                    id="enable-turnstile"
+                    checked={enableTurnstile}
+                    onCheckedChange={(checked) => setEnableTurnstile(!!checked)}
+                    className="border-slate-350 data-[state=checked]:bg-indigo-600 data-[state=checked]:text-white rounded"
+                  />
+                  <Label htmlFor="enable-turnstile" className="text-slate-650 text-xs font-semibold cursor-pointer">
+                    Aktifkan Cloudflare Turnstile Captcha (Anti-Bot)
+                  </Label>
+                </div>
+              </div>
+            </div>
+
+            {/* Integrasi Webhook */}
+            <div className="border-t border-slate-100 pt-4 space-y-2">
+              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                <i className="fa-solid fa-link text-indigo-650"></i>
+                Integrasi Webhook
+              </h3>
+              <Label htmlFor="webhook-url" className="text-slate-650 text-xs font-bold">URL Webhook Notifikasi (Discord / Slack / Custom API)</Label>
+              <Input
+                id="webhook-url"
+                type="url"
+                placeholder="https://discord.com/api/webhooks/... atau https://hooks.slack.com/services/..."
+                value={webhookUrl}
+                onChange={(e) => setWebhookUrl(e.target.value)}
+                className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-800 h-11 rounded-xl transition-all"
+              />
+              <p className="text-[10px] text-slate-400">Setiap ada tanggapan baru masuk, data jawaban akan dikirimkan otomatis ke tautan webhook.</p>
             </div>
           </CardContent>
         </Card>
@@ -755,6 +847,78 @@ export default function NewFormBuilder() {
                             <SelectItem value=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx" className="focus:bg-slate-100 rounded-lg">Hanya Dokumen (PDF, Word, Excel, PPT)</SelectItem>
                           </SelectContent>
                         </Select>
+                      </div>
+                    )}
+
+                    {/* Text Field Validation Selection */}
+                    {field.type === "text" && (
+                      <div className="border-t border-slate-100 pt-4 space-y-3">
+                        <Label className="text-slate-650 text-[11px] font-bold">Validasi Spesifik Kolom Teks</Label>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div className="space-y-1.5">
+                            <Label className="text-slate-500 text-[10px] font-bold">Tipe Validasi</Label>
+                            <Select
+                              value={field.validationType || "none"}
+                              onValueChange={(val) => handleFieldChange(field.id, { 
+                                validationType: val as any,
+                                validationMin: undefined,
+                                validationMax: undefined,
+                                validationPattern: undefined
+                              })}
+                            >
+                              <SelectTrigger className="bg-white border border-slate-200 text-slate-800 h-9 rounded-xl focus:ring-1 focus:ring-indigo-500/20">
+                                <SelectValue placeholder="Tanpa Validasi" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-white border border-slate-250 text-slate-850 rounded-xl">
+                                <SelectItem value="none" className="focus:bg-slate-100 rounded-lg">Tanpa Validasi</SelectItem>
+                                <SelectItem value="number" className="focus:bg-slate-100 rounded-lg">Hanya Angka</SelectItem>
+                                <SelectItem value="phone" className="focus:bg-slate-100 rounded-lg">Nomor Telepon</SelectItem>
+                                <SelectItem value="regex" className="focus:bg-slate-100 rounded-lg">Kustom Regex Pattern</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {field.validationType === "number" && (
+                            <>
+                              <div className="space-y-1.5">
+                                <Label className="text-slate-500 text-[10px] font-bold">Nilai Minimum (Opsional)</Label>
+                                <Input
+                                  type="number"
+                                  placeholder="Min"
+                                  value={field.validationMin !== undefined ? field.validationMin : ""}
+                                  onChange={(e) => handleFieldChange(field.id, { 
+                                    validationMin: e.target.value !== "" ? Number(e.target.value) : undefined 
+                                  })}
+                                  className="bg-white border border-slate-200 h-9 rounded-xl focus:ring-1 focus:ring-indigo-500/20 text-slate-800"
+                                />
+                              </div>
+                              <div className="space-y-1.5">
+                                <Label className="text-slate-500 text-[10px] font-bold">Nilai Maksimum (Opsional)</Label>
+                                <Input
+                                  type="number"
+                                  placeholder="Max"
+                                  value={field.validationMax !== undefined ? field.validationMax : ""}
+                                  onChange={(e) => handleFieldChange(field.id, { 
+                                    validationMax: e.target.value !== "" ? Number(e.target.value) : undefined 
+                                  })}
+                                  className="bg-white border border-slate-200 h-9 rounded-xl focus:ring-1 focus:ring-indigo-500/20 text-slate-800"
+                                />
+                              </div>
+                            </>
+                          )}
+
+                          {field.validationType === "regex" && (
+                            <div className="md:col-span-2 space-y-1.5">
+                              <Label className="text-slate-500 text-[10px] font-bold">{"Regex Pattern (Contoh: ^[A-Z]{3}-\\d{4}$)"}</Label>
+                              <Input
+                                placeholder="Masukkan regular expression..."
+                                value={field.validationPattern || ""}
+                                onChange={(e) => handleFieldChange(field.id, { validationPattern: e.target.value })}
+                                className="bg-white border border-slate-200 h-9 rounded-xl focus:ring-1 focus:ring-indigo-500/20 text-slate-850"
+                              />
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
 

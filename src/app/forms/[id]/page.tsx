@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useTransition, use } from "react";
-import { getPublicFormAction, submitResponseAction, checkIpSubmissionAction } from "@/app/actions/forms";
+import { getPublicFormAction, submitResponseAction, checkIpSubmissionAction, verifyFormPasswordAction } from "@/app/actions/forms";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,10 @@ interface FieldSchema {
   fileTypes?: string;
   conditionFieldId?: string;
   conditionValue?: string;
+  validationType?: "none" | "number" | "phone" | "regex";
+  validationMin?: number;
+  validationMax?: number;
+  validationPattern?: string;
 }
 
 interface FormSchema {
@@ -33,6 +37,11 @@ interface FormSchema {
   custom_success_message?: string;
   redirect_url?: string;
   expiry_date?: string;
+  limit_one_per_ip?: boolean;
+  max_total_responses?: number;
+  enable_turnstile?: boolean;
+  has_password?: boolean;
+  turnstile_site_key?: string;
 }
 
 export default function PublicFormPage({ params }: { params: Promise<{ id: string }> }) {
@@ -55,9 +64,14 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
   // Autosave and Loading states
   const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [responseId, setResponseId] = useState<number | undefined>(undefined);
   const [isAlreadySubmitted, setIsAlreadySubmitted] = useState(false);
   const [isLoadingForm, setIsLoadingForm] = useState(true);
   const [isPending, startTransition] = useTransition();
+
+  // Password Verification state
+  const [isPasswordVerified, setIsPasswordVerified] = useState(false);
+  const [passwordInput, setPasswordInput] = useState("");
 
   const fields: FieldSchema[] = form
     ? (Array.isArray(form.fields)
@@ -76,7 +90,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
         setForm(fetchedForm);
         
         // Check if response is limited to 1 per IP and user has already submitted
-        if (fetchedForm.is_active && fetchedForm.max_responses === 1) {
+        if (fetchedForm.is_active && (fetchedForm.limit_one_per_ip === true || fetchedForm.max_responses === 1)) {
           const checkRes = await checkIpSubmissionAction(formId);
           if (checkRes.success && checkRes.submitted) {
             setIsAlreadySubmitted(true);
@@ -127,6 +141,21 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
 
     fetchForm();
   }, [formId]);
+
+  // Turnstile script dynamic loader
+  useEffect(() => {
+    if (form?.enable_turnstile) {
+      const scriptId = "cloudflare-turnstile-script";
+      if (!document.getElementById(scriptId)) {
+        const script = document.createElement("script");
+        script.id = scriptId;
+        script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+        script.async = true;
+        script.defer = true;
+        document.body.appendChild(script);
+      }
+    }
+  }, [form]);
 
   // Save answers to localStorage on change (Autosave)
   useEffect(() => {
@@ -311,6 +340,38 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(val.trim())) {
           newErrors[field.id] = "Format alamat email tidak valid.";
+          return;
+        }
+      }
+
+      // 3. Custom type validations for text field type
+      if (val && typeof val === "string" && field.type === "text") {
+        if (field.validationType === "number") {
+          const num = Number(val);
+          if (isNaN(num)) {
+            newErrors[field.id] = "Kolom ini harus diisi dengan angka.";
+          } else {
+            if (field.validationMin !== undefined && num < field.validationMin) {
+              newErrors[field.id] = `Nilai minimal adalah ${field.validationMin}.`;
+            }
+            if (field.validationMax !== undefined && num > field.validationMax) {
+              newErrors[field.id] = `Nilai maksimal adalah ${field.validationMax}.`;
+            }
+          }
+        } else if (field.validationType === "phone") {
+          const phoneRegex = /^[+]*[0-9 -()]{7,16}$/;
+          if (!phoneRegex.test(val.trim())) {
+            newErrors[field.id] = "Format nomor telepon tidak valid.";
+          }
+        } else if (field.validationType === "regex" && field.validationPattern) {
+          try {
+            const regex = new RegExp(field.validationPattern);
+            if (!regex.test(val)) {
+              newErrors[field.id] = "Format input tidak sesuai ketentuan.";
+            }
+          } catch (e) {
+            console.error("Regex validation compile error:", e);
+          }
         }
       }
     });
@@ -355,9 +416,14 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
         visibleAnswers[field.id] = answers[field.id];
       }
     });
+
+    // Get Cloudflare Turnstile Captcha response
+    const turnstileToken = (document.getElementsByName("cf-turnstile-response")[0] as HTMLInputElement)?.value;
+
     startTransition(async () => {
-      const result = await submitResponseAction(formId, visibleAnswers);
+      const result = await submitResponseAction(formId, visibleAnswers, passwordInput || undefined, turnstileToken || undefined);
       if (result.success) {
+        setResponseId(result.responseId);
         setIsSubmitted(true);
         if (typeof window !== "undefined") {
           localStorage.removeItem(`form_draft_${formId}`);
@@ -406,6 +472,51 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
           <p className="text-slate-500 text-sm mt-3 leading-relaxed">
             Tautan yang Anda ikuti mungkin rusak, atau formulir ini telah dihapus oleh pengelolanya.
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Check Password Protection
+  if (form.has_password && !isPasswordVerified) {
+    return (
+      <div className="min-h-screen bg-gradient-to-tr from-slate-50 via-indigo-50/30 to-blue-50/50 text-slate-800 flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md border border-white/60 bg-white/70 backdrop-blur-xl rounded-2xl text-center p-8 relative overflow-hidden shadow-lg space-y-5">
+          <div className="absolute top-0 left-0 w-full h-[4px] bg-indigo-600" />
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 shadow-sm">
+            <i className="fa-solid fa-lock text-xl"></i>
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold text-slate-900">Formulir Terproteksi</h2>
+            <p className="text-slate-500 text-xs leading-relaxed">
+              Formulir ini dilindungi kata sandi. Silakan masukkan kata sandi akses untuk membukanya.
+            </p>
+          </div>
+          <form 
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const res = await verifyFormPasswordAction(formId, passwordInput);
+              if (res.success) {
+                setIsPasswordVerified(true);
+                toast.success("Akses terbuka, silakan isi form.");
+              } else {
+                toast.error(res.error || "Kata sandi salah.");
+              }
+            }}
+            className="space-y-3"
+          >
+            <Input
+              type="password"
+              placeholder="Masukkan kata sandi..."
+              value={passwordInput}
+              onChange={(e) => setPasswordInput(e.target.value)}
+              className="bg-white/60 border border-slate-200 text-slate-850 h-10 rounded-xl"
+              required
+            />
+            <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-750 text-white font-bold h-10 rounded-xl transition-all cursor-pointer">
+              Buka Formulir
+            </Button>
+          </form>
         </div>
       </div>
     );
@@ -480,20 +591,94 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
           )}
 
           {!form.redirect_url && (
-            <div className="pt-4 border-t border-slate-100">
+            <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-center gap-3">
+              <Button
+                type="button"
+                onClick={() => window.print()}
+                className="bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl px-6 shadow-sm h-10 font-semibold transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                <i className="fa-solid fa-print"></i>
+                Cetak Bukti Pengisian (PDF)
+              </Button>
               <Button
                 type="button"
                 onClick={() => {
                   setAnswers({});
                   setUploadedFiles({});
                   setIsSubmitted(false);
+                  setResponseId(undefined);
                 }}
-                className="bg-white border border-slate-200 text-slate-650 hover:bg-slate-50 rounded-xl px-6 shadow-sm h-10 font-semibold transition-all"
+                className="bg-white border border-slate-200 text-slate-650 hover:bg-slate-50 rounded-xl px-6 shadow-sm h-10 font-semibold transition-all cursor-pointer"
               >
                 Kirim Tanggapan Lain
               </Button>
             </div>
           )}
+
+          {/* Printable Receipt Area */}
+          <div id="print-receipt-section" className="hidden print:block font-sans p-8 bg-white text-slate-800 text-left">
+            <style dangerouslySetInnerHTML={{ __html: `
+              @media print {
+                body * {
+                  visibility: hidden;
+                }
+                #print-receipt-section, #print-receipt-section * {
+                  visibility: visible;
+                }
+                #print-receipt-section {
+                  position: absolute;
+                  left: 0;
+                  top: 0;
+                  width: 100%;
+                }
+              }
+            ` }} />
+            <div className="border-b-2 border-slate-900 pb-4 mb-6">
+              <h1 className="text-xl font-bold uppercase text-slate-955">Bukti Pengisian Formulir</h1>
+              <p className="text-xs text-slate-500 mt-1">Dicetak pada: {new Date().toLocaleString("id-ID")}</p>
+            </div>
+
+            <div className="space-y-3 text-xs mb-6">
+              <div>
+                <span className="font-bold text-slate-500 block">Formulir:</span>
+                <span className="text-sm font-bold text-slate-900">{form.title}</span>
+              </div>
+              {responseId && (
+                <div>
+                  <span className="font-bold text-slate-500 block">ID Tanggapan:</span>
+                  <span className="font-mono text-slate-800">#{responseId}</span>
+                </div>
+              )}
+            </div>
+
+            <table className="w-full border-collapse border border-slate-300 text-xs">
+              <thead>
+                <tr className="bg-slate-100">
+                  <th className="border border-slate-300 px-4 py-2.5 text-left font-bold text-slate-900">Pertanyaan</th>
+                  <th className="border border-slate-300 px-4 py-2.5 text-left font-bold text-slate-900">Jawaban</th>
+                </tr>
+              </thead>
+              <tbody>
+                {fields.map((field) => {
+                  if (!isFieldVisible(field.id)) return null;
+                  let displayVal = answers[field.id] || "-";
+                  if (Array.isArray(displayVal)) {
+                    displayVal = displayVal.join(", ");
+                  }
+                  return (
+                    <tr key={field.id} className="even:bg-slate-50/50">
+                      <td className="border border-slate-300 px-4 py-2.5 font-semibold text-slate-800">{field.label}</td>
+                      <td className="border border-slate-300 px-4 py-2.5 whitespace-pre-wrap text-slate-750">{String(displayVal)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            <div className="border-t border-slate-200 mt-8 pt-4 text-center text-[10px] text-slate-400">
+              Personal Form Builder • Cetak Tanggapan Resmi
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -762,6 +947,17 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
             );
           })}
 
+          {/* Cloudflare Turnstile Captcha Widget */}
+          {form.enable_turnstile && (
+            <div className="relative overflow-hidden rounded-2xl border border-white/60 bg-white/70 p-6 backdrop-blur-sm shadow-sm flex flex-col items-center justify-center space-y-3">
+              <Label className="text-slate-750 text-sm font-bold tracking-wide self-start">Verifikasi Keamanan (Anti-Bot)</Label>
+              <div 
+                className="cf-turnstile" 
+                data-sitekey={form.turnstile_site_key || "0x4AAAAAAAxgf3w7tWexJp15"}
+              />
+            </div>
+          )}
+
           {/* Form Submit Button */}
           <div className="flex flex-col sm:flex-row gap-3 justify-between items-center pt-4">
             <span className="text-[11px] text-slate-400 font-medium">
@@ -770,7 +966,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
             <Button
               type="submit"
               disabled={isPending || Object.values(uploadingFields).some(Boolean)}
-              className="w-full sm:w-auto bg-indigo-600 text-white hover:bg-indigo-700 font-bold px-8 h-11 rounded-xl shadow-md transition-all"
+              className="w-full sm:w-auto bg-indigo-600 text-white hover:bg-indigo-700 font-bold px-8 h-11 rounded-xl shadow-md transition-all cursor-pointer"
             >
               {isPending ? (
                 <>
