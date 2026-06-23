@@ -993,6 +993,18 @@ function TurnstileWidget({ siteKey }: { siteKey: string }) {
           containerRef.current.innerHTML = "";
           widgetId = (window as any).turnstile.render(containerRef.current, {
             sitekey: siteKey,
+            "error-callback": (err: any) => {
+              console.error("Turnstile widget error callback:", err);
+            },
+            "expired-callback": () => {
+              if (typeof window !== "undefined" && (window as any).turnstile && widgetId) {
+                try {
+                  (window as any).turnstile.reset(widgetId);
+                } catch (e) {
+                  console.error("Error resetting Turnstile widget:", e);
+                }
+              }
+            }
           });
         } catch (e) {
           console.error("Turnstile render error:", e);
