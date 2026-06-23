@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { logoutAction, getCurrentUserAction } from "@/app/actions/auth";
+import { logoutAction, getCurrentUserAction, stopImpersonatingAction } from "@/app/actions/auth";
 import { toast } from "sonner";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -12,6 +12,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [user, setUser] = useState<{ email: string; role: string } | null>(null);
+  const [isImpersonating, setIsImpersonating] = useState(false);
 
   useEffect(() => {
     async function fetchUser() {
@@ -21,6 +22,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           email: res.user.email,
           role: res.user.role || "user",
         });
+        setIsImpersonating(!!res.is_impersonating);
       } else {
         toast.error("Sesi Anda berakhir atau tidak valid. Silakan login kembali.");
         router.push("/login");
@@ -38,6 +40,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         router.refresh();
       } else {
         toast.error("Gagal keluar.");
+      }
+    });
+  };
+
+  const handleStopImpersonating = async () => {
+    startTransition(async () => {
+      const res = await stopImpersonatingAction();
+      if (res.success) {
+        toast.success("Kembali ke akun Super Admin.");
+        router.push("/admin/users");
+        router.refresh();
+      } else {
+        toast.error(res.error || "Gagal menghentikan peniruan sesi.");
       }
     });
   };
@@ -189,6 +204,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* Dynamic children content */}
         <div className="flex-1 overflow-y-auto no-scrollbar">
+          {isImpersonating && (
+            <div className="bg-amber-500 text-white px-6 py-3 shadow-md flex items-center justify-between sticky top-0 z-30 backdrop-blur-md">
+              <div className="flex items-center gap-2.5 text-xs md:text-sm font-bold">
+                <i className="fa-solid fa-user-secret animate-pulse text-lg"></i>
+                <span>Mode Peniruan Sesi Aktif: Anda sedang mengakses akun <strong>{user?.email}</strong></span>
+              </div>
+              <button
+                onClick={handleStopImpersonating}
+                disabled={isPending}
+                className="bg-white text-amber-700 hover:bg-amber-50 font-extrabold px-3.5 py-1.5 rounded-lg text-xs shadow-inner cursor-pointer transition-all duration-200 flex items-center gap-1.5 shrink-0"
+              >
+                <i className="fa-solid fa-circle-xmark"></i>
+                Kembali ke Admin
+              </button>
+            </div>
+          )}
           {children}
         </div>
       </div>

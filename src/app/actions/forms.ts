@@ -764,31 +764,45 @@ export async function toggleFormActiveAction(formId: string, isActive: boolean) 
 
 export async function generateFormWithAIAction(prompt: string, userApiKey?: string, userModel?: string) {
   try {
+    const cookieStore = await cookies();
+    const sessionToken = cookieStore.get("admin_session")?.value;
+    const user = await getSessionUser(sessionToken);
+
+    if (!user) {
+      return { success: false, error: "Unauthorized: Silakan masuk terlebih dahulu." };
+    }
+
     let apiKey = (userApiKey || "").trim();
     if (!apiKey) {
-      try {
-        const cookieStore = await cookies();
-        const sessionToken = cookieStore.get("admin_session")?.value;
-        const user = await getSessionUser(sessionToken);
-        if (user && user.id !== "00000000-0000-0000-0000-000000000000") {
+      if (user.id !== "00000000-0000-0000-0000-000000000000") {
+        try {
           const userRes = await sql`
             SELECT openrouter_api_key FROM users WHERE id = ${user.id} LIMIT 1
           `;
           if (userRes.length > 0 && userRes[0].openrouter_api_key) {
             apiKey = userRes[0].openrouter_api_key.trim();
           }
+        } catch (err) {
+          console.error("Gagal membaca setelan AI user:", err);
         }
-      } catch (err) {
-        console.error("Gagal membaca setelan AI user:", err);
       }
     }
 
-    if (!apiKey) {
+    // Pengguna biasa wajib menggunakan API Key kustom mereka sendiri demi keamanan dan privasi
+    if (!apiKey && user.role === "user") {
+      return { 
+        success: false, 
+        error: "Kunci API OpenRouter kustom belum diatur. Untuk keamanan dan privasi, silakan masukkan API Key Anda sendiri di menu 'Setelan AI Akun'." 
+      };
+    }
+
+    // Hanya Super Admin yang diizinkan menggunakan fallback kunci global/server
+    if (!apiKey && user.role === "super_admin") {
       apiKey = (await getSetting("openrouter_api_key")).trim();
     }
 
     if (!apiKey) {
-      return { success: false, error: "Kunci API OpenRouter tidak ditemukan. Silakan masukkan API Key di Pengaturan Akun Anda atau Setelan Global terlebih dahulu." };
+      return { success: false, error: "Kunci API OpenRouter tidak ditemukan. Silakan hubungi Super Admin untuk mengonfigurasi API Key di Setelan Global." };
     }
 
     let model = (userModel || "").trim();

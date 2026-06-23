@@ -159,6 +159,10 @@ export async function impersonateUserAction(targetUserId: string) {
     await requireSuperAdmin();
     await initDatabase();
 
+    // Dapatkan cookie sesi Super Admin aktif saat ini
+    const cookieStore = await cookies();
+    const currentAdminSession = cookieStore.get("admin_session")?.value;
+
     // Pastikan user target terdaftar
     const targetUser = await sql`
       SELECT id, email, role FROM users WHERE id = ${targetUserId} LIMIT 1
@@ -178,8 +182,18 @@ export async function impersonateUserAction(targetUserId: string) {
     `;
     const sessionId = sessionRes[0].id;
 
-    // Timpa cookie sesi dengan sesi pengguna target
-    const cookieStore = await cookies();
+    // Simpan sesi admin asli di cookie khusus 'original_admin_session' jika belum ada
+    if (currentAdminSession) {
+      cookieStore.set("original_admin_session", currentAdminSession, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7,
+      });
+    }
+
+    // Timpa cookie sesi utama dengan sesi pengguna target
     cookieStore.set("admin_session", sessionId, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -237,9 +251,44 @@ export async function getCurrentUserAction() {
     if (!user) {
       return { success: false, error: "Sesi tidak ditemukan atau kedaluwarsa." };
     }
-    return { success: true, user };
+    
+    // Cek apakah mode impersonasi sedang aktif
+    const isImpersonating = !!cookieStore.get("original_admin_session")?.value;
+
+    return { success: true, user, is_impersonating: isImpersonating };
   } catch (err) {
     console.error("Gagal mendapatkan user aktif:", err);
     return { success: false, error: "Gagal mengambil data pengguna." };
+  }
+}
+
+/**
+ * Menghentikan peniruan sesi (impersonate) dan kembali ke akun Super Admin asli.
+ */
+export async function stopImpersonatingAction() {
+  try {
+    const cookieStore = await cookies();
+    const originalSession = cookieStore.get("original_admin_session")?.value;
+
+    if (!originalSession) {
+      return { success: false, error: "Sesi Super Admin asli tidak ditemukan." };
+    }
+
+    // Kembalikan cookie sesi utama ke sesi admin asli
+    cookieStore.set("admin_session", originalSession, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+    });
+
+    // Hapus cookie sesi admin asli
+    cookieStore.delete("original_admin_session");
+
+    return { success: true };
+  } catch (err: any) {
+    console.error("Gagal menghentikan peniruan sesi:", err);
+    return { success: false, error: err.message || "Gagal menghentikan peniruan sesi." };
   }
 }
