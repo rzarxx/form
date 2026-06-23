@@ -52,6 +52,8 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
   // Anti-spam states
   const [honeypot, setHoneypot] = useState("");
 
+  // Autosave and Loading states
+  const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isAlreadySubmitted, setIsAlreadySubmitted] = useState(false);
   const [isLoadingForm, setIsLoadingForm] = useState(true);
@@ -80,6 +82,43 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
             setIsAlreadySubmitted(true);
           }
         }
+
+        // Load draft answers from localStorage if exists
+        if (typeof window !== "undefined") {
+          const draftKey = `form_draft_${formId}`;
+          const savedDraft = localStorage.getItem(draftKey);
+          if (savedDraft) {
+            try {
+              const parsedDraft = JSON.parse(savedDraft);
+              if (parsedDraft && typeof parsedDraft === "object") {
+                setAnswers(parsedDraft);
+                
+                // If there are uploaded files in the draft, we need to populate uploadedFiles state as well
+                const fieldsArr = Array.isArray(fetchedForm.fields)
+                  ? fetchedForm.fields
+                  : typeof fetchedForm.fields === "string"
+                    ? JSON.parse(fetchedForm.fields)
+                    : [];
+                
+                const filesState: Record<string, { name: string; url: string }> = {};
+                Object.entries(parsedDraft).forEach(([fId, val]) => {
+                  const field = fieldsArr.find((f: any) => f.id === fId);
+                  if (field && field.type === "file" && typeof val === "string" && val.trim()) {
+                    const filename = val.split("/").pop() || "Berkas";
+                    filesState[fId] = { name: filename, url: val };
+                  }
+                });
+                if (Object.keys(filesState).length > 0) {
+                  setUploadedFiles(filesState);
+                }
+                
+                toast.success("Draf isian sebelumnya berhasil dipulihkan otomatis.");
+              }
+            } catch (e) {
+              console.error("Gagal memuat draf dari localStorage", e);
+            }
+          }
+        }
       } else {
         toast.error(result.error || "Formulir tidak ditemukan.");
       }
@@ -88,6 +127,15 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
 
     fetchForm();
   }, [formId]);
+
+  // Save answers to localStorage on change (Autosave)
+  useEffect(() => {
+    if (formId && Object.keys(answers).length > 0 && !isSubmitted) {
+      const draftKey = `form_draft_${formId}`;
+      localStorage.setItem(draftKey, JSON.stringify(answers));
+      setLastSavedTime(new Date());
+    }
+  }, [answers, formId, isSubmitted]);
 
   // Handle auto redirect if configured
   useEffect(() => {
@@ -311,6 +359,9 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
       const result = await submitResponseAction(formId, visibleAnswers);
       if (result.success) {
         setIsSubmitted(true);
+        if (typeof window !== "undefined") {
+          localStorage.removeItem(`form_draft_${formId}`);
+        }
         toast.success("Tanggapan berhasil dikirim!");
       } else {
         toast.error(result.error || "Gagal mengirim tanggapan.");
@@ -320,9 +371,25 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
 
   if (isLoadingForm) {
     return (
-      <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col items-center justify-center">
-        <i className="fa-solid fa-circle-notch fa-spin text-indigo-600 text-3xl mb-3"></i>
-        <p className="text-sm text-slate-500 font-semibold">Memuat formulir...</p>
+      <div className="min-h-screen bg-gradient-to-tr from-slate-50 via-indigo-50/30 to-blue-50/50 flex flex-col items-center py-12 px-4">
+        <div className="w-full max-w-2xl space-y-6">
+          {/* Banner Skeleton */}
+          <div className="w-full h-44 sm:h-60 rounded-2xl bg-white/40 border border-white/60 animate-pulse backdrop-blur-md" />
+          
+          {/* Title Skeleton */}
+          <div className="rounded-2xl border border-white/60 bg-white/70 p-6 sm:p-8 backdrop-blur-xl space-y-3 animate-pulse">
+            <div className="h-7 bg-slate-200/80 rounded-lg w-2/3" />
+            <div className="h-4 bg-slate-200/60 rounded-lg w-1/2" />
+          </div>
+          
+          {/* Input skeletons */}
+          {[1, 2, 3].map((n) => (
+            <div key={n} className="rounded-2xl border border-white/60 bg-white/70 p-6 backdrop-blur-xl space-y-4 animate-pulse">
+              <div className="h-5 bg-slate-200/80 rounded-lg w-1/3" />
+              <div className="h-10 bg-slate-200/40 rounded-xl w-full" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -434,8 +501,39 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
 
   return (
     <div className="min-h-screen bg-gradient-to-tr from-slate-50 via-indigo-50/30 to-blue-50/50 text-slate-800 flex flex-col items-center py-12 px-4 sm:px-6 relative overflow-x-hidden">
-      {/* Background glow decoration */}
+      {/* Background glow decoration blobs */}
+      <div className="absolute top-[10%] left-[10%] w-72 h-72 bg-indigo-300/20 rounded-full blur-[80px] pointer-events-none animate-pulse" style={{ animationDuration: "8s" }} />
+      <div className="absolute bottom-[20%] right-[10%] w-80 h-80 bg-purple-300/15 rounded-full blur-[90px] pointer-events-none animate-pulse" style={{ animationDuration: "10s" }} />
+      <div className="absolute top-[40%] right-[20%] w-64 h-64 bg-blue-300/15 rounded-full blur-[70px] pointer-events-none animate-pulse" style={{ animationDuration: "6s" }} />
+      
+      {/* Background default header glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[250px] bg-gradient-to-b from-indigo-500/5 to-transparent rounded-full blur-[100px] pointer-events-none" />
+
+      {/* Submission Loading Overlay */}
+      {isPending && (
+        <div className="fixed inset-0 bg-white/60 backdrop-blur-md z-50 flex flex-col items-center justify-center">
+          <div className="relative flex items-center justify-center">
+            <div className="h-16 w-16 rounded-full border-4 border-indigo-100 animate-ping absolute" />
+            <div className="h-14 w-14 rounded-full border-4 border-t-indigo-600 border-r-purple-600 border-b-pink-500 border-l-transparent animate-spin" />
+          </div>
+          <h3 className="mt-6 text-slate-900 font-extrabold text-lg tracking-tight animate-pulse">Mengirim Tanggapan Anda</h3>
+          <p className="mt-1.5 text-slate-550 text-xs font-medium">Jawaban Anda sedang dienkripsi & disimpan ke database...</p>
+        </div>
+      )}
+
+      {/* Autosave Draft Saved Pill */}
+      {lastSavedTime && (
+        <div className="fixed bottom-6 right-6 z-40 bg-white/80 border border-slate-200/60 text-slate-700 backdrop-blur-md px-4 py-2.5 rounded-full shadow-lg flex items-center space-x-2 transition-all duration-300 hover:bg-white">
+          <div className="relative flex h-2 w-2 mr-1">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </div>
+          <i className="fa-solid fa-cloud-arrow-up text-emerald-600 text-xs"></i>
+          <span className="text-[10px] font-bold tracking-tight">
+            Draf disimpan otomatis ({lastSavedTime.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" })})
+          </span>
+        </div>
+      )}
 
       <div className="w-full max-w-2xl space-y-6 relative">
         

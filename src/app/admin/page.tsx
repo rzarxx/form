@@ -23,6 +23,8 @@ export default function AdminDashboard() {
   const [forms, setForms] = useState<FormSchema[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const fetchForms = async () => {
@@ -135,6 +137,190 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Real-time Analytics Section */}
+        <Card className="bg-white border-slate-200/80 shadow-sm rounded-2xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-[4px] h-full bg-indigo-650" />
+          <CardHeader className="pt-6 pb-4 flex flex-row items-center justify-between border-b border-slate-100">
+            <div className="space-y-1.5">
+              <CardTitle className="text-lg font-black tracking-tight text-slate-900 flex items-center gap-2">
+                <i className="fa-solid fa-chart-simple text-indigo-650"></i>
+                Analitik Real-time Tanggapan
+              </CardTitle>
+              <CardDescription className="text-slate-500 text-xs">
+                Perbandingan jumlah tanggapan antar formulir terpopuler Anda.
+              </CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                setIsSyncing(true);
+                await fetchForms();
+                toast.success("Data analitik berhasil diperbarui.");
+                setTimeout(() => setIsSyncing(false), 1000);
+              }}
+              disabled={isLoading || isSyncing}
+              className="border-slate-200 text-indigo-650 hover:bg-indigo-50/50 h-9 px-3 rounded-xl text-xs font-semibold cursor-pointer flex items-center gap-1.5 transition-colors"
+            >
+              <i className={`fa-solid fa-sync ${isSyncing ? "fa-spin" : ""}`}></i>
+              Sync Real-time
+            </Button>
+          </CardHeader>
+          <CardContent className="p-6">
+            {isLoading ? (
+              <div className="h-64 flex flex-col items-center justify-center text-slate-400">
+                <i className="fa-solid fa-circle-notch fa-spin text-indigo-600 text-2xl mb-2"></i>
+                <span className="text-xs">Memuat grafik...</span>
+              </div>
+            ) : (() => {
+              const chartForms = [...forms]
+                .sort((a, b) => b.response_count - a.response_count)
+                .slice(0, 8);
+              const maxVal = Math.max(...chartForms.map((f) => f.response_count), 5);
+              const ticks = [0, Math.round(maxVal * 0.25), Math.round(maxVal * 0.5), Math.round(maxVal * 0.75), maxVal];
+              const uniqueTicks = Array.from(new Set(ticks)).sort((a, b) => a - b);
+
+              if (chartForms.length === 0 || totalResponses === 0) {
+                return (
+                  <div className="h-64 border border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center text-center p-6 bg-slate-50/30">
+                    <i className="fa-solid fa-chart-pie text-slate-350 text-3xl mb-3"></i>
+                    <p className="text-xs font-bold text-slate-700">Belum ada data tanggapan untuk dianalisis</p>
+                    <p className="text-[10px] text-slate-400 mt-1 max-w-xs leading-relaxed">Kirim tautan formulir Anda ke responden untuk melihat grafik data di sini secara real-time.</p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="relative">
+                  <svg viewBox="0 0 800 300" width="100%" height="100%" className="overflow-visible select-none">
+                    <defs>
+                      <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.85" />
+                        <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.3" />
+                      </linearGradient>
+                      <linearGradient id="barGradHover" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#4338ca" stopOpacity="0.95" />
+                        <stop offset="100%" stopColor="#6d28d9" stopOpacity="0.45" />
+                      </linearGradient>
+                    </defs>
+
+                    {/* Grid Lines */}
+                    {uniqueTicks.map((tick) => {
+                      const y = 250 - (tick / maxVal) * 210;
+                      return (
+                        <g key={tick} className="opacity-40">
+                          <line 
+                            x1="60" 
+                            y1={y} 
+                            x2="780" 
+                            y2={y} 
+                            stroke="#e2e8f0" 
+                            strokeWidth="1" 
+                            strokeDasharray={tick === 0 ? "0" : "4 4"}
+                          />
+                          <text 
+                            x="45" 
+                            y={y + 4} 
+                            textAnchor="end" 
+                            className="fill-slate-400 text-[10px] font-bold font-mono"
+                          >
+                            {tick}
+                          </text>
+                        </g>
+                      );
+                    })}
+
+                    {/* Bars */}
+                    {chartForms.map((form, index) => {
+                      const barWidth = Math.min(50, 450 / chartForms.length);
+                      const chartAreaWidth = 720;
+                      const spacing = chartAreaWidth / chartForms.length;
+                      const x = 70 + index * spacing + (spacing - barWidth) / 2;
+                      const barHeight = (form.response_count / maxVal) * 210;
+                      const y = 250 - barHeight;
+                      const isHovered = hoveredBarIndex === index;
+
+                      return (
+                        <g key={form.id}>
+                          {/* Hover trigger area */}
+                          <rect
+                            x={x - 10}
+                            y={30}
+                            width={barWidth + 20}
+                            height={230}
+                            fill="transparent"
+                            className="cursor-pointer"
+                            onMouseEnter={() => setHoveredBarIndex(index)}
+                            onMouseLeave={() => setHoveredBarIndex(null)}
+                          />
+                          
+                          {/* The visible bar */}
+                          <rect
+                            x={x}
+                            y={y}
+                            width={barWidth}
+                            height={barHeight}
+                            rx="6"
+                            ry="6"
+                            fill={isHovered ? "url(#barGradHover)" : "url(#barGrad)"}
+                            stroke={isHovered ? "#4338ca" : "#4f46e5"}
+                            strokeWidth={isHovered ? "1.5" : "0.5"}
+                            className="transition-all duration-200"
+                          />
+
+                          {/* Top value label */}
+                          {form.response_count > 0 && (
+                            <text
+                              x={x + barWidth / 2}
+                              y={y - 8}
+                              textAnchor="middle"
+                              className={`fill-indigo-900 font-black text-[10px] transition-opacity duration-200 ${
+                                isHovered ? "opacity-100" : "opacity-0 sm:opacity-100"
+                              }`}
+                            >
+                              {form.response_count}
+                            </text>
+                          )}
+
+                          {/* X-axis form title label */}
+                          <text
+                            x={x + barWidth / 2}
+                            y="275"
+                            textAnchor="middle"
+                            className={`fill-slate-500 font-semibold text-[9px] transition-colors ${
+                              isHovered ? "fill-indigo-650 font-bold" : ""
+                            }`}
+                          >
+                            {form.title.length > 12 ? `${form.title.substring(0, 10)}...` : form.title}
+                          </text>
+                        </g>
+                      );
+                    })}
+                    
+                    {/* Base X-axis Line */}
+                    <line x1="60" y1="250" x2="780" y2="250" stroke="#cbd5e1" strokeWidth="1.5" />
+                  </svg>
+
+                  {/* Tooltip */}
+                  {hoveredBarIndex !== null && chartForms[hoveredBarIndex] && (
+                    <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-slate-900/95 text-white text-[11px] rounded-xl px-4 py-2 shadow-xl border border-slate-800 backdrop-blur-sm transition-all flex items-center gap-3">
+                      <div className="flex flex-col">
+                        <span className="font-extrabold max-w-[200px] truncate">{chartForms[hoveredBarIndex].title}</span>
+                        <span className="text-[10px] text-slate-350">
+                          {chartForms[hoveredBarIndex].response_count} respons masuk
+                        </span>
+                      </div>
+                      <span className="bg-indigo-600 text-white font-mono px-2 py-0.5 rounded text-[10px] font-black">
+                        {Math.round((chartForms[hoveredBarIndex].response_count / totalResponses) * 100) || 0}%
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </CardContent>
+        </Card>
 
         {/* Search Bar & Forms List */}
         <div className="space-y-6">

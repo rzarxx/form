@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useTransition, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getFormDetailAction, updateFormAction } from "@/app/actions/forms";
+import { getFormDetailAction, updateFormAction, generateFormWithAIAction } from "@/app/actions/forms";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,7 +59,67 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
   const [customSuccessMessage, setCustomSuccessMessage] = useState("");
   const [redirectUrl, setRedirectUrl] = useState("");
 
+  // AI Form Generator State
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiApiKey, setAiApiKey] = useState("");
+  const [showAiSettings, setShowAiSettings] = useState(false);
+  const [isAiGenerating, setIsAiGenerating] = useState(false);
+  const [aiMergeMode, setAiMergeMode] = useState<"replace" | "append">("replace");
+  const [showAiPanel, setShowAiPanel] = useState(false);
+
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedKey = localStorage.getItem("openrouter_api_key") || "";
+      setAiApiKey(savedKey);
+    }
+  }, []);
+
+  const handleSaveApiKey = (key: string) => {
+    setAiApiKey(key);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("openrouter_api_key", key);
+    }
+  };
+
+  const handleGenerateWithAI = async () => {
+    if (!aiPrompt.trim()) {
+      toast.error("Silakan masukkan petunjuk/prompt untuk membuat form.");
+      return;
+    }
+
+    setIsAiGenerating(true);
+    const loadingToast = toast.loading("AI sedang merancang formulir Anda...");
+
+    try {
+      const result = await generateFormWithAIAction(aiPrompt, aiApiKey || undefined);
+      toast.dismiss(loadingToast);
+      
+      if (result.success && result.data) {
+        const { title: aiTitle, description: aiDesc, fields: aiFields } = result.data;
+        
+        if (aiMergeMode === "replace") {
+          setTitle(aiTitle);
+          setDescription(aiDesc);
+          setFields(aiFields);
+          toast.success("Formulir berhasil dirancang ulang oleh AI!");
+        } else {
+          setFields((prev) => [...prev, ...aiFields]);
+          toast.success(`${aiFields.length} pertanyaan dari AI berhasil ditambahkan!`);
+        }
+        setAiPrompt("");
+      } else {
+        toast.error(result.error || "Gagal menghasilkan formulir dengan AI.");
+      }
+    } catch (err: any) {
+      toast.dismiss(loadingToast);
+      console.error(err);
+      toast.error(err.message || "Terjadi kesalahan koneksi saat memanggil AI.");
+    } finally {
+      setIsAiGenerating(false);
+    }
+  };
 
   useEffect(() => {
     const fetchForm = async () => {
@@ -313,7 +373,138 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
 
       {/* Main Content */}
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-8 pb-36 space-y-6 relative z-10">
-        
+
+        {/* AI Assistant Panel */}
+        <Card className="bg-indigo-50/40 border border-indigo-205/60 shadow-sm rounded-2xl relative overflow-hidden backdrop-blur-md">
+          <div className="absolute top-0 left-0 w-full h-[4px] bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
+          <CardHeader className="space-y-1.5 pt-6 pb-4 cursor-pointer select-none" onClick={() => setShowAiPanel(!showAiPanel)}>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg font-black tracking-tight text-indigo-900 flex items-center gap-2">
+                <i className="fa-solid fa-wand-magic-sparkles text-indigo-600 animate-pulse"></i>
+                Asisten AI Form Builder
+                <span className="text-[9px] font-bold tracking-wider text-indigo-705 bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-full uppercase ml-1">
+                  Gemini Powered
+                </span>
+              </CardTitle>
+              <span className="text-slate-400 hover:text-slate-600 transition-colors">
+                <i className={`fa-solid ${showAiPanel ? "fa-chevron-up" : "fa-chevron-down"}`}></i>
+              </span>
+            </div>
+            <CardDescription className="text-slate-500 text-xs">
+              Ubah atau tambahkan pertanyaan formulir Anda menggunakan bantuan kecerdasan buatan OpenRouter.
+            </CardDescription>
+          </CardHeader>
+          
+          {showAiPanel && (
+            <CardContent className="space-y-4 pt-0 pb-6 border-t border-indigo-100/50 mt-2">
+              <div className="space-y-2 pt-4">
+                <Label htmlFor="ai-prompt" className="text-indigo-900 text-xs font-bold flex items-center justify-between">
+                  <span>Jelaskan rancangan/pertanyaan baru yang ingin Anda buat</span>
+                  <span className="text-[10px] text-slate-400 font-normal">Contoh: "Tambahkan pertanyaan tentang kepuasan pelayanan pengiriman barang"</span>
+                </Label>
+                <Textarea
+                  id="ai-prompt"
+                  placeholder="Ketik topik atau detail formulir yang Anda inginkan..."
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                  className="bg-white/85 border border-indigo-200/80 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-800 min-h-[85px] leading-relaxed rounded-xl transition-all"
+                  disabled={isAiGenerating}
+                />
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                {/* Method selection */}
+                <div className="flex items-center gap-4">
+                  <span className="text-xs text-slate-500 font-bold">Mode Penggabungan:</span>
+                  <label className="flex items-center gap-1.5 text-xs text-slate-750 font-medium cursor-pointer">
+                    <input
+                      type="radio"
+                      name="ai-merge-mode"
+                      checked={aiMergeMode === "replace"}
+                      onChange={() => setAiMergeMode("replace")}
+                      className="accent-indigo-600"
+                      disabled={isAiGenerating}
+                    />
+                    Gantikan formulir saat ini
+                  </label>
+                  <label className="flex items-center gap-1.5 text-xs text-slate-750 font-medium cursor-pointer">
+                    <input
+                      type="radio"
+                      name="ai-merge-mode"
+                      checked={aiMergeMode === "append"}
+                      onChange={() => setAiMergeMode("append")}
+                      className="accent-indigo-600"
+                      disabled={isAiGenerating}
+                    />
+                    Tambahkan ke formulir saat ini
+                  </label>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowAiSettings(!showAiSettings)}
+                    className="text-slate-500 hover:text-slate-700 h-9 px-3 rounded-lg border border-slate-200/60 bg-white/40 cursor-pointer"
+                  >
+                    <i className="fa-solid fa-key mr-1.5 text-xs"></i>
+                    API Key
+                  </Button>
+
+                  <Button
+                    type="button"
+                    onClick={handleGenerateWithAI}
+                    disabled={isAiGenerating}
+                    className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-700 hover:to-violet-700 font-semibold px-4 h-9 rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer"
+                  >
+                    {isAiGenerating ? (
+                      <>
+                        <i className="fa-solid fa-circle-notch fa-spin"></i>
+                        Merancang Form...
+                      </>
+                    ) : (
+                      <>
+                        <i className="fa-solid fa-wand-magic-sparkles"></i>
+                        Hasilkan dengan AI
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {showAiSettings && (
+                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2 mt-2">
+                  <Label htmlFor="ai-api-key" className="text-slate-700 text-xs font-bold flex items-center justify-between">
+                    <span>OpenRouter API Key (Opsional jika sudah diset di server)</span>
+                    <span className="text-[9px] text-slate-400">Tersimpan aman di peramban Anda (localStorage)</span>
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="ai-api-key"
+                      type="password"
+                      placeholder="sk-or-v1-..."
+                      value={aiApiKey}
+                      onChange={(e) => handleSaveApiKey(e.target.value)}
+                      className="bg-white border border-slate-250 focus:border-indigo-500 text-slate-800 h-9 rounded-lg text-xs"
+                    />
+                    {aiApiKey && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => handleSaveApiKey("")}
+                        className="text-red-500 hover:text-red-700 border border-slate-200/60 bg-white h-9 px-2 rounded-lg text-xs cursor-pointer"
+                      >
+                        Bersihkan
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          )}
+        </Card>
+
         {/* Form Meta */}
         <Card className="bg-white border-slate-200 shadow-sm rounded-2xl relative overflow-hidden">
           <div className="absolute top-0 left-0 w-[4px] h-full bg-indigo-600" />

@@ -511,3 +511,114 @@ export async function toggleFormActiveAction(formId: string, isActive: boolean) 
     return { success: false, error: error.message || "Gagal memperbarui status formulir." };
   }
 }
+
+export async function generateFormWithAIAction(prompt: string, userApiKey?: string) {
+  try {
+    const apiKey = (process.env.OPENROUTER_API_KEY || userApiKey || "").trim();
+    if (!apiKey) {
+      return { success: false, error: "Kunci API OpenRouter tidak ditemukan. Silakan masukkan API Key di Pengaturan AI terlebih dahulu." };
+    }
+
+    const systemPrompt = `Anda adalah asisten pembuat formulir AI yang handal.
+Tugas Anda adalah merancang formulir berdasarkan deskripsi/prompt pengguna dalam format JSON.
+
+Format JSON harus berupa objek tunggal dengan struktur sebagai berikut:
+{
+  "title": "Judul formulir yang menarik",
+  "description": "Deskripsi formulir yang informatif",
+  "fields": [
+    {
+      "id": "field_unique_id",
+      "label": "Pertanyaan atau label input",
+      "type": "text" | "textarea" | "select" | "radio" | "file",
+      "required": true atau false,
+      "options": ["Pilihan A", "Pilihan B"] (Wajib ada jika type adalah "select" atau "radio")
+    }
+  ]
+}
+
+Aturan penting:
+1. Respons harus berupa JSON yang valid. Jangan sertakan teks penjelasan sebelum atau sesudah JSON.
+2. Field "type" hanya boleh salah satu dari: "text", "textarea", "select", "radio", "file".
+3. Buat minimal 3 pertanyaan dan maksimal 10 pertanyaan yang relevan dengan topik.
+4. Buat opsi pilihan ganda yang cerdas dan lengkap untuk tipe "select" atau "radio".
+5. Gunakan Bahasa Indonesia.`;
+
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+        "HTTP-Referer": "https://github.com/rzarxx/form",
+        "X-Title": "Personal Form Builder",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.7,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("OpenRouter API error:", errorText);
+      return { success: false, error: `Gagal menghubungi OpenRouter: ${response.statusText} (${response.status})` };
+    }
+
+    const result = await response.json();
+    const content = result.choices?.[0]?.message?.content?.trim();
+
+    if (!content) {
+      return { success: false, error: "Respons kosong dari AI." };
+    }
+
+    // Try parsing JSON. Clean the output first if the model included backticks
+    let jsonString = content;
+    if (jsonString.startsWith("```")) {
+      const match = jsonString.match(/```(?:json)?([\s\S]*?)```/);
+      if (match) {
+        jsonString = match[1].trim();
+      }
+    }
+
+    try {
+      const parsed = JSON.parse(jsonString);
+      if (!parsed.title || !Array.isArray(parsed.fields)) {
+        return { success: false, error: "Format formulir hasil AI tidak sesuai dengan skema." };
+      }
+
+      // Sanitize fields
+      const sanitizedFields = parsed.fields.map((f: any, idx: number) => {
+        const id = f.id || `field_${Date.now()}_${idx}_${Math.random().toString(36).substr(2, 4)}`;
+        const type = ["text", "textarea", "select", "radio", "file"].includes(f.type) ? f.type : "text";
+        return {
+          id,
+          label: f.label || `Pertanyaan ${idx + 1}`,
+          type,
+          required: !!f.required,
+          options: (type === "select" || type === "radio") ? (Array.isArray(f.options) ? f.options : ["Pilihan 1"]) : undefined,
+          fileTypes: type === "file" ? "*" : undefined,
+        };
+      });
+
+      return {
+        success: true,
+        data: {
+          title: parsed.title,
+          description: parsed.description || "",
+          fields: sanitizedFields,
+        }
+      };
+    } catch (e: any) {
+      console.error("Failed to parse AI JSON response:", content, e);
+      return { success: false, error: "Gagal memproses respons format formulir AI. Silakan coba lagi." };
+    }
+  } catch (error: any) {
+    console.error("Error in generateFormWithAIAction:", error);
+    return { success: false, error: error.message || "Terjadi kesalahan internal saat memanggil AI." };
+  }
+}
+
