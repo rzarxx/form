@@ -44,6 +44,7 @@ export default function NewFormBuilder() {
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiApiKey, setAiApiKey] = useState("");
   const [aiModel, setAiModel] = useState("google/gemini-2.5-flash");
+  const [aiModelList, setAiModelList] = useState<{ label: string; value: string }[]>([]);
   const [showAiSettings, setShowAiSettings] = useState(false);
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [aiMergeMode, setAiMergeMode] = useState<"replace" | "append">("replace");
@@ -57,6 +58,15 @@ export default function NewFormBuilder() {
       const savedModel = localStorage.getItem("openrouter_ai_model") || "google/gemini-2.5-flash";
       setAiApiKey(savedKey);
       setAiModel(savedModel);
+
+      const savedModels = localStorage.getItem("openrouter_models_list");
+      if (savedModels) {
+        try {
+          setAiModelList(JSON.parse(savedModels));
+        } catch {
+          setAiModelList([]);
+        }
+      }
     }
   }, []);
 
@@ -449,13 +459,23 @@ export default function NewFormBuilder() {
                         onChange={(e) => handleSaveModel(e.target.value)}
                         className="w-full bg-white border border-slate-250 text-slate-800 h-9 px-3 rounded-lg text-xs focus:outline-none focus:border-indigo-505 transition-colors cursor-pointer"
                       >
-                        <option value="openrouter/free">openrouter/free (Auto Routing Gratis)</option>
-                        <option value="google/gemini-2.5-flash">google/gemini-2.5-flash (Direkomendasikan)</option>
-                        <option value="google/gemini-2.5-pro">google/gemini-2.5-pro</option>
-                        <option value="google/gemma-2-9b-it:free">google/gemma-2-9b-it:free (Gratis)</option>
-                        <option value="meta-llama/llama-3.1-8b-instruct:free">meta-llama/llama-3.1-8b-instruct:free (Gratis)</option>
-                        <option value="meta-llama/llama-3-8b-instruct:free">meta-llama/llama-3-8b-instruct:free (Gratis)</option>
-                        <option value="qwen/qwen-2.5-72b-instruct:free">qwen/qwen-2.5-72b-instruct:free (Gratis)</option>
+                        {aiModelList.length > 0 ? (
+                          aiModelList.map((model, idx) => (
+                            <option key={idx} value={model.value}>
+                              {model.label}
+                            </option>
+                          ))
+                        ) : (
+                          <>
+                            <option value="openrouter/free">openrouter/free (Auto Routing Gratis)</option>
+                            <option value="google/gemini-2.5-flash">google/gemini-2.5-flash (Direkomendasikan)</option>
+                            <option value="google/gemini-2.5-pro">google/gemini-2.5-pro</option>
+                            <option value="google/gemma-2-9b-it:free">google/gemma-2-9b-it:free (Gratis)</option>
+                            <option value="meta-llama/llama-3.1-8b-instruct:free">meta-llama/llama-3.1-8b-instruct:free (Gratis)</option>
+                            <option value="meta-llama/llama-3-8b-instruct:free">meta-llama/llama-3-8b-instruct:free (Gratis)</option>
+                            <option value="qwen/qwen-2.5-72b-instruct:free">qwen/qwen-2.5-72b-instruct:free (Gratis)</option>
+                          </>
+                        )}
                       </select>
                     </div>
                   </div>

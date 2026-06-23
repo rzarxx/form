@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { getFormsAction, deleteFormAction } from "@/app/actions/forms";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 interface FormSchema {
@@ -26,6 +28,82 @@ export default function AdminDashboard() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  // AI Global Configuration States
+  const [showAiSettingsModal, setShowAiSettingsModal] = useState(false);
+  const [aiApiKey, setAiApiKey] = useState("");
+  const [aiModelList, setAiModelList] = useState<{ label: string; value: string }[]>([]);
+  const [newModelLabel, setNewModelLabel] = useState("");
+  const [newModelValue, setNewModelValue] = useState("");
+
+  const defaultModels = [
+    { label: "openrouter/free (Auto Routing Gratis)", value: "openrouter/free" },
+    { label: "google/gemini-2.5-flash (Direkomendasikan)", value: "google/gemini-2.5-flash" },
+    { label: "google/gemini-2.5-pro", value: "google/gemini-2.5-pro" },
+    { label: "google/gemma-2-9b-it:free (Gratis)", value: "google/gemma-2-9b-it:free" },
+    { label: "meta-llama/llama-3.1-8b-instruct:free (Gratis)", value: "meta-llama/llama-3.1-8b-instruct:free" },
+    { label: "meta-llama/llama-3-8b-instruct:free (Gratis)", value: "meta-llama/llama-3-8b-instruct:free" },
+    { label: "qwen/qwen-2.5-72b-instruct:free (Gratis)", value: "qwen/qwen-2.5-72b-instruct:free" }
+  ];
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedKey = localStorage.getItem("openrouter_api_key") || "";
+      setAiApiKey(savedKey);
+      
+      const savedModels = localStorage.getItem("openrouter_models_list");
+      if (savedModels) {
+        try {
+          setAiModelList(JSON.parse(savedModels));
+        } catch {
+          setAiModelList(defaultModels);
+        }
+      } else {
+        setAiModelList(defaultModels);
+        localStorage.setItem("openrouter_models_list", JSON.stringify(defaultModels));
+      }
+    }
+  }, []);
+
+  const handleSaveApiKey = (key: string) => {
+    setAiApiKey(key);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("openrouter_api_key", key);
+    }
+  };
+
+  const handleAddCustomModel = () => {
+    if (!newModelLabel.trim() || !newModelValue.trim()) {
+      toast.error("Nama model dan ID model wajib diisi.");
+      return;
+    }
+
+    const updatedList = [...aiModelList, { label: newModelLabel.trim(), value: newModelValue.trim() }];
+    setAiModelList(updatedList);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("openrouter_models_list", JSON.stringify(updatedList));
+    }
+    setNewModelLabel("");
+    setNewModelValue("");
+    toast.success("Model AI kustom berhasil ditambahkan!");
+  };
+
+  const handleRemoveCustomModel = (index: number) => {
+    const updatedList = aiModelList.filter((_, idx) => idx !== index);
+    setAiModelList(updatedList);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("openrouter_models_list", JSON.stringify(updatedList));
+    }
+    toast.info("Model AI dihapus dari daftar.");
+  };
+
+  const handleResetDefaultModels = () => {
+    setAiModelList(defaultModels);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("openrouter_models_list", JSON.stringify(defaultModels));
+    }
+    toast.success("Daftar model AI berhasil di-reset ke bawaan.");
+  };
 
   const fetchForms = async () => {
     setIsLoading(true);
@@ -83,12 +161,22 @@ export default function AdminDashboard() {
               Kelola lembar formulir kustom Anda, ubah struktur pertanyaan, dan analisis jawaban secara visual.
             </p>
           </div>
-          <Link href="/admin/forms/new" className="shrink-0">
-            <Button className="bg-primary text-white hover:bg-primary/90 font-semibold px-5 h-10.5 rounded-xl shadow-md transition-all">
-              <i className="fa-solid fa-plus mr-2"></i>
-              Buat Formulir Baru
+          <div className="flex items-center gap-3 shrink-0">
+            <Button
+              onClick={() => setShowAiSettingsModal(true)}
+              variant="outline"
+              className="border-slate-200 text-slate-700 bg-white hover:bg-slate-50 font-semibold px-4 h-10.5 rounded-xl shadow-sm cursor-pointer flex items-center gap-2"
+            >
+              <i className="fa-solid fa-wand-magic-sparkles text-indigo-600"></i>
+              Setelan AI
             </Button>
-          </Link>
+            <Link href="/admin/forms/new">
+              <Button className="bg-primary text-white hover:bg-primary/90 font-semibold px-5 h-10.5 rounded-xl shadow-md transition-all">
+                <i className="fa-solid fa-plus mr-2"></i>
+                Buat Formulir Baru
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Statistics Cards */}
@@ -461,6 +549,157 @@ export default function AdminDashboard() {
           )}
         </div>
       </main>
+
+      {/* AI Settings Modal */}
+      {showAiSettingsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-fade-in">
+          <div className="bg-white border border-slate-200 w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <div className="space-y-1">
+                <h3 className="text-lg font-black tracking-tight text-slate-900 flex items-center gap-2">
+                  <i className="fa-solid fa-wand-magic-sparkles text-indigo-650 animate-pulse"></i>
+                  Konfigurasi Asisten AI (OpenRouter)
+                </h3>
+                <p className="text-xs text-slate-550">Sesuaikan API Key dan daftar model AI yang tersedia di form builder Anda.</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowAiSettingsModal(false)}
+                className="h-8 w-8 text-slate-400 hover:text-slate-700 cursor-pointer rounded-lg"
+              >
+                <i className="fa-solid fa-xmark text-sm"></i>
+              </Button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-6 flex-1">
+              
+              {/* API Key Section */}
+              <div className="space-y-2">
+                <Label htmlFor="modal-api-key" className="text-slate-700 text-xs font-bold flex items-center justify-between">
+                  <span>OpenRouter API Key</span>
+                  <span className="text-[10px] text-slate-400 font-normal">Disimpan lokal di browser Anda</span>
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="modal-api-key"
+                    type="password"
+                    placeholder="sk-or-v1-..."
+                    value={aiApiKey}
+                    onChange={(e) => handleSaveApiKey(e.target.value)}
+                    className="bg-white border border-slate-200 focus:border-indigo-500 text-slate-800 h-10 rounded-xl text-xs"
+                  />
+                  {aiApiKey && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => handleSaveApiKey("")}
+                      className="text-red-500 hover:text-red-750 border border-slate-200 bg-white h-10 px-3 rounded-xl text-xs cursor-pointer font-bold"
+                    >
+                      Hapus
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Models List Section */}
+              <div className="space-y-3 pt-2 border-t border-slate-100">
+                <div className="flex items-center justify-between">
+                  <Label className="text-slate-750 text-xs font-bold">Daftar Model AI Aktif</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleResetDefaultModels}
+                    className="text-indigo-600 hover:text-indigo-800 text-[10px] font-bold h-7 px-2 bg-indigo-50 hover:bg-indigo-100 rounded-lg cursor-pointer"
+                  >
+                    Reset ke Default
+                  </Button>
+                </div>
+
+                <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50/50 max-h-48 overflow-y-auto">
+                  {aiModelList.length === 0 ? (
+                    <p className="p-4 text-xs text-slate-400 text-center font-medium">Belum ada model AI. Tambahkan di bawah.</p>
+                  ) : (
+                    <div className="divide-y divide-slate-150">
+                      {aiModelList.map((model, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-3 bg-white/75 hover:bg-slate-50/60 transition-colors">
+                          <div className="flex flex-col min-w-0 pr-4">
+                            <span className="text-xs font-bold text-slate-850 truncate">{model.label}</span>
+                            <span className="text-[10px] text-slate-400 truncate font-mono">{model.value}</span>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRemoveCustomModel(idx)}
+                            className="h-7 w-7 text-slate-400 hover:text-red-650 rounded-md cursor-pointer shrink-0"
+                          >
+                            <i className="fa-regular fa-trash-can text-xs"></i>
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Add Custom Model Section */}
+              <div className="space-y-3 pt-4 border-t border-slate-100 bg-slate-50/40 p-4 rounded-xl border border-slate-200/50">
+                <Label className="text-slate-700 text-xs font-black flex items-center gap-1.5">
+                  <i className="fa-solid fa-plus-circle text-indigo-600"></i>
+                  Tambah Model AI Kustom
+                </Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="new-model-label" className="text-[10px] text-slate-550 font-bold">Nama Tampilan Model</Label>
+                    <Input
+                      id="new-model-label"
+                      placeholder="Contoh: Claude 3.5 Sonnet"
+                      value={newModelLabel}
+                      onChange={(e) => setNewModelLabel(e.target.value)}
+                      className="bg-white border border-slate-200 focus:border-indigo-500 text-slate-805 h-9 rounded-lg text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="new-model-value" className="text-[10px] text-slate-550 font-bold">ID Model OpenRouter</Label>
+                    <Input
+                      id="new-model-value"
+                      placeholder="Contoh: anthropic/claude-3.5-sonnet"
+                      value={newModelValue}
+                      onChange={(e) => setNewModelValue(e.target.value)}
+                      className="bg-white border border-slate-200 focus:border-indigo-500 text-slate-805 h-9 rounded-lg text-xs"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end pt-1">
+                  <Button
+                    type="button"
+                    onClick={handleAddCustomModel}
+                    className="bg-indigo-600 text-white hover:bg-indigo-750 text-xs font-bold h-8.5 px-4 rounded-lg shadow-sm cursor-pointer flex items-center gap-1.5 animate-pulse-subtle"
+                  >
+                    <i className="fa-solid fa-plus"></i>
+                    Tambah ke Daftar
+                  </Button>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+              <Button
+                onClick={() => setShowAiSettingsModal(false)}
+                className="bg-slate-900 text-white hover:bg-slate-800 text-xs font-bold h-9 px-5 rounded-xl cursor-pointer"
+              >
+                Selesai
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
