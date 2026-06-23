@@ -54,6 +54,7 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
+  const [isPremium, setIsPremium] = useState(false);
 
   // Custom Confirmation Modal State
   const [confirmModal, setConfirmModal] = useState<{
@@ -85,6 +86,7 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
     if (result.success && result.data) {
       setForm(result.data.form as FormSchema);
       setResponses(result.data.responses as unknown as ResponseSchema[]);
+      setIsPremium(!!result.data.isPremium);
     } else {
       toast.error(result.error || "Gagal memuat detail formulir.");
       router.push("/admin");
@@ -161,6 +163,11 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
   });
 
   const handleExportCSV = () => {
+    if (!isPremium) {
+      toast.error("Fitur Ekspor data ke CSV hanya tersedia untuk anggota Premium. Silakan upgrade ke keanggotaan Premium.");
+      return;
+    }
+
     if (!form || filteredResponses.length === 0) {
       toast.error("Tidak ada data tanggapan yang cocok untuk diekspor.");
       return;
@@ -446,10 +453,19 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
               <Button 
                 onClick={handleExportCSV}
                 disabled={filteredResponses.length === 0}
-                className="bg-indigo-600 text-white hover:bg-indigo-750 font-semibold h-10 shrink-0 rounded-xl shadow-sm hover:shadow-indigo-500/10 transition-all duration-300 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+                className="bg-indigo-650 text-white hover:bg-indigo-750 font-semibold h-10 shrink-0 rounded-xl shadow-sm hover:shadow-indigo-500/10 transition-all duration-300 disabled:opacity-40 disabled:pointer-events-none cursor-pointer flex items-center gap-1.5"
               >
-                <i className="fa-solid fa-download mr-2"></i>
-                Ekspor ke CSV
+                {!isPremium ? (
+                  <>
+                    <i className="fa-solid fa-crown text-amber-400"></i>
+                    Ekspor ke CSV (Pro)
+                  </>
+                ) : (
+                  <>
+                    <i className="fa-solid fa-download mr-2"></i>
+                    Ekspor ke CSV
+                  </>
+                )}
               </Button>
             </div>
           </CardContent>

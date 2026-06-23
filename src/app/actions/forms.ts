@@ -320,6 +320,12 @@ export async function getFormDetailAction(formId: string) {
     const userId = await requireAuth();
     await initDatabase();
 
+    // Check user premium status
+    const userRes = await sql`
+      SELECT is_premium, role FROM users WHERE id = ${userId} LIMIT 1
+    `;
+    const isPremium = userRes[0] ? (!!userRes[0].is_premium || userRes[0].role === "super_admin") : false;
+
     // Fetch form configuration with ownership check
     const formResult = await sql`
       SELECT id, title, description, created_at, fields, banner_url, max_responses, is_active,
@@ -347,6 +353,7 @@ export async function getFormDetailAction(formId: string) {
       data: {
         form: formResult[0],
         responses: responses,
+        isPremium: isPremium,
       },
     };
   } catch (error: any) {
