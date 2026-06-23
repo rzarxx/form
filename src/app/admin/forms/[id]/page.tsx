@@ -55,6 +55,14 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
 
+  // Custom Confirmation Modal State
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
+
   // Tab View state: "table" vs "analytics"
   const [activeTab, setActiveTab] = useState<"table" | "analytics">("table");
   
@@ -101,34 +109,40 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
   };
 
   const handleDeleteForm = async () => {
-    if (!confirm("Apakah Anda yakin ingin menghapus formulir ini beserta seluruh responsnya secara permanen?")) {
-      return;
-    }
-
-    startTransition(async () => {
-      const result = await deleteFormAction(formId);
-      if (result.success) {
-        toast.success("Formulir berhasil dihapus.");
-        router.push("/admin");
-        router.refresh();
-      } else {
-        toast.error(result.error || "Gagal menghapus formulir.");
+    setConfirmModal({
+      isOpen: true,
+      title: "Hapus Formulir?",
+      message: "Apakah Anda yakin ingin menghapus formulir ini beserta seluruh responsnya secara permanen? Tindakan ini tidak dapat dibatalkan.",
+      onConfirm: () => {
+        startTransition(async () => {
+          const result = await deleteFormAction(formId);
+          if (result.success) {
+            toast.success("Formulir berhasil dihapus.");
+            router.push("/admin");
+            router.refresh();
+          } else {
+            toast.error(result.error || "Gagal menghapus formulir.");
+          }
+        });
       }
     });
   };
 
   const handleDeleteResponse = async (responseId: number) => {
-    if (!confirm("Apakah Anda yakin ingin menghapus baris tanggapan ini? Berkas yang diunggah pengisi juga akan dihapus dari storage secara permanen.")) {
-      return;
-    }
-
-    startTransition(async () => {
-      const result = await deleteResponseAction(responseId);
-      if (result.success) {
-        toast.success("Tanggapan berhasil dihapus.");
-        fetchFormDetails();
-      } else {
-        toast.error(result.error || "Gagal menghapus tanggapan.");
+    setConfirmModal({
+      isOpen: true,
+      title: "Hapus Tanggapan?",
+      message: "Apakah Anda yakin ingin menghapus baris tanggapan ini? Seluruh berkas/dokumen yang diunggah pengisi form ini juga akan dihapus dari storage secara permanen.",
+      onConfirm: () => {
+        startTransition(async () => {
+          const result = await deleteResponseAction(responseId);
+          if (result.success) {
+            toast.success("Tanggapan berhasil dihapus.");
+            setResponses((prev) => prev.filter((r) => r.id !== responseId));
+          } else {
+            toast.error(result.error || "Gagal menghapus tanggapan.");
+          }
+        });
       }
     });
   };
@@ -828,6 +842,41 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
         )}
 
       </main>
+
+      {/* Custom Confirmation Modal */}
+      {confirmModal && confirmModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-fade-in">
+          <div className="bg-white border border-slate-200 w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-scale-up">
+            <div className="p-6 text-center space-y-4">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-rose-50 border border-rose-100 text-rose-500 shadow-sm">
+                <i className="fa-solid fa-triangle-exclamation text-xl"></i>
+              </div>
+              <div className="space-y-1.5">
+                <h3 className="text-base font-black text-slate-900">{confirmModal.title}</h3>
+                <p className="text-xs text-slate-500 leading-relaxed">{confirmModal.message}</p>
+              </div>
+            </div>
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2.5">
+              <Button
+                variant="ghost"
+                onClick={() => setConfirmModal(null)}
+                className="text-slate-505 hover:text-slate-700 h-9 px-4 text-xs font-semibold cursor-pointer rounded-xl"
+              >
+                Batal
+              </Button>
+              <Button
+                onClick={() => {
+                  confirmModal.onConfirm();
+                  setConfirmModal(null);
+                }}
+                className="bg-rose-600 hover:bg-rose-700 text-white h-9 px-5 text-xs font-bold shadow-sm rounded-xl cursor-pointer"
+              >
+                Hapus Permanen
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

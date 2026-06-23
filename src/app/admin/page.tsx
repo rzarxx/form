@@ -29,6 +29,14 @@ export default function AdminDashboard() {
   const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  // Custom Confirmation Modal State
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
+
   // AI Global Configuration States
   const [showAiSettingsModal, setShowAiSettingsModal] = useState(false);
   const [aiApiKey, setAiApiKey] = useState("");
@@ -121,17 +129,20 @@ export default function AdminDashboard() {
   }, []);
 
   const handleDeleteForm = async (formId: string) => {
-    if (!confirm("Apakah Anda yakin ingin menghapus formulir ini? Semua respons yang masuk juga akan dihapus permanen.")) {
-      return;
-    }
-
-    startTransition(async () => {
-      const result = await deleteFormAction(formId);
-      if (result.success) {
-        toast.success("Formulir berhasil dihapus.");
-        setForms((prev) => prev.filter((f) => f.id !== formId));
-      } else {
-        toast.error(result.error || "Gagal menghapus formulir.");
+    setConfirmModal({
+      isOpen: true,
+      title: "Hapus Formulir?",
+      message: "Apakah Anda yakin ingin menghapus formulir ini? Semua data tanggapan responden yang masuk di dalam formulir ini juga akan dihapus permanen.",
+      onConfirm: () => {
+        startTransition(async () => {
+          const result = await deleteFormAction(formId);
+          if (result.success) {
+            toast.success("Formulir berhasil dihapus.");
+            setForms((prev) => prev.filter((f) => f.id !== formId));
+          } else {
+            toast.error(result.error || "Gagal menghapus formulir.");
+          }
+        });
       }
     });
   };
@@ -695,6 +706,41 @@ export default function AdminDashboard() {
                 className="bg-slate-900 text-white hover:bg-slate-800 text-xs font-bold h-9 px-5 rounded-xl cursor-pointer"
               >
                 Selesai
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Confirmation Modal */}
+      {confirmModal && confirmModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-fade-in">
+          <div className="bg-white border border-slate-200 w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-scale-up">
+            <div className="p-6 text-center space-y-4">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-rose-50 border border-rose-100 text-rose-500 shadow-sm">
+                <i className="fa-solid fa-triangle-exclamation text-xl"></i>
+              </div>
+              <div className="space-y-1.5">
+                <h3 className="text-base font-black text-slate-900">{confirmModal.title}</h3>
+                <p className="text-xs text-slate-500 leading-relaxed">{confirmModal.message}</p>
+              </div>
+            </div>
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2.5">
+              <Button
+                variant="ghost"
+                onClick={() => setConfirmModal(null)}
+                className="text-slate-505 hover:text-slate-700 h-9 px-4 text-xs font-semibold cursor-pointer rounded-xl"
+              >
+                Batal
+              </Button>
+              <Button
+                onClick={() => {
+                  confirmModal.onConfirm();
+                  setConfirmModal(null);
+                }}
+                className="bg-rose-600 hover:bg-rose-700 text-white h-9 px-5 text-xs font-bold shadow-sm rounded-xl cursor-pointer"
+              >
+                Hapus Permanen
               </Button>
             </div>
           </div>
