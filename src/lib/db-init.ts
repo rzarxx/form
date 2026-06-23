@@ -70,6 +70,15 @@ export async function initDatabase() {
       ALTER TABLE forms ADD COLUMN IF NOT EXISTS enable_turnstile BOOLEAN DEFAULT FALSE;
     `;
 
+    // Create settings table
+    await sql`
+      CREATE TABLE IF NOT EXISTS settings (
+        key VARCHAR(255) PRIMARY KEY,
+        value TEXT,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
     isInitialized = true;
     console.log("Database initialization check completed successfully.");
   } catch (error) {

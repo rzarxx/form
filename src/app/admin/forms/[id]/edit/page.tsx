@@ -4,6 +4,7 @@ import React, { useState, useEffect, useTransition, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getFormDetailAction, updateFormAction, generateFormWithAIAction } from "@/app/actions/forms";
+import { getGlobalSettingsAction } from "@/app/actions/settings";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -80,21 +81,48 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedKey = localStorage.getItem("openrouter_api_key") || "";
-      const savedModel = localStorage.getItem("openrouter_ai_model") || "google/gemini-2.5-flash";
-      setAiApiKey(savedKey);
-      setAiModel(savedModel);
+    async function initSettings() {
+      let localKey = "";
+      let localModel = "";
 
-      const savedModels = localStorage.getItem("openrouter_models_list");
-      if (savedModels) {
-        try {
-          setAiModelList(JSON.parse(savedModels));
-        } catch {
-          setAiModelList([]);
+      if (typeof window !== "undefined") {
+        localKey = localStorage.getItem("openrouter_api_key") || "";
+        localModel = localStorage.getItem("openrouter_ai_model") || "";
+      }
+
+      try {
+        const res = await getGlobalSettingsAction();
+        if (res.success && res.data) {
+          const activeModel = localModel || res.data.openrouter_model || "google/gemini-2.5-flash";
+          setAiModel(activeModel);
+
+          if (!localKey && res.data.openrouter_api_key) {
+            setAiApiKey("");
+          } else {
+            setAiApiKey(localKey);
+          }
+        } else {
+          setAiModel(localModel || "google/gemini-2.5-flash");
+          setAiApiKey(localKey);
+        }
+      } catch {
+        setAiModel(localModel || "google/gemini-2.5-flash");
+        setAiApiKey(localKey);
+      }
+
+      if (typeof window !== "undefined") {
+        const savedModels = localStorage.getItem("openrouter_models_list");
+        if (savedModels) {
+          try {
+            setAiModelList(JSON.parse(savedModels));
+          } catch {
+            setAiModelList([]);
+          }
         }
       }
     }
+
+    initSettings();
   }, []);
 
   const handleSaveApiKey = (key: string) => {

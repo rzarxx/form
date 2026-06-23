@@ -4,6 +4,7 @@ import { cookies, headers } from "next/headers";
 import { sql } from "@/lib/db";
 import { initDatabase } from "@/lib/db-init";
 import { verifyAdminSession } from "@/lib/auth-helper";
+import { getSetting } from "@/lib/settings";
 import { del } from "@vercel/blob";
 import { promises as fs } from "fs";
 import path from "path";
@@ -430,7 +431,7 @@ export async function submitResponseAction(
 
     // 7. Check Cloudflare Turnstile Captcha
     if (form.enable_turnstile) {
-      const secretKey = process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY;
+      const secretKey = await getSetting("cloudflare_turnstile_secret_key");
       if (secretKey) {
         if (!turnstileToken) {
           return { success: false, error: "Verifikasi Turnstile diperlukan." };
@@ -456,7 +457,7 @@ export async function submitResponseAction(
           return { success: false, error: "Terjadi kesalahan saat memverifikasi Turnstile Captcha." };
         }
       } else {
-        console.warn("CLOUDFLARE_TURNSTILE_SECRET_KEY is not defined in environment variables. Skipping Turnstile verification.");
+        console.warn("CLOUDFLARE_TURNSTILE_SECRET_KEY is not defined. Skipping Turnstile verification.");
       }
     }
 
@@ -598,13 +599,14 @@ export async function submitResponseAction(
           ? JSON.parse(form.fields)
           : [];
 
-      if (process.env.RESEND_API_KEY) {
+      const resendApiKey = await getSetting("resend_api_key");
+      if (resendApiKey) {
         try {
           const res = await fetch("https://api.resend.com/emails", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+              Authorization: `Bearer ${resendApiKey}`,
             },
             body: JSON.stringify({
               from: "Personal Form Builder <onboarding@resend.dev>",
@@ -639,7 +641,7 @@ export async function submitResponseAction(
         }
       } else {
         console.log("-----------------------------------------");
-        console.log("FALLBACK EMAIL LOG (RESEND_API_KEY not set):");
+        console.log("FALLBACK EMAIL LOG (resend_api_key not set):");
         console.log("To:", form.notify_email);
         console.log("Subject: Tanggapan Baru: " + form.title);
         console.log("Answers:", answers);
@@ -672,7 +674,7 @@ export async function getPublicFormAction(formId: string) {
     }
 
     const form = formResult[0];
-    const turnstileSiteKey = process.env.CLOUDFLARE_TURNSTILE_SITE_KEY || "0x4AAAAAAAxgf3w7tWexJp15";
+    const turnstileSiteKey = await getSetting("cloudflare_turnstile_site_key");
 
     return { 
       success: true, 
@@ -727,12 +729,19 @@ export async function toggleFormActiveAction(formId: string, isActive: boolean) 
 
 export async function generateFormWithAIAction(prompt: string, userApiKey?: string, userModel?: string) {
   try {
-    const apiKey = (process.env.OPENROUTER_API_KEY || userApiKey || "").trim();
+    let apiKey = (userApiKey || "").trim();
     if (!apiKey) {
-      return { success: false, error: "Kunci API OpenRouter tidak ditemukan. Silakan masukkan API Key di Pengaturan AI terlebih dahulu." };
+      apiKey = (await getSetting("openrouter_api_key")).trim();
     }
 
-    const model = (userModel || process.env.OPENROUTER_MODEL || "google/gemini-2.5-flash").trim();
+    if (!apiKey) {
+      return { success: false, error: "Kunci API OpenRouter tidak ditemukan. Silakan masukkan API Key di Setelan Global terlebih dahulu." };
+    }
+
+    let model = (userModel || "").trim();
+    if (!model) {
+      model = (await getSetting("openrouter_model")).trim();
+    }
 
     const systemPrompt = `Anda adalah asisten pembuat formulir AI yang handal.
 Tugas Anda adalah merancang formulir berdasarkan deskripsi/prompt pengguna dalam format JSON.

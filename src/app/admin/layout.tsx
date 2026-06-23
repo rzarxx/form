@@ -36,6 +36,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       path: "/admin/forms/new",
       icon: "fa-solid fa-square-plus",
     },
+    {
+      name: "Setelan Global",
+      path: "/admin/settings",
+      icon: "fa-solid fa-gears",
+    },
   ];
 
   return (
