@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { logoutAction } from "@/app/actions/auth";
+import { logoutAction, getCurrentUserAction } from "@/app/actions/auth";
 import { toast } from "sonner";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -11,6 +11,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [user, setUser] = useState<{ email: string; role: string } | null>(null);
+
+  useEffect(() => {
+    async function fetchUser() {
+      const res = await getCurrentUserAction();
+      if (res.success && res.user) {
+        setUser({
+          email: res.user.email,
+          role: res.user.role || "user",
+        });
+      } else {
+        toast.error("Sesi Anda berakhir atau tidak valid. Silakan login kembali.");
+        router.push("/login");
+      }
+    }
+    fetchUser();
+  }, [router]);
 
   const handleLogout = async () => {
     startTransition(async () => {
@@ -36,12 +53,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       path: "/admin/forms/new",
       icon: "fa-solid fa-square-plus",
     },
-    {
-      name: "Setelan Global",
-      path: "/admin/settings",
-      icon: "fa-solid fa-gears",
-    },
   ];
+
+  if (user?.role === "super_admin") {
+    menuItems.push(
+      {
+        name: "Setelan Global",
+        path: "/admin/settings",
+        icon: "fa-solid fa-gears",
+      },
+      {
+        name: "Kelola Pengguna",
+        path: "/admin/users",
+        icon: "fa-solid fa-users",
+      }
+    );
+  } else if (user?.role === "user") {
+    menuItems.push({
+      name: "Setelan AI Akun",
+      path: "/admin/profile",
+      icon: "fa-solid fa-user-gear",
+    });
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#f1f5f9] text-slate-800 font-sans">
@@ -139,8 +172,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {/* Right side: User Profile dropdown & info */}
             <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
-                <span className="block text-sm font-bold text-slate-800">Administrator</span>
-                <span className="block text-[10px] text-slate-400 font-semibold">rezakusuma1804@gmail.com</span>
+                <span className="block text-sm font-bold text-slate-800">
+                  {user ? (user.role === "super_admin" ? "Super Admin" : "User") : "Memuat..."}
+                </span>
+                <span className="block text-[10px] text-slate-405 font-semibold">
+                  {user ? user.email : "..."}
+                </span>
               </div>
 
               <div className="h-9 w-9 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 font-bold">

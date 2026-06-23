@@ -336,7 +336,7 @@ export default function SettingsPage() {
         <Button
           onClick={handleSave}
           disabled={isPending}
-          className="bg-indigo-650 hover:bg-indigo-700 text-white font-bold px-6 py-2 shadow-md flex items-center gap-2 cursor-pointer transition-all duration-200 rounded-lg"
+          className="bg-primary hover:bg-primary/95 text-white font-bold px-6 py-2 shadow-md flex items-center gap-2 cursor-pointer transition-all duration-200 rounded-lg"
         >
           {isPending ? (
             <>

@@ -3,15 +3,15 @@
 import { cookies } from "next/headers";
 import { sql } from "@/lib/db";
 import { initDatabase } from "@/lib/db-init";
-import { verifyAdminSession } from "@/lib/auth-helper";
+import { getSessionUser } from "@/lib/auth-helper";
 
-// Helper untuk validasi sesi admin
+// Helper untuk validasi sesi admin tingkat tinggi (hanya Super Admin)
 async function requireAuth() {
   const cookieStore = await cookies();
   const sessionToken = cookieStore.get("admin_session")?.value;
-  const isAuthenticated = await verifyAdminSession(sessionToken);
-  if (!isAuthenticated) {
-    throw new Error("Unauthorized: Anda harus masuk sebagai admin.");
+  const user = await getSessionUser(sessionToken);
+  if (!user || user.role !== "super_admin") {
+    throw new Error("Unauthorized: Hanya Super Admin yang diizinkan mengelola setelan global website.");
   }
 }
 

@@ -3,7 +3,7 @@
 import { cookies, headers } from "next/headers";
 import { sql } from "@/lib/db";
 import { initDatabase } from "@/lib/db-init";
-import { verifyAdminSession } from "@/lib/auth-helper";
+import { verifyAdminSession, getSessionUser } from "@/lib/auth-helper";
 import { getSetting } from "@/lib/settings";
 import { del } from "@vercel/blob";
 import { promises as fs } from "fs";
@@ -38,14 +38,15 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
-// Helper to enforce authentication in admin actions
-async function requireAuth() {
+// Helper to enforce authentication in admin actions and return user ID
+async function requireAuth(): Promise<string> {
   const cookieStore = await cookies();
   const sessionToken = cookieStore.get("admin_session")?.value;
-  const isAuthenticated = await verifyAdminSession(sessionToken);
-  if (!isAuthenticated) {
-    throw new Error("Unauthorized: Anda harus masuk sebagai admin.");
+  const user = await getSessionUser(sessionToken);
+  if (!user) {
+    throw new Error("Unauthorized: Anda harus masuk.");
   }
+  return user.id;
 }
 
 // Helper to extract URLs from JSON answers and delete them
@@ -116,7 +117,7 @@ export async function createFormAction(
   enableTurnstile: boolean = false
 ) {
   try {
-    await requireAuth();
+    const userId = await requireAuth();
     await initDatabase();
 
     if (!title) {
@@ -129,13 +130,15 @@ export async function createFormAction(
       INSERT INTO forms (
         title, description, fields, banner_url, max_responses, is_active,
         custom_success_message, redirect_url, expiry_date, notify_email,
-        limit_one_per_ip, max_total_responses, access_password, webhook_url, enable_turnstile
+        limit_one_per_ip, max_total_responses, access_password, webhook_url, enable_turnstile,
+        user_id
       )
       VALUES (
         ${title}, ${description || null}, ${fieldsJson}, ${bannerUrl || null}, ${maxResponses}, ${isActive},
         ${customSuccessMessage || null}, ${redirectUrl || null}, 
         ${expiryDate ? new Date(expiryDate) : null}, ${notifyEmail || null},
-        ${limitOnePerIp}, ${maxTotalResponses}, ${accessPassword || null}, ${webhookUrl || null}, ${enableTurnstile}
+        ${limitOnePerIp}, ${maxTotalResponses}, ${accessPassword || null}, ${webhookUrl || null}, ${enableTurnstile},
+        ${userId}
       )
       RETURNING id, title, created_at
     `;
@@ -166,12 +169,22 @@ export async function updateFormAction(
   enableTurnstile: boolean = false
 ) {
   try {
-    await requireAuth();
+    const userId = await requireAuth();
     await initDatabase();
 
     if (!formId) {
       return { success: false, error: "ID formulir tidak valid." };
     }
+
+    // Pengecekan kepemilikan form
+    const ownerCheck = await sql`
+      SELECT id FROM forms 
+      WHERE id = ${formId} AND (user_id = ${userId} OR (user_id IS NULL AND ${userId} = '00000000-0000-0000-0000-000000000000'))
+    `;
+    if (ownerCheck.length === 0) {
+      return { success: false, error: "Unauthorized: Anda tidak memiliki akses untuk mengubah formulir ini." };
+    }
+
     if (!title) {
       return { success: false, error: "Judul formulir wajib diisi." };
     }
@@ -208,7 +221,7 @@ export async function updateFormAction(
 
 export async function getFormsAction() {
   try {
-    await requireAuth();
+    const userId = await requireAuth();
     await initDatabase();
 
     // Fetch forms along with response counts using a LEFT JOIN and GROUP BY
@@ -218,6 +231,7 @@ export async function getFormsAction() {
              COUNT(r.id)::int as response_count
       FROM forms f
       LEFT JOIN form_responses r ON f.id = r.form_id
+      WHERE f.user_id = ${userId} OR (f.user_id IS NULL AND ${userId} = '00000000-0000-0000-0000-000000000000')
       GROUP BY f.id
       ORDER BY f.created_at DESC
     `;
@@ -231,20 +245,20 @@ export async function getFormsAction() {
 
 export async function getFormDetailAction(formId: string) {
   try {
-    await requireAuth();
+    const userId = await requireAuth();
     await initDatabase();
 
-    // Fetch form configuration
+    // Fetch form configuration with ownership check
     const formResult = await sql`
       SELECT id, title, description, created_at, fields, banner_url, max_responses, is_active,
              custom_success_message, redirect_url, expiry_date, notify_email,
              limit_one_per_ip, max_total_responses, access_password, webhook_url, enable_turnstile
       FROM forms
-      WHERE id = ${formId}
+      WHERE id = ${formId} AND (user_id = ${userId} OR (user_id IS NULL AND ${userId} = '00000000-0000-0000-0000-000000000000'))
     `;
 
     if (formResult.length === 0) {
-      return { success: false, error: "Formulir tidak ditemukan." };
+      return { success: false, error: "Formulir tidak ditemukan atau Anda tidak memiliki akses." };
     }
 
     // Fetch responses for this form
@@ -270,13 +284,18 @@ export async function getFormDetailAction(formId: string) {
 
 export async function deleteFormAction(formId: string) {
   try {
-    await requireAuth();
+    const userId = await requireAuth();
     await initDatabase();
 
-    // 1. Get form to delete banner
+    // 1. Verify ownership and get banner URL
     const formRes = await sql`
-      SELECT banner_url FROM forms WHERE id = ${formId}
+      SELECT banner_url FROM forms 
+      WHERE id = ${formId} AND (user_id = ${userId} OR (user_id IS NULL AND ${userId} = '00000000-0000-0000-0000-000000000000'))
     `;
+
+    if (formRes.length === 0) {
+      return { success: false, error: "Unauthorized: Anda tidak memiliki akses untuk menghapus formulir ini." };
+    }
 
     // 2. Get all responses to delete uploaded assets
     const responses = await sql`
@@ -321,13 +340,20 @@ export async function deleteFormAction(formId: string) {
 
 export async function deleteResponseAction(responseId: number) {
   try {
-    await requireAuth();
+    const userId = await requireAuth();
     await initDatabase();
 
-    // 1. Get response details to delete assets
+    // 1. Verify ownership and get response details
     const responseRes = await sql`
-      SELECT answers FROM form_responses WHERE id = ${responseId}
+      SELECT r.answers 
+      FROM form_responses r
+      JOIN forms f ON r.form_id = f.id
+      WHERE r.id = ${responseId} AND (f.user_id = ${userId} OR (f.user_id IS NULL AND ${userId} = '00000000-0000-0000-0000-000000000000'))
     `;
+
+    if (responseRes.length === 0) {
+      return { success: false, error: "Unauthorized: Anda tidak memiliki akses untuk menghapus tanggapan ini." };
+    }
 
     if (responseRes.length > 0) {
       await deleteResponseBlobs(responseRes[0].answers);
@@ -711,8 +737,17 @@ export async function checkIpSubmissionAction(formId: string) {
 
 export async function toggleFormActiveAction(formId: string, isActive: boolean) {
   try {
-    await requireAuth();
+    const userId = await requireAuth();
     await initDatabase();
+
+    // Verify ownership
+    const ownerCheck = await sql`
+      SELECT id FROM forms 
+      WHERE id = ${formId} AND (user_id = ${userId} OR (user_id IS NULL AND ${userId} = '00000000-0000-0000-0000-000000000000'))
+    `;
+    if (ownerCheck.length === 0) {
+      return { success: false, error: "Unauthorized: Anda tidak memiliki akses untuk mengubah status formulir ini." };
+    }
 
     await sql`
       UPDATE forms
@@ -731,14 +766,50 @@ export async function generateFormWithAIAction(prompt: string, userApiKey?: stri
   try {
     let apiKey = (userApiKey || "").trim();
     if (!apiKey) {
+      try {
+        const cookieStore = await cookies();
+        const sessionToken = cookieStore.get("admin_session")?.value;
+        const user = await getSessionUser(sessionToken);
+        if (user && user.id !== "00000000-0000-0000-0000-000000000000") {
+          const userRes = await sql`
+            SELECT openrouter_api_key FROM users WHERE id = ${user.id} LIMIT 1
+          `;
+          if (userRes.length > 0 && userRes[0].openrouter_api_key) {
+            apiKey = userRes[0].openrouter_api_key.trim();
+          }
+        }
+      } catch (err) {
+        console.error("Gagal membaca setelan AI user:", err);
+      }
+    }
+
+    if (!apiKey) {
       apiKey = (await getSetting("openrouter_api_key")).trim();
     }
 
     if (!apiKey) {
-      return { success: false, error: "Kunci API OpenRouter tidak ditemukan. Silakan masukkan API Key di Setelan Global terlebih dahulu." };
+      return { success: false, error: "Kunci API OpenRouter tidak ditemukan. Silakan masukkan API Key di Pengaturan Akun Anda atau Setelan Global terlebih dahulu." };
     }
 
     let model = (userModel || "").trim();
+    if (!model) {
+      try {
+        const cookieStore = await cookies();
+        const sessionToken = cookieStore.get("admin_session")?.value;
+        const user = await getSessionUser(sessionToken);
+        if (user && user.id !== "00000000-0000-0000-0000-000000000000") {
+          const userRes = await sql`
+            SELECT openrouter_model FROM users WHERE id = ${user.id} LIMIT 1
+          `;
+          if (userRes.length > 0 && userRes[0].openrouter_model) {
+            model = userRes[0].openrouter_model.trim();
+          }
+        }
+      } catch (err) {
+        console.error("Gagal membaca model AI user:", err);
+      }
+    }
+
     if (!model) {
       model = (await getSetting("openrouter_model")).trim();
     }
