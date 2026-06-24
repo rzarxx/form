@@ -110,7 +110,7 @@ export default function SettingsPage() {
     return (
       <div className="flex h-[80vh] items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-300 border-t-indigo-650"></div>
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-300 border-t-indigo-600"></div>
           <p className="text-sm font-semibold text-slate-500">Memuat setelan global...</p>
         </div>
       </div>
@@ -153,7 +153,7 @@ export default function SettingsPage() {
                     <i className="fa-solid fa-database mr-1"></i> Tersimpan di Database
                   </span>
                 ) : meta.has_env_openrouter_key ? (
-                  <span className="text-[10px] bg-slate-150 text-slate-655 font-bold px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] bg-slate-200 text-slate-600 font-bold px-2 py-0.5 rounded-full">
                     <i className="fa-solid fa-server mr-1"></i> Terbaca dari .env
                   </span>
                 ) : null}
@@ -166,7 +166,7 @@ export default function SettingsPage() {
                   value={settings.openrouter_api_key}
                   onChange={handleChange}
                   placeholder={meta.has_env_openrouter_key && !settings.openrouter_api_key ? "•••••••• (Menggunakan kunci .env)" : "sk-or-v1-..."}
-                  className="pr-10 border-slate-250 hover:border-slate-350 focus:border-indigo-500"
+                  className="pr-10 border-slate-300 hover:border-slate-400 focus:border-indigo-500"
                 />
                 <button
                   type="button"
@@ -176,7 +176,7 @@ export default function SettingsPage() {
                   <i className={`fa-solid ${showOpenRouter ? "fa-eye-slash" : "fa-eye"}`}></i>
                 </button>
               </div>
-              <p className="text-[11px] text-slate-450 leading-relaxed">
+              <p className="text-[11px] text-slate-500 leading-relaxed">
                 Masukkan API Key OpenRouter Anda. Jika kosong, sistem otomatis akan menggunakan fallback kunci dari environment variables.
               </p>
             </div>
@@ -192,9 +192,9 @@ export default function SettingsPage() {
                 value={settings.openrouter_model}
                 onChange={handleChange}
                 placeholder="google/gemini-2.5-flash"
-                className="border-slate-250 hover:border-slate-350 focus:border-indigo-500"
+                className="border-slate-300 hover:border-slate-400 focus:border-indigo-500"
               />
-              <p className="text-[11px] text-slate-450 leading-relaxed">
+              <p className="text-[11px] text-slate-500 leading-relaxed">
                 ID Model OpenRouter default yang akan digunakan (contoh: <code>google/gemini-2.5-flash</code> atau <code>meta-llama/llama-3-8b-instruct:free</code>).
               </p>
             </div>
@@ -224,9 +224,9 @@ export default function SettingsPage() {
                   value={settings.cloudflare_turnstile_site_key}
                   onChange={handleChange}
                   placeholder="0x4AAAAAAA..."
-                  className="border-slate-250 hover:border-slate-350 focus:border-indigo-500"
+                  className="border-slate-300 hover:border-slate-400 focus:border-indigo-500"
                 />
-                <p className="text-[11px] text-slate-450">
+                <p className="text-[11px] text-slate-500">
                   Site Key publik Turnstile untuk merender widget di halaman form.
                 </p>
               </div>
@@ -241,7 +241,7 @@ export default function SettingsPage() {
                       <i className="fa-solid fa-database mr-1"></i> Tersimpan
                     </span>
                   ) : meta.has_env_turnstile_secret ? (
-                    <span className="text-[10px] bg-slate-150 text-slate-655 font-bold px-2 py-0.5 rounded-full">
+                    <span className="text-[10px] bg-slate-200 text-slate-600 font-bold px-2 py-0.5 rounded-full">
                       <i className="fa-solid fa-server mr-1"></i> Terbaca (.env)
                     </span>
                   ) : null}
@@ -254,7 +254,7 @@ export default function SettingsPage() {
                     value={settings.cloudflare_turnstile_secret_key}
                     onChange={handleChange}
                     placeholder={meta.has_env_turnstile_secret && !settings.cloudflare_turnstile_secret_key ? "•••••••• (Menggunakan kunci .env)" : "0x4AAAAAAA..."}
-                    className="pr-10 border-slate-250 hover:border-slate-350 focus:border-indigo-500"
+                    className="pr-10 border-slate-300 hover:border-slate-400 focus:border-indigo-500"
                   />
                   <button
                     type="button"
@@ -264,7 +264,7 @@ export default function SettingsPage() {
                     <i className={`fa-solid ${showTurnstileSecret ? "fa-eye-slash" : "fa-eye"}`}></i>
                   </button>
                 </div>
-                <p className="text-[11px] text-slate-450">
+                <p className="text-[11px] text-slate-500">
                   Secret Key rahasia untuk verifikasi validitas token captcha di server.
                 </p>
               </div>
@@ -300,7 +300,7 @@ export default function SettingsPage() {
                     <i className="fa-solid fa-database mr-1"></i> Tersimpan di Database
                   </span>
                 ) : meta.has_env_resend_key ? (
-                  <span className="text-[10px] bg-slate-150 text-slate-655 font-bold px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] bg-slate-200 text-slate-600 font-bold px-2 py-0.5 rounded-full">
                     <i className="fa-solid fa-server mr-1"></i> Terbaca dari .env
                   </span>
                 ) : null}
@@ -313,7 +313,7 @@ export default function SettingsPage() {
                   value={settings.resend_api_key}
                   onChange={handleChange}
                   placeholder={meta.has_env_resend_key && !settings.resend_api_key ? "•••••••• (Menggunakan kunci .env)" : "re_..."}
-                  className="pr-10 border-slate-250 hover:border-slate-350 focus:border-indigo-500"
+                  className="pr-10 border-slate-300 hover:border-slate-400 focus:border-indigo-500"
                 />
                 <button
                   type="button"
@@ -323,7 +323,7 @@ export default function SettingsPage() {
                   <i className={`fa-solid ${showResend ? "fa-eye-slash" : "fa-eye"}`}></i>
                 </button>
               </div>
-              <p className="text-[11px] text-slate-450 leading-relaxed">
+              <p className="text-[11px] text-slate-500 leading-relaxed">
                 Mendukung verifikasi email instan. Ambil API Key dari dashboard <strong>Resend.com</strong>.
               </p>
             </div>

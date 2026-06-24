@@ -199,7 +199,7 @@ export default function AdminDashboard() {
             </div>
             <CardContent className="p-6 flex items-center justify-between">
               <div className="space-y-2">
-                <CardDescription className="text-slate-450 font-bold tracking-wide uppercase text-[10px]">Total Formulir Aktif</CardDescription>
+                <CardDescription className="text-slate-500 font-bold tracking-wide uppercase text-[10px]">Total Formulir Aktif</CardDescription>
                 <CardTitle className="text-3xl font-black tracking-tight text-slate-900">
                   {isLoading ? <i className="fa-solid fa-circle-notch fa-spin text-primary text-2xl"></i> : totalForms}
                 </CardTitle>
@@ -221,7 +221,7 @@ export default function AdminDashboard() {
             </div>
             <CardContent className="p-6 flex items-center justify-between">
               <div className="space-y-2">
-                <CardDescription className="text-slate-450 font-bold tracking-wide uppercase text-[10px]">Total Respons Masuk</CardDescription>
+                <CardDescription className="text-slate-500 font-bold tracking-wide uppercase text-[10px]">Total Respons Masuk</CardDescription>
                 <CardTitle className="text-3xl font-black tracking-tight text-slate-900">
                   {isLoading ? <i className="fa-solid fa-circle-notch fa-spin text-violet-500 text-2xl"></i> : totalResponses}
                 </CardTitle>
@@ -239,11 +239,11 @@ export default function AdminDashboard() {
 
         {/* Real-time Analytics Section */}
         <Card className="bg-white border-slate-200/80 shadow-sm rounded-2xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-[4px] h-full bg-indigo-650" />
+          <div className="absolute top-0 left-0 w-[4px] h-full bg-indigo-600" />
           <CardHeader className="pt-6 pb-4 flex flex-row items-center justify-between border-b border-slate-100">
             <div className="space-y-1.5">
               <CardTitle className="text-lg font-black tracking-tight text-slate-900 flex items-center gap-2">
-                <i className="fa-solid fa-chart-simple text-indigo-650"></i>
+                <i className="fa-solid fa-chart-simple text-indigo-600"></i>
                 Analitik Real-time Tanggapan
               </CardTitle>
               <CardDescription className="text-slate-500 text-xs">
@@ -260,7 +260,7 @@ export default function AdminDashboard() {
                 setTimeout(() => setIsSyncing(false), 1000);
               }}
               disabled={isLoading || isSyncing}
-              className="border-slate-200 text-indigo-650 hover:bg-indigo-50/50 h-9 px-3 rounded-xl text-xs font-semibold cursor-pointer flex items-center gap-1.5 transition-colors"
+              className="border-slate-200 text-indigo-600 hover:bg-indigo-50/50 h-9 px-3 rounded-xl text-xs font-semibold cursor-pointer flex items-center gap-1.5 transition-colors"
             >
               <i className={`fa-solid fa-sync ${isSyncing ? "fa-spin" : ""}`}></i>
               Sync Real-time
@@ -283,7 +283,7 @@ export default function AdminDashboard() {
               if (chartForms.length === 0 || totalResponses === 0) {
                 return (
                   <div className="h-64 border border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center text-center p-6 bg-slate-50/30">
-                    <i className="fa-solid fa-chart-pie text-slate-350 text-3xl mb-3"></i>
+                    <i className="fa-solid fa-chart-pie text-slate-400 text-3xl mb-3"></i>
                     <p className="text-xs font-bold text-slate-700">Belum ada data tanggapan untuk dianalisis</p>
                     <p className="text-[10px] text-slate-400 mt-1 max-w-xs leading-relaxed">Kirim tautan formulir Anda ke responden untuk melihat grafik data di sini secara real-time.</p>
                   </div>
@@ -388,7 +388,7 @@ export default function AdminDashboard() {
                             y="275"
                             textAnchor="middle"
                             className={`fill-slate-500 font-semibold text-[9px] transition-colors ${
-                              isHovered ? "fill-indigo-650 font-bold" : ""
+                              isHovered ? "fill-indigo-600 font-bold" : ""
                             }`}
                           >
                             {form.title.length > 12 ? `${form.title.substring(0, 10)}...` : form.title}
@@ -406,7 +406,7 @@ export default function AdminDashboard() {
                     <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-slate-900/95 text-white text-[11px] rounded-xl px-4 py-2 shadow-xl border border-slate-800 backdrop-blur-sm transition-all flex items-center gap-3">
                       <div className="flex flex-col">
                         <span className="font-extrabold max-w-[200px] truncate">{chartForms[hoveredBarIndex].title}</span>
-                        <span className="text-[10px] text-slate-350">
+                        <span className="text-[10px] text-slate-400">
                           {chartForms[hoveredBarIndex].response_count} respons masuk
                         </span>
                       </div>
@@ -569,10 +569,10 @@ export default function AdminDashboard() {
             <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
               <div className="space-y-1">
                 <h3 className="text-lg font-black tracking-tight text-slate-900 flex items-center gap-2">
-                  <i className="fa-solid fa-wand-magic-sparkles text-indigo-650 animate-pulse"></i>
+                  <i className="fa-solid fa-wand-magic-sparkles text-indigo-600 animate-pulse"></i>
                   Konfigurasi Asisten AI (OpenRouter)
                 </h3>
-                <p className="text-xs text-slate-550">Sesuaikan API Key dan daftar model AI yang tersedia di form builder Anda.</p>
+                <p className="text-xs text-slate-500">Sesuaikan API Key dan daftar model AI yang tersedia di form builder Anda.</p>
               </div>
               <Button
                 variant="ghost"
@@ -618,7 +618,7 @@ export default function AdminDashboard() {
               {/* Models List Section */}
               <div className="space-y-3 pt-2 border-t border-slate-100">
                 <div className="flex items-center justify-between">
-                  <Label className="text-slate-750 text-xs font-bold">Daftar Model AI Aktif</Label>
+                  <Label className="text-slate-700 text-xs font-bold">Daftar Model AI Aktif</Label>
                   <Button
                     type="button"
                     variant="ghost"
@@ -634,11 +634,11 @@ export default function AdminDashboard() {
                   {aiModelList.length === 0 ? (
                     <p className="p-4 text-xs text-slate-400 text-center font-medium">Belum ada model AI. Tambahkan di bawah.</p>
                   ) : (
-                    <div className="divide-y divide-slate-150">
+                    <div className="divide-y divide-slate-200">
                       {aiModelList.map((model, idx) => (
                         <div key={idx} className="flex items-center justify-between p-3 bg-white/75 hover:bg-slate-50/60 transition-colors">
                           <div className="flex flex-col min-w-0 pr-4">
-                            <span className="text-xs font-bold text-slate-850 truncate">{model.label}</span>
+                            <span className="text-xs font-bold text-slate-800 truncate">{model.label}</span>
                             <span className="text-[10px] text-slate-400 truncate font-mono">{model.value}</span>
                           </div>
                           <Button
@@ -665,23 +665,23 @@ export default function AdminDashboard() {
                 </Label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label htmlFor="new-model-label" className="text-[10px] text-slate-550 font-bold">Nama Tampilan Model</Label>
+                    <Label htmlFor="new-model-label" className="text-[10px] text-slate-500 font-bold">Nama Tampilan Model</Label>
                     <Input
                       id="new-model-label"
                       placeholder="Contoh: Claude 3.5 Sonnet"
                       value={newModelLabel}
                       onChange={(e) => setNewModelLabel(e.target.value)}
-                      className="bg-white border border-slate-200 focus:border-indigo-500 text-slate-805 h-9 rounded-lg text-xs"
+                      className="bg-white border border-slate-200 focus:border-indigo-500 text-slate-800 h-9 rounded-lg text-xs"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="new-model-value" className="text-[10px] text-slate-550 font-bold">ID Model OpenRouter</Label>
+                    <Label htmlFor="new-model-value" className="text-[10px] text-slate-500 font-bold">ID Model OpenRouter</Label>
                     <Input
                       id="new-model-value"
                       placeholder="Contoh: anthropic/claude-3.5-sonnet"
                       value={newModelValue}
                       onChange={(e) => setNewModelValue(e.target.value)}
-                      className="bg-white border border-slate-200 focus:border-indigo-500 text-slate-805 h-9 rounded-lg text-xs"
+                      className="bg-white border border-slate-200 focus:border-indigo-500 text-slate-800 h-9 rounded-lg text-xs"
                     />
                   </div>
                 </div>
@@ -689,7 +689,7 @@ export default function AdminDashboard() {
                   <Button
                     type="button"
                     onClick={handleAddCustomModel}
-                    className="bg-indigo-600 text-white hover:bg-indigo-750 text-xs font-bold h-8.5 px-4 rounded-lg shadow-sm cursor-pointer flex items-center gap-1.5 animate-pulse-subtle"
+                    className="bg-indigo-600 text-white hover:bg-indigo-700 text-xs font-bold h-8.5 px-4 rounded-lg shadow-sm cursor-pointer flex items-center gap-1.5 animate-pulse-subtle"
                   >
                     <i className="fa-solid fa-plus"></i>
                     Tambah ke Daftar
@@ -729,7 +729,7 @@ export default function AdminDashboard() {
               <Button
                 variant="ghost"
                 onClick={() => setConfirmModal(null)}
-                className="text-slate-505 hover:text-slate-700 h-9 px-4 text-xs font-semibold cursor-pointer rounded-xl"
+                className="text-slate-500 hover:text-slate-700 h-9 px-4 text-xs font-semibold cursor-pointer rounded-xl"
               >
                 Batal
               </Button>

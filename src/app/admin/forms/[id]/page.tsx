@@ -306,7 +306,7 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
     return (
       <div className="min-h-screen bg-[#f1f5f9] text-slate-800 flex flex-col items-center justify-center">
         <i className="fa-solid fa-circle-notch fa-spin text-indigo-600 text-3xl mb-3"></i>
-        <p className="text-sm text-slate-505 font-semibold">Memuat detail formulir...</p>
+        <p className="text-sm text-slate-500 font-semibold">Memuat detail formulir...</p>
       </div>
     );
   }
@@ -334,7 +334,7 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
       <div className="border-b border-slate-200/80 bg-white py-4 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <Link href="/admin">
-            <Button variant="ghost" size="sm" className="text-slate-500 hover:text-slate-850 transition-colors font-semibold cursor-pointer">
+            <Button variant="ghost" size="sm" className="text-slate-500 hover:text-slate-800 transition-colors font-semibold cursor-pointer">
               <i className="fa-solid fa-arrow-left mr-2"></i>
               Kembali ke Dasbor
             </Button>
@@ -357,7 +357,7 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="border-slate-200 bg-white hover:bg-slate-50 text-slate-650 hover:text-slate-900 h-9 rounded-xl transition-all cursor-pointer font-semibold"
+                className="border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 h-9 rounded-xl transition-all cursor-pointer font-semibold"
               >
                 <i className="fa-solid fa-gear mr-1.5 text-slate-400"></i>
                 Edit Form
@@ -368,7 +368,7 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
               variant="outline"
               size="sm"
               onClick={() => setShowShare(!showShare)}
-              className={`border-slate-200 bg-white hover:bg-slate-50 text-slate-650 hover:text-slate-900 h-9 rounded-xl transition-all cursor-pointer font-semibold ${showShare ? "bg-slate-50 border-slate-300" : ""}`}
+              className={`border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 h-9 rounded-xl transition-all cursor-pointer font-semibold ${showShare ? "bg-slate-50 border-slate-300" : ""}`}
             >
               <i className="fa-solid fa-share-nodes mr-1.5 text-slate-400"></i>
               Bagikan
@@ -378,7 +378,7 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="border-slate-200 bg-white hover:bg-slate-50 text-slate-655 hover:text-slate-900 h-9 rounded-xl transition-all cursor-pointer font-semibold"
+                className="border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 h-9 rounded-xl transition-all cursor-pointer font-semibold"
               >
                 <i className="fa-solid fa-arrow-up-right-from-square mr-1.5 text-slate-400"></i>
                 Link Publik
@@ -453,7 +453,7 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
               <Button 
                 onClick={handleExportCSV}
                 disabled={filteredResponses.length === 0}
-                className="bg-indigo-650 text-white hover:bg-indigo-750 font-semibold h-10 shrink-0 rounded-xl shadow-sm hover:shadow-indigo-500/10 transition-all duration-300 disabled:opacity-40 disabled:pointer-events-none cursor-pointer flex items-center gap-1.5"
+                className="bg-indigo-600 text-white hover:bg-indigo-700 font-semibold h-10 shrink-0 rounded-xl shadow-sm hover:shadow-indigo-500/10 transition-all duration-300 disabled:opacity-40 disabled:pointer-events-none cursor-pointer flex items-center gap-1.5"
               >
                 {!isPremium ? (
                   <>
@@ -519,7 +519,7 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
                       <Button 
                         size="sm"
                         onClick={() => copyToClipboard(formUrl, "Link formulir berhasil disalin!")}
-                        className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-650 px-4 rounded-xl transition-all shadow-sm cursor-pointer"
+                        className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-4 rounded-xl transition-all shadow-sm cursor-pointer"
                       >
                         <i className="fa-regular fa-copy mr-1.5 text-slate-400"></i>
                         Salin
@@ -529,7 +529,7 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
 
                   {/* Embed Iframe */}
                   <div className="space-y-1.5">
-                    <Label className="text-slate-655 text-xs font-bold flex items-center gap-1">
+                    <Label className="text-slate-600 text-xs font-bold flex items-center gap-1">
                       <i className="fa-solid fa-code text-indigo-600 mr-1"></i>
                       HTML Embed Iframe (Tempel di Web Anda)
                     </Label>
@@ -543,7 +543,7 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
                       <Button 
                         size="sm"
                         onClick={() => copyToClipboard(embedCode, "Kode embed iframe berhasil disalin!")}
-                        className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-655 px-4 rounded-xl transition-all shadow-sm cursor-pointer"
+                        className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-4 rounded-xl transition-all shadow-sm cursor-pointer"
                       >
                         <i className="fa-regular fa-copy mr-1.5 text-slate-400"></i>
                         Salin
@@ -628,7 +628,7 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
               ) : filteredResponses.length === 0 ? (
                 <div className="p-16 text-center flex flex-col items-center justify-center space-y-2">
                   <div className="h-10 w-10 rounded-full bg-slate-50 flex items-center justify-center border border-slate-200">
-                    <i className="fa-solid fa-magnifying-glass text-slate-350"></i>
+                    <i className="fa-solid fa-magnifying-glass text-slate-400"></i>
                   </div>
                   <p className="text-slate-500 text-xs font-semibold">
                     Tidak ada tanggapan yang cocok dengan kata pencarian.
@@ -640,20 +640,20 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
                     <Table>
                       <TableHeader className="bg-slate-50 border-b border-slate-200">
                         <TableRow className="hover:bg-transparent border-b-slate-200">
-                          <TableHead className="w-16 text-slate-450 font-bold uppercase tracking-wider text-[10px] py-3.5 px-5">ID</TableHead>
-                          <TableHead className="w-44 text-slate-450 font-bold uppercase tracking-wider text-[10px] py-3.5 px-5">
+                          <TableHead className="w-16 text-slate-500 font-bold uppercase tracking-wider text-[10px] py-3.5 px-5">ID</TableHead>
+                          <TableHead className="w-44 text-slate-500 font-bold uppercase tracking-wider text-[10px] py-3.5 px-5">
                             <span className="flex items-center gap-1.5">
-                              <i className="fa-regular fa-clock text-slate-450 text-xs"></i>
+                              <i className="fa-regular fa-clock text-slate-500 text-xs"></i>
                               Waktu Kirim
                             </span>
                           </TableHead>
-                          <TableHead className="w-32 text-slate-450 font-bold uppercase tracking-wider text-[10px] py-3.5 px-5">IP Address</TableHead>
+                          <TableHead className="w-32 text-slate-500 font-bold uppercase tracking-wider text-[10px] py-3.5 px-5">IP Address</TableHead>
                           {fields.map((field) => (
-                            <TableHead key={field.id} className="text-slate-450 font-bold uppercase tracking-wider text-[10px] py-3.5 px-5 min-w-[150px]">
+                            <TableHead key={field.id} className="text-slate-500 font-bold uppercase tracking-wider text-[10px] py-3.5 px-5 min-w-[150px]">
                               {field.label}
                             </TableHead>
                           ))}
-                          <TableHead className="w-20 text-slate-450 font-bold uppercase tracking-wider text-[10px] py-3.5 px-5 text-right">Aksi</TableHead>
+                          <TableHead className="w-20 text-slate-500 font-bold uppercase tracking-wider text-[10px] py-3.5 px-5 text-right">Aksi</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -681,13 +681,13 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
                                     <Link 
                                       href={val} 
                                       target="_blank" 
-                                      className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 border border-indigo-150 px-2.5 py-1 text-xs text-indigo-600 font-bold hover:bg-indigo-100 transition-all shadow-inner"
+                                      className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 border border-indigo-200 px-2.5 py-1 text-xs text-indigo-600 font-bold hover:bg-indigo-100 transition-all shadow-inner"
                                     >
                                       Unduh Berkas
                                       <i className="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
                                     </Link>
                                   ) : val === undefined || val === null ? (
-                                    <span className="text-slate-350">-</span>
+                                    <span className="text-slate-400">-</span>
                                   ) : Array.isArray(val) ? (
                                     val.join(", ")
                                   ) : (
@@ -716,7 +716,7 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
                   {/* Pagination controls */}
                   {totalPages > 1 && (
                     <div className="border-t border-slate-100 bg-slate-50/30 px-5 py-3.5 flex items-center justify-between">
-                      <div className="text-xs text-slate-450 font-semibold">
+                      <div className="text-xs text-slate-500 font-semibold">
                         Menampilkan <span className="text-slate-700">{startIndex + 1}</span> hingga{" "}
                         <span className="text-slate-700">{Math.min(startIndex + itemsPerPage, totalItems)}</span> dari{" "}
                         <span className="text-slate-700">{totalItems}</span> tanggapan
@@ -756,13 +756,13 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
         {activeTab === "analytics" && (
           <div className="space-y-6 animate-fade-in">
             {responses.length === 0 ? (
-              <Card className="border border-slate-200 bg-white p-16 text-center text-slate-450 text-xs font-semibold shadow-sm">
+              <Card className="border border-slate-200 bg-white p-16 text-center text-slate-500 text-xs font-semibold shadow-sm">
                 Belum ada tanggapan masuk untuk dianalisis.
               </Card>
             ) : (
               <>
                 {/* Daily Submissions Line Chart */}
-                <Card className="bg-white border border-slate-200 shadow-sm rounded-2xl relative overflow-hidden transition-all duration-300 hover:border-slate-350">
+                <Card className="bg-white border border-slate-200 shadow-sm rounded-2xl relative overflow-hidden transition-all duration-300 hover:border-slate-400">
                   <div className="py-4 px-6 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-0.5">
                     <h3 className="text-sm font-bold text-slate-800 leading-tight">Tren Tanggapan Harian</h3>
                     <span className="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-bold">
@@ -866,7 +866,7 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
                                   <text 
                                     x={x} 
                                     y={height - paddingBottom + 18} 
-                                    className="text-[9px] fill-slate-450 font-bold" 
+                                    className="text-[9px] fill-slate-500 font-bold" 
                                     textAnchor="middle"
                                   >
                                     {d.date}
@@ -888,7 +888,7 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
                     if (field.type === "radio" || field.type === "select") {
                       const stats = getFieldStats(field);
                       return (
-                        <Card key={field.id} className="bg-white border border-slate-200 shadow-sm rounded-2xl relative overflow-hidden transition-all duration-300 hover:border-slate-350">
+                        <Card key={field.id} className="bg-white border border-slate-200 shadow-sm rounded-2xl relative overflow-hidden transition-all duration-300 hover:border-slate-400">
                           <div className="py-4 px-6 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-0.5">
                             <h3 className="text-sm font-bold text-slate-800 leading-tight">{field.label}</h3>
                             <span className="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-bold">
@@ -930,7 +930,7 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
                             ) : (
                               textAnswers.map((ans, idx) => (
                                 <div key={idx} className="py-3.5 px-4 hover:bg-slate-50/40 transition-colors">
-                                  <p className="text-xs text-slate-650 leading-relaxed font-semibold">
+                                  <p className="text-xs text-slate-600 leading-relaxed font-semibold">
                                     {String(ans)}
                                   </p>
                                 </div>
@@ -973,7 +973,7 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
                                     <Link 
                                       href={url} 
                                       target="_blank" 
-                                      className="inline-flex items-center gap-1.5 text-indigo-650 hover:text-indigo-750 font-bold transition-colors"
+                                      className="inline-flex items-center gap-1.5 text-indigo-600 hover:text-indigo-700 font-bold transition-colors"
                                     >
                                       Buka Berkas
                                       <i className="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
@@ -1014,7 +1014,7 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
               <Button
                 variant="ghost"
                 onClick={() => setConfirmModal(null)}
-                className="text-slate-505 hover:text-slate-700 h-9 px-4 text-xs font-semibold cursor-pointer rounded-xl"
+                className="text-slate-500 hover:text-slate-700 h-9 px-4 text-xs font-semibold cursor-pointer rounded-xl"
               >
                 Batal
               </Button>
@@ -1102,9 +1102,9 @@ const DonutChart = ({ stats }: { stats: { option: string; count: number; percent
             <div key={idx} className="flex justify-between items-center text-xs">
               <div className="flex items-center space-x-2 min-w-0">
                 <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                <span className="text-slate-650 font-bold truncate" title={item.option}>{item.option}</span>
+                <span className="text-slate-600 font-bold truncate" title={item.option}>{item.option}</span>
               </div>
-              <span className="text-slate-450 font-bold shrink-0 pl-2">
+              <span className="text-slate-500 font-bold shrink-0 pl-2">
                 {item.count} ({item.percentage}%)
               </span>
             </div>

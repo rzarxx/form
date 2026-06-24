@@ -65,7 +65,7 @@ function RegisterForm() {
             <CardTitle className="text-2xl font-black tracking-tight text-slate-900">
               Daftar Akun Baru
             </CardTitle>
-            <CardDescription className="text-slate-550 text-xs">
+            <CardDescription className="text-slate-500 text-xs">
               Buat akun pembuat form Anda secara gratis sekarang
             </CardDescription>
           </div>

@@ -498,6 +498,8 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
       const result = await submitResponseAction(formId, visibleAnswers, passwordInput || undefined, turnstileToken || undefined);
       if (result.success) {
         if (result.requiresPayment) {
+          setCheckoutData(null);
+          setPaymentStatus("unpaid");
           setIsCheckingOutPaidForm(true);
           setPaidFormPrice(result.formPrice || 0);
           setPaidFormTitle(result.formTitle || "");
@@ -639,10 +641,10 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
               placeholder="Masukkan kata sandi..."
               value={passwordInput}
               onChange={(e) => setPasswordInput(e.target.value)}
-              className="bg-white/60 border border-slate-200 text-slate-850 h-10 rounded-xl"
+              className="bg-white/60 border border-slate-200 text-slate-800 h-10 rounded-xl"
               required
             />
-            <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-750 text-white font-bold h-10 rounded-xl transition-all cursor-pointer">
+            <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-10 rounded-xl transition-all cursor-pointer">
               Buka Formulir
             </Button>
           </form>
@@ -662,7 +664,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
             <AlertTriangle className="h-7 w-7" />
           </div>
           <h2 className="text-xl font-bold text-slate-900">Formulir Ditutup</h2>
-          <p className="text-slate-550 text-sm mt-3 leading-relaxed">
+          <p className="text-slate-500 text-sm mt-3 leading-relaxed">
             {isExpired ? (
               <>
                 Formulir <strong className="text-slate-800">"{form.title}"</strong> sudah melewati batas waktu pengisian ({new Date(form.expiry_date!).toLocaleString("id-ID")}) dan tidak menerima tanggapan baru.
@@ -690,7 +692,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
               Checkout Pembayaran Formulir
             </h2>
             <p className="text-slate-500 text-sm mt-1">
-              Formulir <strong className="text-slate-850">"{paidFormTitle}"</strong> mewajibkan pembayaran untuk dapat memproses tanggapan.
+              Formulir <strong className="text-slate-800">"{paidFormTitle}"</strong> mewajibkan pembayaran untuk dapat memproses tanggapan.
             </p>
           </div>
 
@@ -711,7 +713,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                     placeholder="Masukkan nama lengkap Anda"
                     value={payerName}
                     onChange={(e) => setPayerName(e.target.value)}
-                    className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-850 h-11 rounded-xl"
+                    className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-800 h-11 rounded-xl"
                   />
                 </div>
 
@@ -723,7 +725,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                     placeholder="Masukkan email Anda"
                     value={payerEmail}
                     onChange={(e) => setPayerEmail(e.target.value)}
-                    className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-855 h-11 rounded-xl"
+                    className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-800 h-11 rounded-xl"
                   />
                   <p className="text-[10px] text-slate-400">Status pembayaran & instruksi transfer akan dikirimkan ke email ini.</p>
                 </div>
@@ -731,7 +733,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                 <div className="space-y-2">
                   <Label>Pilih Metode Pembayaran</Label>
                   {paymentChannels.length === 0 ? (
-                    <div className="text-xs p-3 bg-rose-50 border border-rose-200 text-rose-650 rounded-xl">
+                    <div className="text-xs p-3 bg-rose-50 border border-rose-200 text-rose-600 rounded-xl">
                       Tidak ada metode pembayaran aktif. Silakan hubungi admin pengelola form.
                     </div>
                   ) : (
@@ -741,7 +743,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                           key={ch.code}
                           className={`flex items-center space-x-3 rounded-xl border p-3 cursor-pointer select-none transition-all duration-200 ${
                             selectedChannel === ch.code 
-                              ? "border-indigo-650 bg-indigo-50/40 font-semibold shadow-sm" 
+                              ? "border-indigo-600 bg-indigo-50/40 font-semibold shadow-sm" 
                               : "border-slate-200 bg-white hover:bg-slate-50"
                           }`}
                         >
@@ -775,7 +777,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                   <Button
                     onClick={handleFormPayment}
                     disabled={isPending || paymentChannels.length === 0}
-                    className="flex-1 py-3 bg-gradient-to-r from-indigo-650 to-indigo-750 text-white font-semibold rounded-xl shadow hover:from-indigo-700 hover:to-indigo-800 transition duration-200 cursor-pointer h-11"
+                    className="flex-1 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold rounded-xl shadow hover:from-indigo-600 hover:to-indigo-700 transition duration-200 cursor-pointer h-11"
                   >
                     {isPending ? (
                       <>
@@ -798,20 +800,31 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                   <CardTitle className="text-lg">Tagihan Pembayaran</CardTitle>
                   <CardDescription>Segera selesaikan pembayaran Anda untuk mengirim tanggapan.</CardDescription>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => setIsCheckingOutPaidForm(false)} className="text-slate-450 hover:text-slate-655 cursor-pointer">
+                <Button variant="ghost" size="sm" onClick={() => setIsCheckingOutPaidForm(false)} className="text-slate-500 hover:text-slate-600 cursor-pointer">
                   <i className="fa-solid fa-xmark text-lg"></i>
                 </Button>
               </CardHeader>
               <CardContent className="space-y-4 pt-5">
                 {/* Status Indicator */}
-                <div className="rounded-xl p-3.5 bg-amber-50 border border-amber-200 text-center space-y-1">
-                  <div className="text-[9px] font-extrabold text-amber-700 uppercase tracking-widest">Status Pembayaran</div>
-                  <div className="text-sm font-semibold text-amber-800 flex items-center justify-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full bg-amber-500 animate-pulse"></span>
-                    MENUNGGU PEMBAYARAN
+                {paymentStatus === "expired" || paymentStatus === "failed" ? (
+                  <div className="rounded-xl p-3.5 bg-rose-50 border border-rose-200 text-center space-y-1">
+                    <div className="text-[9px] font-extrabold text-rose-700 uppercase tracking-widest">Status Pembayaran</div>
+                    <div className="text-sm font-semibold text-rose-800 flex items-center justify-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full bg-rose-500"></span>
+                      {paymentStatus === "expired" ? "KEDALUWARSA" : "TRANSAKSI GAGAL"}
+                    </div>
+                    <p className="text-[10px] text-slate-400">Silakan pilih metode pembayaran lain untuk mengulangi.</p>
                   </div>
-                  <p className="text-[10px] text-slate-400">Status akan terupdate otomatis secara real-time</p>
-                </div>
+                ) : (
+                  <div className="rounded-xl p-3.5 bg-amber-50 border border-amber-200 text-center space-y-1">
+                    <div className="text-[9px] font-extrabold text-amber-700 uppercase tracking-widest">Status Pembayaran</div>
+                    <div className="text-sm font-semibold text-amber-800 flex items-center justify-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+                      MENUNGGU PEMBAYARAN
+                    </div>
+                    <p className="text-[10px] text-slate-400">Status akan terupdate otomatis secara real-time</p>
+                  </div>
+                )}
 
                 {/* QR Code / Pay Code */}
                 {checkoutData.qrUrl ? (
@@ -848,7 +861,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                             <span>{inst.title}</span>
                             <i className="fa-solid fa-chevron-down text-slate-400 group-open:rotate-180 transition-transform duration-250"></i>
                           </summary>
-                          <ol className="p-3.5 text-xs text-slate-650 list-decimal list-inside space-y-2 border-t">
+                          <ol className="p-3.5 text-xs text-slate-600 list-decimal list-inside space-y-2 border-t">
                             {inst.steps.map((step: any, idx: number) => (
                               <li key={idx} dangerouslySetInnerHTML={{ __html: step }} className="leading-relaxed"></li>
                             ))}
@@ -937,7 +950,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                   setPaymentStatus("unpaid");
                   setIsCheckingOutPaidForm(false);
                 }}
-                className="bg-white border border-slate-200 text-slate-650 hover:bg-slate-50 rounded-xl px-6 shadow-sm h-10 font-semibold transition-all cursor-pointer"
+                className="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl px-6 shadow-sm h-10 font-semibold transition-all cursor-pointer"
               >
                 Kirim Tanggapan Lain
               </Button>
@@ -945,7 +958,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
           )}
 
           {/* Printable Receipt Area */}
-          <div id="print-receipt-section" className="hidden print:block font-sans p-10 bg-white text-slate-850 text-left max-w-4xl mx-auto">
+          <div id="print-receipt-section" className="hidden print:block font-sans p-10 bg-white text-slate-800 text-left max-w-4xl mx-auto">
             <style dangerouslySetInnerHTML={{ __html: `
               @media print {
                 body * {
@@ -981,27 +994,27 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
             <div className="grid grid-cols-2 gap-6 bg-slate-50 rounded-2xl p-5 border border-slate-100 text-xs mb-6">
               <div className="space-y-2">
                 <div>
-                  <span className="font-semibold text-slate-450 block uppercase tracking-wider text-[9px]">Nama Formulir</span>
+                  <span className="font-semibold text-slate-500 block uppercase tracking-wider text-[9px]">Nama Formulir</span>
                   <span className="text-sm font-bold text-indigo-950">{form.title}</span>
                 </div>
                 {form.description && (
                   <div>
-                    <span className="font-semibold text-slate-450 block uppercase tracking-wider text-[9px]">Keterangan</span>
-                    <span className="text-[11px] text-slate-650 block leading-relaxed">{form.description}</span>
+                    <span className="font-semibold text-slate-500 block uppercase tracking-wider text-[9px]">Keterangan</span>
+                    <span className="text-[11px] text-slate-600 block leading-relaxed">{form.description}</span>
                   </div>
                 )}
               </div>
               <div className="space-y-2 text-right">
                 {responseId && (
                   <div>
-                    <span className="font-semibold text-slate-450 block uppercase tracking-wider text-[9px]">ID Tanggapan</span>
+                    <span className="font-semibold text-slate-500 block uppercase tracking-wider text-[9px]">ID Tanggapan</span>
                     <span className="font-mono text-xs font-bold text-slate-800 bg-white border px-2.5 py-1 rounded-xl shadow-xs inline-block mt-1">#{responseId}</span>
                   </div>
                 )}
                 {form.is_paid_form && (
                   <div className="mt-1">
-                    <span className="font-semibold text-slate-455 block uppercase tracking-wider text-[9px]">Status Pembayaran</span>
-                    <span className="text-[10px] font-bold bg-emerald-55 border border-emerald-200/50 text-emerald-700 px-2.5 py-0.5 rounded-full inline-block mt-1">LUNAS (PAID)</span>
+                    <span className="font-semibold text-slate-500 block uppercase tracking-wider text-[9px]">Status Pembayaran</span>
+                    <span className="text-[10px] font-bold bg-emerald-50 border border-emerald-200/50 text-emerald-700 px-2.5 py-0.5 rounded-full inline-block mt-1">LUNAS (PAID)</span>
                   </div>
                 )}
               </div>
@@ -1022,7 +1035,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                     <th className="px-5 py-3 text-left font-bold text-slate-700 uppercase tracking-wider text-[9px]">Tanggapan / Jawaban</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-150 text-slate-700">
+                <tbody className="divide-y divide-slate-200 text-slate-700">
                   {fields.map((field) => {
                     if (!isFieldVisible(field.id)) return null;
                     let displayVal = answers[field.id] || "-";
@@ -1081,7 +1094,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
             <div className="h-14 w-14 rounded-full border-4 border-t-indigo-600 border-r-purple-600 border-b-pink-500 border-l-transparent animate-spin" />
           </div>
           <h3 className="mt-6 text-slate-900 font-extrabold text-lg tracking-tight animate-pulse">Mengirim Tanggapan Anda</h3>
-          <p className="mt-1.5 text-slate-550 text-xs font-medium">Jawaban Anda sedang dienkripsi & disimpan ke database...</p>
+          <p className="mt-1.5 text-slate-500 text-xs font-medium">Jawaban Anda sedang dienkripsi & disimpan ke database...</p>
         </div>
       )}
 
@@ -1123,7 +1136,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
               )}
             </div>
             {form.description && (
-              <p className="text-slate-550 text-sm leading-relaxed whitespace-pre-line">
+              <p className="text-slate-500 text-sm leading-relaxed whitespace-pre-line">
                 {form.description}
               </p>
             )}
@@ -1163,7 +1176,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
               >
                 <div className="space-y-3">
                   <div className="flex items-center space-x-1.5">
-                    <Label className="text-slate-750 text-sm font-bold tracking-wide">
+                    <Label className="text-slate-700 text-sm font-bold tracking-wide">
                       {field.label}
                     </Label>
                     {field.required && (
@@ -1226,11 +1239,11 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                             className={`flex items-center px-4 py-3 rounded-xl border cursor-pointer transition-all duration-200 select-none ${
                               isSelected 
                                 ? "border-indigo-500/50 bg-indigo-50/50 text-indigo-950 shadow-[0_0_15px_rgba(99,102,241,0.02)]" 
-                                : "border-slate-200 bg-white/50 text-slate-750 hover:border-slate-300 hover:bg-white"
+                                : "border-slate-200 bg-white/50 text-slate-700 hover:border-slate-300 hover:bg-white"
                             }`}
                           >
                             <div className={`h-4.5 w-4.5 rounded-full border flex items-center justify-center mr-3 shrink-0 transition-all ${
-                              isSelected ? "border-indigo-650 bg-indigo-50/80" : "border-slate-300 bg-white"
+                              isSelected ? "border-indigo-600 bg-indigo-50/80" : "border-slate-300 bg-white"
                             }`}>
                               {isSelected && (
                                 <div className="h-2.5 w-2.5 rounded-full bg-indigo-600" />
@@ -1256,7 +1269,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                             disabled={isPending || uploadingFields[field.id]}
                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                           />
-                          <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-200 text-slate-400 group-hover:text-indigo-650 transition-all duration-300">
+                          <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-200 text-slate-400 group-hover:text-indigo-600 transition-all duration-300">
                             {uploadingFields[field.id] ? (
                               <Loader2 className="h-5 w-5 animate-spin text-indigo-600" />
                             ) : (
@@ -1284,14 +1297,14 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                                   style={{ width: `${uploadProgress[field.id] || 0}%` }}
                                 />
                               </div>
-                              <span className="text-[10px] text-slate-550 font-bold block text-center">
+                              <span className="text-[10px] text-slate-500 font-bold block text-center">
                                 Mengunggah: {uploadProgress[field.id] || 0}%
                               </span>
                             </div>
                           )}
                         </div>
                       ) : (
-                        <div className="flex items-center justify-between p-3.5 rounded-xl border border-slate-250 bg-white/80 text-xs shadow-inner">
+                        <div className="flex items-center justify-between p-3.5 rounded-xl border border-slate-300 bg-white/80 text-xs shadow-inner">
                           <div className="flex items-center space-x-3 truncate max-w-sm">
                             <div className="h-8 w-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
                               <Paperclip className="h-4 w-4" />
@@ -1312,7 +1325,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                               });
                               handleInputChange(field.id, "");
                             }}
-                            className="h-8 px-3 text-slate-500 hover:text-rose-650 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                            className="h-8 px-3 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                           >
                             Ganti File
                           </Button>
@@ -1336,7 +1349,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
           {/* Cloudflare Turnstile Captcha Widget */}
           {form.enable_turnstile && (
             <div className="relative overflow-hidden rounded-2xl border border-white/60 bg-white/70 p-6 backdrop-blur-sm shadow-sm flex flex-col items-center justify-center space-y-3">
-              <Label className="text-slate-750 text-sm font-bold tracking-wide self-start">Verifikasi Keamanan (Anti-Bot)</Label>
+              <Label className="text-slate-700 text-sm font-bold tracking-wide self-start">Verifikasi Keamanan (Anti-Bot)</Label>
               <TurnstileWidget siteKey={form.turnstile_site_key || "0x4AAAAAAAxgf3w7tWexJp15"} />
             </div>
           )}

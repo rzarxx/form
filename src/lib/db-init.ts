@@ -140,11 +140,16 @@ export async function initDatabase() {
         type VARCHAR(50) NOT NULL,
         payer_name VARCHAR(255),
         payer_email VARCHAR(255),
+        ip_address VARCHAR(45),
         form_response_answers JSONB,
         form_response_id INT,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
+    `;
+
+    await sql`
+      ALTER TABLE transactions ADD COLUMN IF NOT EXISTS ip_address VARCHAR(45);
     `;
 
     isInitialized = true;

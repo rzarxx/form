@@ -287,11 +287,11 @@ export default function TripaySettingsPage() {
                 size="sm"
                 onClick={handleSyncChannels}
                 disabled={isSyncing}
-                className="text-xs border-indigo-200 text-indigo-650 hover:bg-indigo-50 font-semibold cursor-pointer"
+                className="text-xs border-indigo-200 text-indigo-600 hover:bg-indigo-50 font-semibold cursor-pointer"
               >
                 {isSyncing ? (
                   <>
-                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-indigo-650 border-t-transparent mr-1"></div>
+                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent mr-1"></div>
                     Menyinkronkan...
                   </>
                 ) : (
@@ -312,7 +312,7 @@ export default function TripaySettingsPage() {
           </CardHeader>
           <CardContent>
             {availableChannels.length === 0 ? (
-              <div className="rounded-lg bg-slate-50 p-6 border border-dashed border-slate-350 text-center text-slate-500">
+              <div className="rounded-lg bg-slate-50 p-6 border border-dashed border-slate-400 text-center text-slate-500">
                 <i className="fa-solid fa-circle-info text-lg mb-2 block"></i>
                 Tidak ada metode pembayaran yang ditemukan atau kredensial API belum diatur/valid.
               </div>

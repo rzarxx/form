@@ -58,7 +58,7 @@ function LoginForm() {
             <CardTitle className="text-2xl font-black tracking-tight text-slate-900">
               Masuk ke Dasbor
             </CardTitle>
-            <CardDescription className="text-slate-550 text-xs">
+            <CardDescription className="text-slate-500 text-xs">
               Masukkan email dan kata sandi Anda untuk mengelola formulir
             </CardDescription>
           </div>

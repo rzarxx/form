@@ -370,13 +370,13 @@ export default function NewFormBuilder() {
             </Button>
           </Link>
           <div className="flex items-center gap-3">
-            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider bg-slate-50 border border-slate-205 px-2.5 py-1 rounded-lg font-mono">
+            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg font-mono">
               Form Builder
             </span>
             <Button 
               onClick={handleSaveForm} 
               disabled={isPending || isUploadingBanner}
-              className="bg-indigo-600 text-white hover:bg-indigo-750 font-semibold px-4 h-9 rounded-xl shadow-sm transition-all cursor-pointer"
+              className="bg-indigo-600 text-white hover:bg-indigo-700 font-semibold px-4 h-9 rounded-xl shadow-sm transition-all cursor-pointer"
             >
               {isPending ? (
                 <>
@@ -398,7 +398,7 @@ export default function NewFormBuilder() {
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-8 pb-36 space-y-6 relative z-10">
 
         {limitExceeded && (
-          <div className="rounded-2xl border border-rose-250 bg-rose-50 p-4 text-rose-700 shadow-sm flex items-start gap-3">
+          <div className="rounded-2xl border border-rose-300 bg-rose-50 p-4 text-rose-700 shadow-sm flex items-start gap-3">
             <i className="fa-solid fa-triangle-exclamation text-xl shrink-0 mt-0.5"></i>
             <div className="flex-1">
               <h4 className="font-bold text-sm">Batas Pembuatan Formulir Tercapai</h4>
@@ -414,7 +414,7 @@ export default function NewFormBuilder() {
         )}
 
         {/* AI Assistant Panel */}
-        <Card className="bg-indigo-50/40 border border-indigo-205/60 shadow-sm rounded-2xl relative overflow-hidden backdrop-blur-md">
+        <Card className="bg-indigo-50/40 border border-indigo-200/60 shadow-sm rounded-2xl relative overflow-hidden backdrop-blur-md">
           <div className="absolute top-0 left-0 w-full h-[4px] bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
           <CardHeader className="space-y-1.5 pt-6 pb-4 cursor-pointer select-none" onClick={() => setShowAiPanel(!showAiPanel)}>
             <div className="flex items-center justify-between">
@@ -455,7 +455,7 @@ export default function NewFormBuilder() {
                 {/* Method selection */}
                 <div className="flex items-center gap-4">
                   <span className="text-xs text-slate-500 font-bold">Mode Penggabungan:</span>
-                  <label className="flex items-center gap-1.5 text-xs text-slate-750 font-medium cursor-pointer">
+                  <label className="flex items-center gap-1.5 text-xs text-slate-700 font-medium cursor-pointer">
                     <input
                       type="radio"
                       name="ai-merge-mode"
@@ -466,7 +466,7 @@ export default function NewFormBuilder() {
                     />
                     Gantikan formulir saat ini
                   </label>
-                  <label className="flex items-center gap-1.5 text-xs text-slate-750 font-medium cursor-pointer">
+                  <label className="flex items-center gap-1.5 text-xs text-slate-700 font-medium cursor-pointer">
                     <input
                       type="radio"
                       name="ai-merge-mode"
@@ -526,7 +526,7 @@ export default function NewFormBuilder() {
                           placeholder="sk-or-v1-..."
                           value={aiApiKey}
                           onChange={(e) => handleSaveApiKey(e.target.value)}
-                          className="bg-white border border-slate-250 focus:border-indigo-500 text-slate-800 h-9 rounded-lg text-xs"
+                          className="bg-white border border-slate-300 focus:border-indigo-500 text-slate-800 h-9 rounded-lg text-xs"
                         />
                         {aiApiKey && (
                           <Button
@@ -549,7 +549,7 @@ export default function NewFormBuilder() {
                         id="ai-model-select"
                         value={aiModel}
                         onChange={(e) => handleSaveModel(e.target.value)}
-                        className="w-full bg-white border border-slate-250 text-slate-800 h-9 px-3 rounded-lg text-xs focus:outline-none focus:border-indigo-505 transition-colors cursor-pointer"
+                        className="w-full bg-white border border-slate-300 text-slate-800 h-9 px-3 rounded-lg text-xs focus:outline-none focus:border-indigo-500 transition-colors cursor-pointer"
                       >
                         {aiModelList.length > 0 ? (
                           aiModelList.map((model, idx) => (
@@ -591,7 +591,7 @@ export default function NewFormBuilder() {
           </CardHeader>
           <CardContent className="space-y-4 pt-0">
             <div className="space-y-2">
-              <Label htmlFor="form-title" className="text-slate-650 text-xs font-bold">Judul Formulir</Label>
+              <Label htmlFor="form-title" className="text-slate-600 text-xs font-bold">Judul Formulir</Label>
               <Input
                 id="form-title"
                 placeholder="Contoh: Formulir Pendaftaran Kegiatan"
@@ -602,7 +602,7 @@ export default function NewFormBuilder() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="form-desc" className="text-slate-650 text-xs font-bold">Deskripsi / Petunjuk Pengisian (Opsional)</Label>
+              <Label htmlFor="form-desc" className="text-slate-600 text-xs font-bold">Deskripsi / Petunjuk Pengisian (Opsional)</Label>
               <Textarea
                 id="form-desc"
                 placeholder="Tulis informasi tambahan atau aturan bagi pengisi formulir..."
@@ -614,7 +614,7 @@ export default function NewFormBuilder() {
 
             {/* Banner Image Uploader */}
             <div className="space-y-2 pt-2">
-              <Label className="text-slate-650 text-xs font-bold">Gambar Banner Formulir (Opsional)</Label>
+              <Label className="text-slate-600 text-xs font-bold">Gambar Banner Formulir (Opsional)</Label>
               <div className="flex flex-col gap-4">
                 {bannerUrl ? (
                   <div className="relative w-full h-36 rounded-xl border border-slate-200 overflow-hidden bg-slate-50 shadow-inner">
@@ -640,7 +640,7 @@ export default function NewFormBuilder() {
                     />
                     <div className="flex flex-col items-center justify-center space-y-2 text-slate-400">
                       {isUploadingBanner ? (
-                        <i className="fa-solid fa-circle-notch fa-spin text-indigo-650 text-xl"></i>
+                        <i className="fa-solid fa-circle-notch fa-spin text-indigo-600 text-xl"></i>
                       ) : (
                         <i className="fa-solid fa-cloud-arrow-up text-xl group-hover:text-indigo-600 transition-colors"></i>
                       )}
@@ -660,9 +660,9 @@ export default function NewFormBuilder() {
                 id="limit-responses"
                 checked={limitOnePerIp}
                 onCheckedChange={(checked) => setLimitOnePerIp(!!checked)}
-                className="border-slate-350 data-[state=checked]:bg-indigo-600 data-[state=checked]:text-white rounded"
+                className="border-slate-400 data-[state=checked]:bg-indigo-600 data-[state=checked]:text-white rounded"
               />
-              <Label htmlFor="limit-responses" className="text-slate-650 text-xs font-semibold cursor-pointer">
+              <Label htmlFor="limit-responses" className="text-slate-600 text-xs font-semibold cursor-pointer">
                 Batasi 1 Tanggapan per IP Address (Cegah Spam Data Dobel)
               </Label>
             </div>
@@ -684,7 +684,7 @@ export default function NewFormBuilder() {
           <CardContent className="space-y-4 pt-0">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="expiry-date" className="text-slate-650 text-xs font-bold">Batas Waktu Pengisian (Deadline)</Label>
+                <Label htmlFor="expiry-date" className="text-slate-600 text-xs font-bold">Batas Waktu Pengisian (Deadline)</Label>
                 <Input
                   id="expiry-date"
                   type="datetime-local"
@@ -696,7 +696,7 @@ export default function NewFormBuilder() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="notify-email" className="text-slate-650 text-xs font-bold">Notifikasi Tanggapan ke Email (Resend)</Label>
+                <Label htmlFor="notify-email" className="text-slate-600 text-xs font-bold">Notifikasi Tanggapan ke Email (Resend)</Label>
                 <Input
                   id="notify-email"
                   type="email"
@@ -710,7 +710,7 @@ export default function NewFormBuilder() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="custom-success-msg" className="text-slate-650 text-xs font-bold">Pesan Sukses Kustom setelah Kirim</Label>
+              <Label htmlFor="custom-success-msg" className="text-slate-600 text-xs font-bold">Pesan Sukses Kustom setelah Kirim</Label>
               <Textarea
                 id="custom-success-msg"
                 placeholder="Tulis instruksi setelah berhasil kirim tanggapan (misal: link grup whatsapp pendaftar)..."
@@ -721,7 +721,7 @@ export default function NewFormBuilder() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="redirect-url" className="text-slate-650 text-xs font-bold flex items-center gap-1.5">
+              <Label htmlFor="redirect-url" className="text-slate-600 text-xs font-bold flex items-center gap-1.5">
                 Mengarahkan Otomatis (Redirect URL)
                 {!isPremium && <span className="text-[9px] text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.25 rounded-full font-bold">👑 Premium</span>}
               </Label>
@@ -740,12 +740,12 @@ export default function NewFormBuilder() {
             {/* Keamanan & Pembatasan Akses */}
             <div className="border-t border-slate-100 pt-4 space-y-4">
               <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                <i className="fa-solid fa-shield-halved text-indigo-650"></i>
+                <i className="fa-solid fa-shield-halved text-indigo-600"></i>
                 Keamanan & Pembatasan Akses
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="access-password" className="text-slate-650 text-xs font-bold">Kata Sandi Akses Formulir (Password Protection)</Label>
+                  <Label htmlFor="access-password" className="text-slate-600 text-xs font-bold">Kata Sandi Akses Formulir (Password Protection)</Label>
                   <Input
                     id="access-password"
                     type="text"
@@ -758,7 +758,7 @@ export default function NewFormBuilder() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="max-total-responses" className="text-slate-650 text-xs font-bold">Batas Maksimal Total Tanggapan (Kuota)</Label>
+                  <Label htmlFor="max-total-responses" className="text-slate-600 text-xs font-bold">Batas Maksimal Total Tanggapan (Kuota)</Label>
                   <Input
                     id="max-total-responses"
                     type="number"
@@ -777,9 +777,9 @@ export default function NewFormBuilder() {
                     id="limit-one-per-ip-adv"
                     checked={limitOnePerIp}
                     onCheckedChange={(checked) => setLimitOnePerIp(!!checked)}
-                    className="border-slate-350 data-[state=checked]:bg-indigo-600 data-[state=checked]:text-white rounded"
+                    className="border-slate-400 data-[state=checked]:bg-indigo-600 data-[state=checked]:text-white rounded"
                   />
-                  <Label htmlFor="limit-one-per-ip-adv" className="text-slate-650 text-xs font-semibold cursor-pointer">
+                  <Label htmlFor="limit-one-per-ip-adv" className="text-slate-600 text-xs font-semibold cursor-pointer">
                     Batasi 1 Tanggapan per IP Address (Cegah Spam Data)
                   </Label>
                 </div>
@@ -796,9 +796,9 @@ export default function NewFormBuilder() {
                       }
                       setEnableTurnstile(!!checked);
                     }}
-                    className="border-slate-350 data-[state=checked]:bg-indigo-600 data-[state=checked]:text-white rounded"
+                    className="border-slate-400 data-[state=checked]:bg-indigo-600 data-[state=checked]:text-white rounded"
                   />
-                  <Label htmlFor="enable-turnstile" className="text-slate-650 text-xs font-semibold cursor-pointer flex items-center gap-1.5">
+                  <Label htmlFor="enable-turnstile" className="text-slate-600 text-xs font-semibold cursor-pointer flex items-center gap-1.5">
                     Aktifkan Cloudflare Turnstile Captcha (Anti-Bot)
                     {!isPremium && <span className="text-[9px] text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.25 rounded-full font-bold">👑 Premium</span>}
                   </Label>
@@ -809,11 +809,11 @@ export default function NewFormBuilder() {
             {/* Integrasi Webhook */}
             <div className="border-t border-slate-100 pt-4 space-y-2">
               <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                <i className="fa-solid fa-link text-indigo-650"></i>
+                <i className="fa-solid fa-link text-indigo-600"></i>
                 Integrasi Webhook
                 {!isPremium && <span className="text-[9px] text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.25 rounded-full font-bold">👑 Premium</span>}
               </h3>
-              <Label htmlFor="webhook-url" className="text-slate-650 text-xs font-bold">URL Webhook Notifikasi (Discord / Slack / Custom API)</Label>
+              <Label htmlFor="webhook-url" className="text-slate-600 text-xs font-bold">URL Webhook Notifikasi (Discord / Slack / Custom API)</Label>
               <Input
                 id="webhook-url"
                 type="url"
@@ -829,7 +829,7 @@ export default function NewFormBuilder() {
             {/* Sistem Pembayaran Form (Event Berbayar) */}
             <div className="border-t border-slate-100 pt-4 space-y-4">
               <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                <i className="fa-solid fa-wallet text-indigo-650"></i>
+                <i className="fa-solid fa-wallet text-indigo-600"></i>
                 Sistem Pembayaran Form (Event Berbayar)
                 {!isPremium && <span className="text-[9px] text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.25 rounded-full font-bold">👑 Premium</span>}
               </h3>
@@ -846,9 +846,9 @@ export default function NewFormBuilder() {
                     }
                     setIsPaidForm(!!checked);
                   }}
-                  className="border-slate-350 data-[state=checked]:bg-indigo-600 data-[state=checked]:text-white rounded"
+                  className="border-slate-400 data-[state=checked]:bg-indigo-600 data-[state=checked]:text-white rounded"
                 />
-                <Label htmlFor="is-paid-form" className="text-slate-650 text-xs font-semibold cursor-pointer">
+                <Label htmlFor="is-paid-form" className="text-slate-600 text-xs font-semibold cursor-pointer">
                   Aktifkan Tarif Pembayaran untuk Mengisi Form ini
                 </Label>
               </div>
@@ -856,7 +856,7 @@ export default function NewFormBuilder() {
               {isPaidForm && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-250">
                   <div className="space-y-2">
-                    <Label htmlFor="form-price" className="text-slate-650 text-xs font-bold">Tarif Pengisian Form (Nominal Rupiah)</Label>
+                    <Label htmlFor="form-price" className="text-slate-600 text-xs font-bold">Tarif Pengisian Form (Nominal Rupiah)</Label>
                     <div className="relative">
                       <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 font-semibold text-sm">
                         Rp
@@ -867,20 +867,20 @@ export default function NewFormBuilder() {
                         placeholder="10000"
                         value={formPrice || ""}
                         onChange={(e) => setFormPrice(Number(e.target.value) || 0)}
-                        className="pl-9 bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-850 h-11 rounded-xl transition-all"
+                        className="pl-9 bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-800 h-11 rounded-xl transition-all"
                       />
                     </div>
                     <p className="text-[10px] text-slate-400">Pengisi formulir wajib melunasi tagihan sejumlah ini sebelum data disimpan.</p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="form-payment-description" className="text-slate-650 text-xs font-bold">Deskripsi / Detail Pembayaran (Merchant Ref)</Label>
+                    <Label htmlFor="form-payment-description" className="text-slate-600 text-xs font-bold">Deskripsi / Detail Pembayaran (Merchant Ref)</Label>
                     <Input
                       id="form-payment-description"
                       placeholder="Contoh: Tiket Masuk Event Musik Kampus"
                       value={formPaymentDescription}
                       onChange={(e) => setFormPaymentDescription(e.target.value)}
-                      className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-850 h-11 rounded-xl transition-all"
+                      className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-800 h-11 rounded-xl transition-all"
                     />
                     <p className="text-[10px] text-slate-400">Akan ditampilkan pada struk tagihan checkout Tripay.</p>
                   </div>
@@ -976,7 +976,7 @@ export default function NewFormBuilder() {
                           onCheckedChange={(checked) => 
                             handleFieldChange(field.id, { required: !!checked })
                           }
-                          className="border-slate-350 data-[state=checked]:bg-indigo-600 data-[state=checked]:text-white rounded"
+                          className="border-slate-400 data-[state=checked]:bg-indigo-600 data-[state=checked]:text-white rounded"
                         />
                         <Label htmlFor={`req-${field.id}`} className="text-slate-700 text-xs font-semibold cursor-pointer">
                           Wajib Diisi (Required)
@@ -995,7 +995,7 @@ export default function NewFormBuilder() {
                           <SelectTrigger className="bg-white border border-slate-200 text-slate-800 max-w-sm h-9 rounded-xl focus:ring-1 focus:ring-indigo-500/20">
                             <SelectValue placeholder="Pilih tipe berkas..." />
                           </SelectTrigger>
-                          <SelectContent className="bg-white border border-slate-250 text-slate-800 rounded-xl">
+                          <SelectContent className="bg-white border border-slate-300 text-slate-800 rounded-xl">
                             <SelectItem value="*" className="focus:bg-slate-100 rounded-lg">Semua Berkas (*)</SelectItem>
                             <SelectItem value="image/*" className="focus:bg-slate-100 rounded-lg">Hanya Gambar (PNG, JPG, WebP, GIF)</SelectItem>
                             <SelectItem value="audio/*" className="focus:bg-slate-100 rounded-lg">Hanya Audio (MP3, WAV, OGG)</SelectItem>
@@ -1008,7 +1008,7 @@ export default function NewFormBuilder() {
                     {/* Text Field Validation Selection */}
                     {field.type === "text" && (
                       <div className="border-t border-slate-100 pt-4 space-y-3">
-                        <Label className="text-slate-650 text-[11px] font-bold">Validasi Spesifik Kolom Teks</Label>
+                        <Label className="text-slate-600 text-[11px] font-bold">Validasi Spesifik Kolom Teks</Label>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                           <div className="space-y-1.5">
                             <Label className="text-slate-500 text-[10px] font-bold">Tipe Validasi</Label>
@@ -1024,7 +1024,7 @@ export default function NewFormBuilder() {
                               <SelectTrigger className="bg-white border border-slate-200 text-slate-800 h-9 rounded-xl focus:ring-1 focus:ring-indigo-500/20">
                                 <SelectValue placeholder="Tanpa Validasi" />
                               </SelectTrigger>
-                              <SelectContent className="bg-white border border-slate-250 text-slate-850 rounded-xl">
+                              <SelectContent className="bg-white border border-slate-300 text-slate-800 rounded-xl">
                                 <SelectItem value="none" className="focus:bg-slate-100 rounded-lg">Tanpa Validasi</SelectItem>
                                 <SelectItem value="number" className="focus:bg-slate-100 rounded-lg">Hanya Angka</SelectItem>
                                 <SelectItem value="phone" className="focus:bg-slate-100 rounded-lg">Nomor Telepon</SelectItem>
@@ -1069,7 +1069,7 @@ export default function NewFormBuilder() {
                                 placeholder="Masukkan regular expression..."
                                 value={field.validationPattern || ""}
                                 onChange={(e) => handleFieldChange(field.id, { validationPattern: e.target.value })}
-                                className="bg-white border border-slate-200 h-9 rounded-xl focus:ring-1 focus:ring-indigo-500/20 text-slate-850"
+                                className="bg-white border border-slate-200 h-9 rounded-xl focus:ring-1 focus:ring-indigo-500/20 text-slate-800"
                               />
                             </div>
                           )}
@@ -1080,7 +1080,7 @@ export default function NewFormBuilder() {
                     {/* Options configuration for Select/Radio types */}
                     {(field.type === "select" || field.type === "radio") && field.options && (
                       <div className="border-t border-slate-100 pt-4 space-y-3">
-                        <Label className="text-slate-650 text-[11px] font-bold">Daftar Opsi Pilihan</Label>
+                        <Label className="text-slate-600 text-[11px] font-bold">Daftar Opsi Pilihan</Label>
                         <div className="space-y-2">
                           {field.options.map((option, optIdx) => (
                             <div key={optIdx} className="flex items-center space-x-2">
@@ -1131,9 +1131,9 @@ export default function NewFormBuilder() {
                                 });
                               }
                             }}
-                            className="border-slate-350 data-[state=checked]:bg-indigo-600 data-[state=checked]:text-white rounded"
+                            className="border-slate-400 data-[state=checked]:bg-indigo-600 data-[state=checked]:text-white rounded"
                           />
-                          <Label htmlFor={`cond-chk-${field.id}`} className="text-slate-650 text-xs font-semibold cursor-pointer">
+                          <Label htmlFor={`cond-chk-${field.id}`} className="text-slate-600 text-xs font-semibold cursor-pointer">
                             Terapkan Logika Percabangan (Conditional Show)
                           </Label>
                         </div>
@@ -1153,7 +1153,7 @@ export default function NewFormBuilder() {
                                 <SelectTrigger className="bg-white border border-slate-200 text-slate-800 h-9 rounded-xl focus:ring-1 focus:ring-indigo-500/20">
                                   <SelectValue placeholder="Pilih pertanyaan..." />
                                 </SelectTrigger>
-                                <SelectContent className="bg-white border border-slate-200 text-slate-850 rounded-xl">
+                                <SelectContent className="bg-white border border-slate-200 text-slate-800 rounded-xl">
                                   {fields.slice(0, index).map((pf) => (
                                     <SelectItem key={pf.id} value={pf.id} className="focus:bg-slate-100 rounded-lg">
                                       {pf.label || `[Pertanyaan #${fields.indexOf(pf) + 1}]`}
@@ -1176,7 +1176,7 @@ export default function NewFormBuilder() {
                                       <SelectTrigger className="bg-white border border-slate-200 text-slate-800 h-9 rounded-xl focus:ring-1 focus:ring-indigo-500/20">
                                         <SelectValue placeholder="Pilih nilai..." />
                                       </SelectTrigger>
-                                      <SelectContent className="bg-white border border-slate-200 text-slate-850 rounded-xl">
+                                      <SelectContent className="bg-white border border-slate-200 text-slate-800 rounded-xl">
                                         {triggerField.options.map((opt, idx) => (
                                           <SelectItem key={idx} value={opt} className="focus:bg-slate-100 rounded-lg">
                                             {opt}
@@ -1191,7 +1191,7 @@ export default function NewFormBuilder() {
                                     placeholder="Contoh: Ya"
                                     value={field.conditionValue || ""}
                                     onChange={(e) => handleFieldChange(field.id, { conditionValue: e.target.value })}
-                                    className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-850 h-9 rounded-xl transition-all"
+                                    className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-800 h-9 rounded-xl transition-all"
                                   />
                                 );
                               })()}
@@ -1209,9 +1209,9 @@ export default function NewFormBuilder() {
 
         {/* STICKY FLOATING ADD FIELD TOOLBAR AT BOTTOM CENTER */}
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-full max-w-2xl px-4 animate-in fade-in slide-in-from-bottom-5 duration-300">
-          <div className="border border-slate-200/85 bg-white/95 backdrop-blur-md rounded-2xl p-3 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 text-slate-850">
+          <div className="border border-slate-200/85 bg-white/95 backdrop-blur-md rounded-2xl p-3 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 text-slate-800">
             <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider pl-1.5 shrink-0 flex items-center gap-1.5">
-              <i className="fa-solid fa-layer-group text-indigo-650"></i>
+              <i className="fa-solid fa-layer-group text-indigo-600"></i>
               Tambah Input:
             </span>
             <div className="flex flex-wrap gap-1.5 justify-center">
@@ -1221,7 +1221,7 @@ export default function NewFormBuilder() {
                 onClick={() => handleAddField("text")}
                 className="border-slate-200 bg-white text-slate-700 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 text-[11px] h-8 rounded-lg transition-all font-semibold cursor-pointer shadow-sm"
               >
-                <i className="fa-solid fa-font text-indigo-650 mr-1.5 group-hover:text-white"></i>
+                <i className="fa-solid fa-font text-indigo-600 mr-1.5 group-hover:text-white"></i>
                 Teks Pendek
               </Button>
               <Button
@@ -1230,7 +1230,7 @@ export default function NewFormBuilder() {
                 onClick={() => handleAddField("textarea")}
                 className="border-slate-200 bg-white text-slate-700 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 text-[11px] h-8 rounded-lg transition-all font-semibold cursor-pointer shadow-sm"
               >
-                <i className="fa-solid fa-paragraph text-indigo-650 mr-1.5 group-hover:text-white"></i>
+                <i className="fa-solid fa-paragraph text-indigo-600 mr-1.5 group-hover:text-white"></i>
                 Paragraf
               </Button>
               <Button
@@ -1239,7 +1239,7 @@ export default function NewFormBuilder() {
                 onClick={() => handleAddField("select")}
                 className="border-slate-200 bg-white text-slate-700 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 text-[11px] h-8 rounded-lg transition-all font-semibold cursor-pointer shadow-sm"
               >
-                <i className="fa-solid fa-caret-down text-indigo-650 mr-1.5 group-hover:text-white"></i>
+                <i className="fa-solid fa-caret-down text-indigo-600 mr-1.5 group-hover:text-white"></i>
                 Dropdown
               </Button>
               <Button
@@ -1248,7 +1248,7 @@ export default function NewFormBuilder() {
                 onClick={() => handleAddField("radio")}
                 className="border-slate-200 bg-white text-slate-700 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 text-[11px] h-8 rounded-lg transition-all font-semibold cursor-pointer shadow-sm"
               >
-                <i className="fa-solid fa-circle-dot text-indigo-650 mr-1.5 group-hover:text-white"></i>
+                <i className="fa-solid fa-circle-dot text-indigo-600 mr-1.5 group-hover:text-white"></i>
                 Pilihan Ganda
               </Button>
               <Button
@@ -1257,7 +1257,7 @@ export default function NewFormBuilder() {
                 onClick={() => handleAddField("file")}
                 className="border-slate-200 bg-white text-slate-700 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 text-[11px] h-8 rounded-lg transition-all font-semibold cursor-pointer shadow-sm relative"
               >
-                <i className="fa-solid fa-cloud-arrow-up text-indigo-650 mr-1.5 group-hover:text-white"></i>
+                <i className="fa-solid fa-cloud-arrow-up text-indigo-600 mr-1.5 group-hover:text-white"></i>
                 Unggah Berkas
                 {!isPremium && <span className="absolute -top-1.5 -right-1 text-[8px] bg-amber-500 text-white rounded px-1 py-0.25 font-bold shadow-sm">👑</span>}
               </Button>

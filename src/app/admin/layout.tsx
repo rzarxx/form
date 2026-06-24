@@ -165,9 +165,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <button
             onClick={handleLogout}
             disabled={isPending}
-            className="flex w-full items-center gap-3 rounded-lg px-4 py-3 font-medium text-[#dee4ee] hover:bg-[#333a48] hover:text-rose-450 transition-all duration-200 cursor-pointer"
+            className="flex w-full items-center gap-3 rounded-lg px-4 py-3 font-medium text-[#dee4ee] hover:bg-[#333a48] hover:text-rose-500 transition-all duration-200 cursor-pointer"
           >
-            <i className="fa-solid fa-right-from-bracket text-lg text-slate-400 group-hover:text-rose-450"></i>
+            <i className="fa-solid fa-right-from-bracket text-lg text-slate-400 group-hover:text-rose-500"></i>
             Keluar Dasbor
           </button>
         </div>
@@ -182,7 +182,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="flex items-center gap-2 xl:hidden">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="z-50 block rounded-md border border-slate-200 bg-slate-50 p-2 text-slate-650 hover:text-primary transition-colors cursor-pointer"
+                className="z-50 block rounded-md border border-slate-200 bg-slate-50 p-2 text-slate-600 hover:text-primary transition-colors cursor-pointer"
               >
                 <i className="fa-solid fa-bars text-lg"></i>
               </button>

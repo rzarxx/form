@@ -54,7 +54,7 @@ export async function POST(req: Request) {
 
     // Cari transaksi di database berdasarkan merchant_ref atau tripay_reference
     const txRes = await sql`
-      SELECT id, user_id, form_id, status, type, form_response_answers, payer_name, payer_email
+      SELECT id, user_id, form_id, status, type, form_response_answers, payer_name, payer_email, ip_address
       FROM transactions 
       WHERE reference = ${merchant_ref || ""} OR tripay_reference = ${reference}
       LIMIT 1
@@ -106,7 +106,7 @@ export async function POST(req: Request) {
             const form = formRes[0];
             
             // Simpan jawaban ke form_responses
-            const ip = req.headers.get("x-forwarded-for") || "127.0.0.1";
+            const ip = tx.ip_address || req.headers.get("x-forwarded-for") || "127.0.0.1";
             const insertRes = await sql`
               INSERT INTO form_responses (form_id, answers, ip_address)
               VALUES (${formId}, ${sql.json(answers)}, ${ip})

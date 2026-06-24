@@ -1,6 +1,6 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { sql } from "@/lib/db";
 import { getSetting } from "@/lib/settings";
 import { getSessionUser } from "@/lib/auth-helper";
@@ -146,6 +146,10 @@ export async function createPaymentAction(params: {
     const sessionToken = cookieStore.get("admin_session")?.value;
     const user = await getSessionUser(sessionToken);
 
+    // Get client's original IP address
+    const headerList = await headers();
+    const ip = headerList.get("x-forwarded-for")?.split(",")[0] || headerList.get("x-real-ip") || "127.0.0.1";
+
     let amount = 0;
     let orderItems: any[] = [];
     let merchantRef = "";
@@ -227,6 +231,7 @@ export async function createPaymentAction(params: {
         type,
         payer_name,
         payer_email,
+        ip_address,
         form_response_answers
       ) VALUES (
         ${user ? user.id : null},
@@ -239,6 +244,7 @@ export async function createPaymentAction(params: {
         ${params.type},
         ${params.payerName},
         ${params.payerEmail},
+        ${ip},
         ${params.formResponseAnswers ? JSON.stringify(params.formResponseAnswers) : null}
       )
     `;

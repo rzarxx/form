@@ -31,7 +31,7 @@ export default function Home() {
           </div>
           
           <Link href="/admin">
-            <Button variant="outline" className="border-slate-200 text-slate-650 hover:bg-slate-50 hover:text-slate-900 h-9 text-xs rounded-xl font-semibold transition-colors">
+            <Button variant="outline" className="border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 h-9 text-xs rounded-xl font-semibold transition-colors">
               <SlidersHorizontal className="h-3.5 w-3.5 mr-1.5 text-slate-400" />
               Kelola Form
             </Button>
@@ -64,7 +64,7 @@ export default function Home() {
             </Button>
           </Link>
           <a href="https://github.com/rzarxx/form" target="_blank" rel="noreferrer" className="w-full sm:w-auto">
-            <Button variant="outline" className="w-full sm:w-auto border-slate-200 text-slate-650 hover:bg-slate-50 h-12 px-8 text-sm rounded-xl font-semibold transition-colors">
+            <Button variant="outline" className="w-full sm:w-auto border-slate-200 text-slate-600 hover:bg-slate-50 h-12 px-8 text-sm rounded-xl font-semibold transition-colors">
               Dokumentasi GitHub
             </Button>
           </a>

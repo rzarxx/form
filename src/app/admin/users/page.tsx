@@ -234,7 +234,7 @@ export default function ManageUsersPage() {
     return (
       <div className="flex h-[80vh] items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-300 border-t-indigo-650"></div>
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-300 border-t-indigo-600"></div>
           <p className="text-sm font-semibold text-slate-500">Memuat daftar pengguna...</p>
         </div>
       </div>
@@ -254,7 +254,7 @@ export default function ManageUsersPage() {
         </div>
         <Button
           onClick={openCreateModal}
-          className="bg-indigo-600 hover:bg-indigo-750 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition-all cursor-pointer"
+          className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition-all cursor-pointer"
         >
           <UserPlus size={16} />
           Tambah Pengguna
@@ -276,7 +276,7 @@ export default function ManageUsersPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200/80 text-slate-650 font-bold">
+                <tr className="bg-slate-50 border-b border-slate-200/80 text-slate-600 font-bold">
                   <th className="px-6 py-4">No</th>
                   <th className="px-6 py-4">Alamat Email</th>
                   <th className="px-6 py-4">Peran (Role)</th>
@@ -383,7 +383,7 @@ export default function ManageUsersPage() {
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent className="sm:max-w-md bg-white border border-slate-200 rounded-2xl shadow-xl">
           <form onSubmit={handleCreateUser}>
-            <DialogHeader className="pb-4 border-b border-slate-150">
+            <DialogHeader className="pb-4 border-b border-slate-200">
               <DialogTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
                 <UserPlus className="text-indigo-600" /> Tambah Pengguna Baru
               </DialogTitle>
@@ -434,7 +434,7 @@ export default function ManageUsersPage() {
                 </select>
               </div>
 
-              <div className="border border-slate-150 rounded-xl p-3 bg-slate-50/50 space-y-3">
+              <div className="border border-slate-200 rounded-xl p-3 bg-slate-50/50 space-y-3">
                 <div className="flex items-center space-x-2">
                   <input
                     id="create-is-premium"
@@ -442,7 +442,7 @@ export default function ManageUsersPage() {
                     type="checkbox"
                     checked={formData.is_premium}
                     onChange={handleInputChange}
-                    className="h-4 w-4 rounded border-slate-300 text-indigo-655 focus:ring-indigo-650 cursor-pointer"
+                    className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer"
                   />
                   <Label htmlFor="create-is-premium" className="font-semibold text-slate-700 cursor-pointer flex items-center gap-1.5 text-xs">
                     <Crown size={12} className="text-amber-500 fill-amber-500" />
@@ -467,7 +467,7 @@ export default function ManageUsersPage() {
               </div>
             </div>
 
-            <DialogFooter className="pt-4 border-t border-slate-150 gap-2">
+            <DialogFooter className="pt-4 border-t border-slate-200 gap-2">
               <Button
                 type="button"
                 variant="outline"
@@ -492,7 +492,7 @@ export default function ManageUsersPage() {
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="sm:max-w-md bg-white border border-slate-200 rounded-2xl shadow-xl">
           <form onSubmit={handleEditUser}>
-            <DialogHeader className="pb-4 border-b border-slate-150">
+            <DialogHeader className="pb-4 border-b border-slate-200">
               <DialogTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
                 <Edit3 size={18} className="text-indigo-600" /> Edit Data Pengguna
               </DialogTitle>
@@ -548,7 +548,7 @@ export default function ManageUsersPage() {
                 </select>
               </div>
 
-              <div className="border border-slate-150 rounded-xl p-3 bg-slate-50/50 space-y-3">
+              <div className="border border-slate-200 rounded-xl p-3 bg-slate-50/50 space-y-3">
                 <div className="flex items-center space-x-2">
                   <input
                     id="edit-is-premium"
@@ -556,7 +556,7 @@ export default function ManageUsersPage() {
                     type="checkbox"
                     checked={formData.is_premium}
                     onChange={handleInputChange}
-                    className="h-4 w-4 rounded border-slate-300 text-indigo-650 focus:ring-indigo-650 cursor-pointer"
+                    className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer"
                   />
                   <Label htmlFor="edit-is-premium" className="font-semibold text-slate-700 cursor-pointer flex items-center gap-1.5 text-xs">
                     <Crown size={12} className="text-amber-500 fill-amber-500" />
@@ -581,7 +581,7 @@ export default function ManageUsersPage() {
               </div>
             </div>
 
-            <DialogFooter className="pt-4 border-t border-slate-150 gap-2">
+            <DialogFooter className="pt-4 border-t border-slate-200 gap-2">
               <Button
                 type="button"
                 variant="outline"
@@ -593,7 +593,7 @@ export default function ManageUsersPage() {
               <Button
                 type="submit"
                 disabled={isPending}
-                className="bg-indigo-600 hover:bg-indigo-750 text-white rounded-xl font-semibold text-xs py-2 px-4 flex items-center gap-1.5 shadow-sm cursor-pointer"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold text-xs py-2 px-4 flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
                 {isPending ? "Menyimpan..." : "Simpan Perubahan"}
               </Button>
@@ -624,7 +624,7 @@ export default function ManageUsersPage() {
             </p>
           </div>
 
-          <DialogFooter className="pt-4 border-t border-slate-150 gap-2">
+          <DialogFooter className="pt-4 border-t border-slate-200 gap-2">
             <Button
               type="button"
               variant="outline"
@@ -637,7 +637,7 @@ export default function ManageUsersPage() {
               type="button"
               onClick={handleDeleteUser}
               disabled={isPending}
-              className="bg-rose-600 hover:bg-rose-750 text-white rounded-xl font-semibold text-xs py-2 px-4 shadow-sm cursor-pointer"
+              className="bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-semibold text-xs py-2 px-4 shadow-sm cursor-pointer"
             >
               {isPending ? "Menghapus..." : "Ya, Hapus Permanen"}
             </Button>

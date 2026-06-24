@@ -64,7 +64,7 @@ export default function UserProfilePage() {
     return (
       <div className="flex h-[80vh] items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-350 border-t-indigo-650"></div>
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-400 border-t-indigo-600"></div>
           <p className="text-sm font-semibold text-slate-500">Memuat profil Anda...</p>
         </div>
       </div>
@@ -113,7 +113,7 @@ export default function UserProfilePage() {
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 disabled={isLegacyAdmin || isPending}
-                className="pr-10 border-slate-250 hover:border-slate-350 focus:border-indigo-500 h-11 rounded-xl"
+                className="pr-10 border-slate-300 hover:border-slate-400 focus:border-indigo-500 h-11 rounded-xl"
               />
               <button
                 type="button"
@@ -124,7 +124,7 @@ export default function UserProfilePage() {
                 <i className={`fa-solid ${showApiKey ? "fa-eye-slash" : "fa-eye"}`}></i>
               </button>
             </div>
-            <p className="text-[11px] text-slate-450 leading-relaxed">
+            <p className="text-[11px] text-slate-500 leading-relaxed">
               Kunci API Anda akan disamarkan dan disimpan secara terenkripsi/aman di database.
             </p>
           </div>
@@ -140,9 +140,9 @@ export default function UserProfilePage() {
               value={model}
               onChange={(e) => setModel(e.target.value)}
               disabled={isLegacyAdmin || isPending}
-              className="border-slate-250 hover:border-slate-350 focus:border-indigo-500 h-11 rounded-xl"
+              className="border-slate-300 hover:border-slate-400 focus:border-indigo-500 h-11 rounded-xl"
             />
-            <p className="text-[11px] text-slate-450 leading-relaxed">
+            <p className="text-[11px] text-slate-500 leading-relaxed">
               ID Model OpenRouter yang ingin Anda gunakan (contoh: <code>google/gemini-2.5-flash</code> atau <code>meta-llama/llama-3.1-8b-instruct:free</code>).
             </p>
           </div>

@@ -407,14 +407,25 @@ export default function PremiumPage() {
                 </CardHeader>
                 <CardContent className="space-y-4 pt-4">
                   {/* Status Indicator */}
-                  <div className="rounded-lg p-3 bg-amber-50 border border-amber-200 text-center space-y-1">
-                    <div className="text-[10px] font-bold text-amber-700 uppercase tracking-widest">Status Pembayaran</div>
-                    <div className="text-sm font-semibold text-amber-800 flex items-center justify-center gap-1.5">
-                      <div className="h-2.5 w-2.5 rounded-full bg-amber-500 animate-pulse"></div>
-                      MENUNGGU PEMBAYARAN
+                  {paymentStatus === "expired" || paymentStatus === "failed" ? (
+                    <div className="rounded-lg p-3 bg-rose-50 border border-rose-200 text-center space-y-1">
+                      <div className="text-[10px] font-bold text-rose-700 uppercase tracking-widest">Status Pembayaran</div>
+                      <div className="text-sm font-semibold text-rose-800 flex items-center justify-center gap-1.5">
+                        <span className="h-2.5 w-2.5 rounded-full bg-rose-500"></span>
+                        {paymentStatus === "expired" ? "KEDALUWARSA" : "TRANSAKSI GAGAL"}
+                      </div>
+                      <p className="text-[10px] text-slate-400">Silakan pilih metode pembayaran lain untuk mengulangi.</p>
                     </div>
-                    <p className="text-[10px] text-slate-400">Status akan terupdate otomatis secara real-time</p>
-                  </div>
+                  ) : (
+                    <div className="rounded-lg p-3 bg-amber-50 border border-amber-200 text-center space-y-1">
+                      <div className="text-[10px] font-bold text-amber-700 uppercase tracking-widest">Status Pembayaran</div>
+                      <div className="text-sm font-semibold text-amber-800 flex items-center justify-center gap-1.5">
+                        <div className="h-2.5 w-2.5 rounded-full bg-amber-500 animate-pulse"></div>
+                        MENUNGGU PEMBAYARAN
+                      </div>
+                      <p className="text-[10px] text-slate-400">Status akan terupdate otomatis secara real-time</p>
+                    </div>
+                  )}
 
                   {/* QR Code / Pay Code */}
                   {checkoutData.qrUrl ? (
