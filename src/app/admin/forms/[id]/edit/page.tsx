@@ -67,6 +67,9 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
   const [notifyEmail, setNotifyEmail] = useState("");
   const [customSuccessMessage, setCustomSuccessMessage] = useState("");
   const [redirectUrl, setRedirectUrl] = useState("");
+  const [removeBranding, setRemoveBranding] = useState(false);
+  const [fbPixelId, setFbPixelId] = useState("");
+  const [gtmId, setGtmId] = useState("");
 
   // Premium & Paid Form Configuration State
   const [isPremium, setIsPremium] = useState(true);
@@ -162,6 +165,9 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
         setNotifyEmail(form.notify_email || "");
         setCustomSuccessMessage(form.custom_success_message || "");
         setRedirectUrl(form.redirect_url || "");
+        setRemoveBranding(form.remove_branding === true);
+        setFbPixelId(form.fb_pixel_id || "");
+        setGtmId(form.gtm_id || "");
       } else {
         toast.error(result.error || "Gagal memuat data formulir.");
       }
@@ -332,7 +338,10 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
         enableTurnstile,
         isPaidForm,
         formPrice,
-        formPaymentDescription
+        formPaymentDescription,
+        removeBranding,
+        fbPixelId || null,
+        gtmId || null
       );
       
       if (result.success) {
@@ -847,6 +856,60 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Kustomisasi Branding & Tracking Pixel (Pro) */}
+            <div className="border-t border-slate-100 pt-4 space-y-4">
+              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                <i className="fa-solid fa-wand-magic-sparkles text-indigo-600"></i>
+                Kustomisasi & Analitik (White-Label)
+                {!isPremium && <span className="text-[9px] text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.25 rounded-full font-bold">👑 Premium</span>}
+              </h3>
+
+              <div className="flex items-center space-x-2.5">
+                <Checkbox
+                  id="remove-branding"
+                  checked={removeBranding}
+                  disabled={!isPremium}
+                  onCheckedChange={(checked) => {
+                    if (!isPremium) {
+                      toast.error("Fitur Hapus Branding hanya tersedia untuk anggota Premium.");
+                      return;
+                    }
+                    setRemoveBranding(!!checked);
+                  }}
+                  className="border-slate-400 data-[state=checked]:bg-indigo-600 data-[state=checked]:text-white rounded"
+                />
+                <Label htmlFor="remove-branding" className="text-slate-600 text-xs font-semibold cursor-pointer">
+                  Sembunyikan Branding Platform (Watermark di Footer)
+                </Label>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fb-pixel-id" className="text-slate-600 text-xs font-bold">Facebook Pixel ID</Label>
+                  <Input
+                    id="fb-pixel-id"
+                    placeholder={isPremium ? "Masukkan ID Pixel Facebook Anda..." : "🔒 Fitur ini hanya untuk Premium"}
+                    value={fbPixelId}
+                    disabled={!isPremium}
+                    onChange={(e) => setFbPixelId(e.target.value)}
+                    className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-800 h-11 rounded-xl transition-all disabled:opacity-60"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="gtm-id" className="text-slate-600 text-xs font-bold">Google Tag Manager (GTM) ID</Label>
+                  <Input
+                    id="gtm-id"
+                    placeholder={isPremium ? "Masukkan ID GTM Anda (GTM-XXXXXXX)..." : "🔒 Fitur ini hanya untuk Premium"}
+                    value={gtmId}
+                    disabled={!isPremium}
+                    onChange={(e) => setGtmId(e.target.value)}
+                    className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-800 h-11 rounded-xl transition-all disabled:opacity-60"
+                  />
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

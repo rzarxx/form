@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { sql } from "@/lib/db";
 import { getSetting } from "@/lib/settings";
 import { triggerResponseNotifications } from "@/lib/notifications";
+import { generateAndSendInvoice } from "@/lib/invoice";
 
 export async function POST(req: Request) {
   try {
@@ -54,7 +55,7 @@ export async function POST(req: Request) {
 
     // Cari transaksi di database berdasarkan merchant_ref atau tripay_reference
     const txRes = await sql`
-      SELECT id, user_id, form_id, amount, status, type, form_response_answers, payer_name, payer_email, ip_address
+      SELECT id, user_id, form_id, amount, status, type, form_response_answers, payer_name, payer_email, ip_address, coupon_id
       FROM transactions 
       WHERE reference = ${merchant_ref || ""} OR tripay_reference = ${reference}
       LIMIT 1
@@ -151,6 +152,19 @@ export async function POST(req: Request) {
               `;
               console.log(`[Tripay Webhook] Credited creator ${creatorId} balance with net: ${creatorAmount} (commission: ${platformCommission})`);
             }
+
+            // Update used_count kupon jika ada
+            if (tx.coupon_id) {
+              await sql`
+                UPDATE coupons SET used_count = used_count + 1 WHERE id = ${tx.coupon_id}
+              `;
+              console.log(`[Tripay Webhook] Coupon ID ${tx.coupon_id} usage incremented.`);
+            }
+
+            // Memicu pembuatan & pengiriman invoice PDF secara async
+            generateAndSendInvoice(tx.id).catch((err) => {
+              console.error("[Tripay Webhook] generateAndSendInvoice error:", err);
+            });
 
             console.log(`[Tripay Webhook] Saved paid form response ID: ${responseId} for form: ${formId}`);
 

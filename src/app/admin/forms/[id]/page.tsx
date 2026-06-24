@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useTransition, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import * as XLSX from "xlsx";
 import { getFormDetailAction, deleteFormAction, toggleFormActiveAction, deleteResponseAction, generateResponseInsightsAction } from "@/app/actions/forms";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -251,11 +252,6 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
   });
 
   const handleExportCSV = () => {
-    if (!isPremium) {
-      toast.error("Fitur Ekspor data ke CSV hanya tersedia untuk anggota Premium. Silakan upgrade ke keanggotaan Premium.");
-      return;
-    }
-
     if (!form || filteredResponses.length === 0) {
       toast.error("Tidak ada data tanggapan yang cocok untuk diekspor.");
       return;
@@ -318,6 +314,62 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
     } catch (err) {
       console.error("CSV Export failed:", err);
       toast.error("Gagal mengekspor data ke CSV.");
+    }
+  };
+
+  const handleExportExcel = () => {
+    if (!isPremium) {
+      toast.error("Fitur Ekspor data ke Excel (.xlsx) hanya tersedia untuk anggota Premium. Silakan upgrade ke keanggotaan Premium.");
+      return;
+    }
+
+    if (!form || filteredResponses.length === 0) {
+      toast.error("Tidak ada data tanggapan yang cocok untuk diekspor.");
+      return;
+    }
+
+    try {
+      const headers = ["ID", "Waktu Pengiriman", "IP Address", ...fields.map(f => f.label)];
+      
+      const rows = filteredResponses.map(res => {
+        const dateStr = new Date(res.created_at).toLocaleString("id-ID", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit"
+        });
+        
+        const parsedAnswers = typeof res.answers === "string" ? JSON.parse(res.answers) : res.answers;
+        const answerValues = fields.map(field => {
+          const ans = parsedAnswers[field.id];
+          if (ans === undefined || ans === null) return "";
+          if (Array.isArray(ans)) return ans.join("; ");
+          return String(ans);
+        });
+        
+        return [res.id, dateStr, res.ip_address || "-", ...answerValues];
+      });
+
+      const worksheetData = [headers, ...rows];
+      const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Tanggapan");
+
+      // Auto-fit column widths
+      const maxColWidth = worksheetData[0].map((_, colIdx) => {
+        return Math.max(...worksheetData.map(row => String(row[colIdx] || "").length));
+      });
+      worksheet["!cols"] = maxColWidth.map(w => ({ wch: Math.max(w + 3, 10) }));
+
+      const cleanTitle = form.title.toLowerCase().replace(/[^a-z0-9]+/g, "_");
+      XLSX.writeFile(workbook, `respons_excel_${cleanTitle}_${Date.now()}.xlsx`);
+      
+      toast.success("File Excel (.xlsx) berhasil diekspor!");
+    } catch (err) {
+      console.error("Excel Export failed:", err);
+      toast.error("Gagal mengekspor data ke Excel.");
     }
   };
 
@@ -538,23 +590,34 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
                 </div>
               </div>
 
-              <Button 
-                onClick={handleExportCSV}
-                disabled={filteredResponses.length === 0}
-                className="bg-indigo-600 text-white hover:bg-indigo-700 font-semibold h-10 shrink-0 rounded-xl shadow-sm hover:shadow-indigo-500/10 transition-all duration-300 disabled:opacity-40 disabled:pointer-events-none cursor-pointer flex items-center gap-1.5"
-              >
-                {!isPremium ? (
-                  <>
-                    <i className="fa-solid fa-crown text-amber-400"></i>
-                    Ekspor ke CSV (Pro)
-                  </>
-                ) : (
-                  <>
-                    <i className="fa-solid fa-download mr-2"></i>
-                    Ekspor ke CSV
-                  </>
-                )}
-              </Button>
+              <div className="flex gap-2 flex-wrap sm:flex-nowrap">
+                <Button 
+                  onClick={handleExportCSV}
+                  disabled={filteredResponses.length === 0}
+                  className="bg-slate-800 text-white hover:bg-slate-900 font-semibold h-10 shrink-0 rounded-xl shadow-sm hover:shadow-slate-500/10 transition-all duration-300 disabled:opacity-40 disabled:pointer-events-none cursor-pointer flex items-center gap-1.5"
+                >
+                  <i className="fa-solid fa-download"></i>
+                  Ekspor ke CSV
+                </Button>
+
+                <Button 
+                  onClick={handleExportExcel}
+                  disabled={filteredResponses.length === 0}
+                  className="bg-indigo-600 text-white hover:bg-indigo-700 font-semibold h-10 shrink-0 rounded-xl shadow-sm hover:shadow-indigo-500/10 transition-all duration-300 disabled:opacity-40 disabled:pointer-events-none cursor-pointer flex items-center gap-1.5"
+                >
+                  {!isPremium ? (
+                    <>
+                      <i className="fa-solid fa-crown text-amber-400"></i>
+                      Ekspor ke Excel (Pro)
+                    </>
+                  ) : (
+                    <>
+                      <i className="fa-solid fa-file-excel"></i>
+                      Ekspor ke Excel (.xlsx)
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

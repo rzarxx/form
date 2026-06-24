@@ -118,7 +118,10 @@ export async function createFormAction(
   enableTurnstile: boolean = false,
   isPaidForm: boolean = false,
   formPrice: number = 0,
-  formPaymentDescription?: string | null
+  formPaymentDescription?: string | null,
+  removeBranding: boolean = false,
+  fbPixelId?: string | null,
+  gtmId?: string | null
 ) {
   try {
     const userId = await requireAuth();
@@ -161,6 +164,12 @@ export async function createFormAction(
       if (isPaidForm) {
         return { success: false, error: "Fitur Formulir Berbayar hanya tersedia untuk anggota Premium." };
       }
+      if (removeBranding) {
+        return { success: false, error: "Fitur Hapus Branding hanya tersedia untuk anggota Premium." };
+      }
+      if (fbPixelId || gtmId) {
+        return { success: false, error: "Fitur Tracking Pixel & GTM hanya tersedia untuk anggota Premium." };
+      }
     }
 
     const fieldsJson = JSON.stringify(fields);
@@ -170,14 +179,16 @@ export async function createFormAction(
         title, description, fields, banner_url, max_responses, is_active,
         custom_success_message, redirect_url, expiry_date, notify_email,
         limit_one_per_ip, max_total_responses, access_password, webhook_url, enable_turnstile,
-        user_id, is_paid_form, form_price, form_payment_description
+        user_id, is_paid_form, form_price, form_payment_description,
+        remove_branding, fb_pixel_id, gtm_id
       )
       VALUES (
         ${title}, ${description || null}, ${fieldsJson}, ${bannerUrl || null}, ${maxResponses}, ${isActive},
         ${customSuccessMessage || null}, ${redirectUrl || null}, 
         ${expiryDate ? new Date(expiryDate) : null}, ${notifyEmail || null},
         ${limitOnePerIp}, ${maxTotalResponses}, ${accessPassword || null}, ${webhookUrl || null}, ${enableTurnstile},
-        ${userId}, ${isPaidForm}, ${formPrice}, ${formPaymentDescription || null}
+        ${userId}, ${isPaidForm}, ${formPrice}, ${formPaymentDescription || null},
+        ${removeBranding}, ${fbPixelId || null}, ${gtmId || null}
       )
       RETURNING id, title, created_at
     `;
@@ -208,7 +219,10 @@ export async function updateFormAction(
   enableTurnstile: boolean = false,
   isPaidForm: boolean = false,
   formPrice: number = 0,
-  formPaymentDescription?: string | null
+  formPaymentDescription?: string | null,
+  removeBranding: boolean = false,
+  fbPixelId?: string | null,
+  gtmId?: string | null
 ) {
   try {
     const userId = await requireAuth();
@@ -256,6 +270,12 @@ export async function updateFormAction(
       if (isPaidForm) {
         return { success: false, error: "Fitur Formulir Berbayar hanya tersedia untuk anggota Premium." };
       }
+      if (removeBranding) {
+        return { success: false, error: "Fitur Hapus Branding hanya tersedia untuk anggota Premium." };
+      }
+      if (fbPixelId || gtmId) {
+        return { success: false, error: "Fitur Tracking Pixel & GTM hanya tersedia untuk anggota Premium." };
+      }
     }
 
     const fieldsJson = JSON.stringify(fields);
@@ -280,7 +300,10 @@ export async function updateFormAction(
         enable_turnstile = ${enableTurnstile},
         is_paid_form = ${isPaidForm},
         form_price = ${formPrice},
-        form_payment_description = ${formPaymentDescription || null}
+        form_payment_description = ${formPaymentDescription || null},
+        remove_branding = ${removeBranding},
+        fb_pixel_id = ${fbPixelId || null},
+        gtm_id = ${gtmId || null}
       WHERE id = ${formId}
     `;
 
@@ -331,7 +354,8 @@ export async function getFormDetailAction(formId: string) {
       SELECT id, title, description, created_at, fields, banner_url, max_responses, is_active,
              custom_success_message, redirect_url, expiry_date, notify_email,
              limit_one_per_ip, max_total_responses, access_password, webhook_url, enable_turnstile,
-             is_paid_form, form_price, form_payment_description, ai_insights, ai_insights_updated_at
+             is_paid_form, form_price, form_payment_description, ai_insights, ai_insights_updated_at,
+             remove_branding, fb_pixel_id, gtm_id
       FROM forms
       WHERE id = ${formId} AND (user_id = ${userId} OR (user_id IS NULL AND ${userId} = '00000000-0000-0000-0000-000000000000'))
     `;
@@ -660,13 +684,16 @@ export async function getPublicFormAction(formId: string) {
     await initDatabase();
 
     const formResult = await sql`
-      SELECT id, title, description, fields, banner_url, max_responses, is_active,
-             custom_success_message, redirect_url, expiry_date, notify_email,
-             limit_one_per_ip, max_total_responses, enable_turnstile,
-             is_paid_form, form_price, form_payment_description,
-             (access_password IS NOT NULL AND access_password != '') as has_password
-      FROM forms
-      WHERE id = ${formId}
+      SELECT f.id, f.title, f.description, f.fields, f.banner_url, f.max_responses, f.is_active,
+             f.custom_success_message, f.redirect_url, f.expiry_date, f.notify_email,
+             f.limit_one_per_ip, f.max_total_responses, f.enable_turnstile,
+             f.is_paid_form, f.form_price, f.form_payment_description,
+             (f.access_password IS NOT NULL AND f.access_password != '') as has_password,
+             f.remove_branding, f.fb_pixel_id, f.gtm_id,
+             COALESCE(u.is_premium, false) as is_owner_premium
+      FROM forms f
+      LEFT JOIN users u ON f.user_id = u.id
+      WHERE f.id = ${formId}
     `;
 
     if (formResult.length === 0) {

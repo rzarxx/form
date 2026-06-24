@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useTransition, use } from "react";
 import { getPublicFormAction, submitResponseAction, checkIpSubmissionAction, verifyFormPasswordAction } from "@/app/actions/forms";
 import { getPremiumPricingAndChannelsAction, createPaymentAction, checkTransactionStatusAction } from "@/app/actions/tripay";
+import { validateCouponAction } from "@/app/actions/coupons";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,13 @@ import {
   Printer, 
   Paperclip 
 } from "lucide-react";
+
+declare global {
+  interface Window {
+    fbq?: any;
+    _fbq?: any;
+  }
+}
 
 interface FieldSchema {
   id: string;
@@ -57,6 +65,10 @@ interface FormSchema {
   is_paid_form?: boolean;
   form_price?: number;
   form_payment_description?: string;
+  remove_branding?: boolean;
+  fb_pixel_id?: string;
+  gtm_id?: string;
+  is_owner_premium?: boolean;
 }
 
 export default function PublicFormPage({ params }: { params: Promise<{ id: string }> }) {
@@ -108,6 +120,55 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
   } | null>(null);
   
   const [paymentStatus, setPaymentStatus] = useState<string>("unpaid");
+
+  // Coupon states
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    couponId: string;
+    discountType: "percentage" | "fixed";
+    discountValue: number;
+    discountAmount: number;
+    finalPrice: number;
+  } | null>(null);
+  const [couponError, setCouponError] = useState("");
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponError("Silakan masukkan kode kupon.");
+      return;
+    }
+    setIsValidatingCoupon(true);
+    setCouponError("");
+    try {
+      const res = await validateCouponAction(formId, couponCode, paidFormPrice);
+      if (res.success && res.data) {
+        setAppliedCoupon({
+          couponId: res.data.couponId,
+          discountType: res.data.discountType as "percentage" | "fixed",
+          discountValue: res.data.discountValue,
+          discountAmount: res.data.discountAmount,
+          finalPrice: res.data.finalPrice
+        });
+        toast.success("Kupon berhasil dipasang!");
+      } else {
+        setCouponError(res.error || "Kupon tidak valid.");
+        setAppliedCoupon(null);
+      }
+    } catch (err) {
+      console.error(err);
+      setCouponError("Gagal memvalidasi kupon.");
+      setAppliedCoupon(null);
+    } finally {
+      setIsValidatingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+    setCouponError("");
+  };
 
   const fields: FieldSchema[] = form
     ? (Array.isArray(form.fields)
@@ -178,6 +239,73 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
     fetchForm();
   }, [formId]);
 
+  // Inject Facebook Pixel & GTM scripts if owner is premium
+  useEffect(() => {
+    if (!form) return;
+
+    const cleanupScripts: (() => void)[] = [];
+
+    // 1. Inject Facebook Pixel if configured and owner is premium
+    if (form.is_owner_premium && form.fb_pixel_id && form.fb_pixel_id.trim()) {
+      const pixelId = form.fb_pixel_id.trim();
+
+      // Check if pixel is already loaded
+      if (!(window as any).fbq) {
+        /* eslint-disable */
+        (function(f: any,b: any,e: any,v: any,n?: any,t?: any,s?: any)
+        {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+        n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+        n.queue=[];t=b.createElement(e);t.async=!0;
+        t.src=v;s=b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t,s)}(window, document,'script',
+        'https://connect.facebook.net/en_US/fbevents.js'));
+        (window as any).fbq('init', pixelId);
+        (window as any).fbq('track', 'PageView');
+        /* eslint-enable */
+      } else {
+        (window as any).fbq('init', pixelId);
+        (window as any).fbq('track', 'PageView');
+      }
+
+      console.log(`[Tracking] FB Pixel ID ${pixelId} injected.`);
+    }
+
+    // 2. Inject Google Tag Manager if configured and owner is premium
+    if (form.is_owner_premium && form.gtm_id && form.gtm_id.trim()) {
+      const gtmId = form.gtm_id.trim();
+
+      const script = document.createElement("script");
+      script.id = "gtm-script";
+      script.innerHTML = `
+        (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+        new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+        'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+        })(window,document,'script','dataLayer','${gtmId}');
+      `;
+      document.head.appendChild(script);
+
+      const noscript = document.createElement("noscript");
+      noscript.id = "gtm-noscript";
+      noscript.innerHTML = `
+        <iframe src="https://www.googletagmanager.com/ns.html?id=${gtmId}"
+        height="0" width="0" style="display:none;visibility:hidden"></iframe>
+      `;
+      document.body.appendChild(noscript);
+
+      cleanupScripts.push(() => {
+        document.getElementById("gtm-script")?.remove();
+        document.getElementById("gtm-noscript")?.remove();
+      });
+      console.log(`[Tracking] Google Tag Manager ID ${gtmId} injected.`);
+    }
+
+    return () => {
+      cleanupScripts.forEach(cleanup => cleanup());
+    };
+  }, [form]);
+
   // Load payment channels on mount
   useEffect(() => {
     async function loadChannels() {
@@ -240,9 +368,9 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
     }
   }, [answers, formId, isSubmitted]);
 
-  // Handle auto redirect if configured
+  // Handle auto redirect if configured (Premium/Pro feature)
   useEffect(() => {
-    if (isSubmitted && form?.redirect_url) {
+    if (isSubmitted && form?.redirect_url && form.is_owner_premium) {
       const timer = setTimeout(() => {
         window.location.href = form.redirect_url!;
       }, 3000);
@@ -521,7 +649,8 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
   };
 
   const handleFormPayment = () => {
-    if (!selectedChannel) {
+    const currentPrice = appliedCoupon ? appliedCoupon.finalPrice : paidFormPrice;
+    if (currentPrice > 0 && !selectedChannel) {
       toast.error("Silakan pilih metode pembayaran.");
       return;
     }
@@ -534,23 +663,38 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
       try {
         const res = await createPaymentAction({
           type: "form_payment",
-          method: selectedChannel,
+          method: currentPrice > 0 ? selectedChannel : "FREE_COUPON",
           payerName,
           payerEmail,
           formId,
+          couponCode: appliedCoupon ? couponCode : undefined,
           formResponseAnswers: pendingAnswers,
         });
 
-        if (res.success && res.reference) {
-          toast.success("Tagihan pembayaran berhasil dibuat!");
-          setCheckoutData({
-            reference: res.reference,
-            payCode: res.payCode || null,
-            qrUrl: res.qrUrl || null,
-            qrString: res.qrString || null,
-            instructions: res.instructions || [],
-          });
-          setPaymentStatus("unpaid");
+        if (res.success) {
+          const finalPrice = appliedCoupon ? appliedCoupon.finalPrice : paidFormPrice;
+          setPaidFormPrice(finalPrice);
+
+          if (res.isFree) {
+            toast.success("Tanggapan Anda telah resmi disimpan. Terima kasih! 🎉");
+            setIsCheckingOutPaidForm(false);
+            setIsSubmitted(true);
+            setAppliedCoupon(null);
+            setCouponCode("");
+            if (typeof window !== "undefined") {
+              localStorage.removeItem(`form_draft_${formId}`);
+            }
+          } else if (res.reference) {
+            toast.success("Tagihan pembayaran berhasil dibuat!");
+            setCheckoutData({
+              reference: res.reference,
+              payCode: res.payCode || null,
+              qrUrl: res.qrUrl || null,
+              qrString: res.qrString || null,
+              instructions: res.instructions || [],
+            });
+            setPaymentStatus("unpaid");
+          }
         } else {
           toast.error(res.error || "Gagal membuat tagihan pembayaran.");
         }
@@ -701,8 +845,21 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
               <CardHeader className="bg-slate-50/60 border-b">
                 <CardTitle className="text-lg">Rincian Pembayaran</CardTitle>
                 <CardDescription>{paidFormDescription || "Silakan lengkapi info pembayaran di bawah ini."}</CardDescription>
-                <div className="mt-3 text-3xl font-extrabold text-slate-950">
-                  Rp {paidFormPrice.toLocaleString("id-ID")}
+                <div className="mt-3 flex items-baseline gap-2">
+                  {appliedCoupon ? (
+                    <>
+                      <span className="text-3xl font-extrabold text-slate-950">
+                        Rp {appliedCoupon.finalPrice.toLocaleString("id-ID")}
+                      </span>
+                      <span className="text-sm line-through text-slate-400">
+                        Rp {paidFormPrice.toLocaleString("id-ID")}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-3xl font-extrabold text-slate-950">
+                      Rp {paidFormPrice.toLocaleString("id-ID")}
+                    </span>
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="space-y-4 pt-5">
@@ -730,40 +887,95 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                   <p className="text-[10px] text-slate-400">Status pembayaran & instruksi transfer akan dikirimkan ke email ini.</p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Pilih Metode Pembayaran</Label>
-                  {paymentChannels.length === 0 ? (
-                    <div className="text-xs p-3 bg-rose-50 border border-rose-200 text-rose-600 rounded-xl">
-                      Tidak ada metode pembayaran aktif. Silakan hubungi admin pengelola form.
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[220px] overflow-y-auto pr-1">
-                      {paymentChannels.map((ch) => (
-                        <label
-                          key={ch.code}
-                          className={`flex items-center space-x-3 rounded-xl border p-3 cursor-pointer select-none transition-all duration-200 ${
-                            selectedChannel === ch.code 
-                              ? "border-indigo-600 bg-indigo-50/40 font-semibold shadow-sm" 
-                              : "border-slate-200 bg-white hover:bg-slate-50"
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="payment_method"
-                            value={ch.code}
-                            checked={selectedChannel === ch.code}
-                            onChange={() => setSelectedChannel(ch.code)}
-                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="text-xs font-semibold text-slate-800 truncate">{ch.name}</div>
-                            <div className="text-[9px] text-slate-400 uppercase tracking-wider">{ch.code}</div>
-                          </div>
-                        </label>
-                      ))}
-                    </div>
+                {/* Coupon Input */}
+                <div className="space-y-2 border-t pt-4">
+                  <Label htmlFor="couponCode">Kode Kupon (Jika Ada)</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="couponCode"
+                      placeholder="Contoh: EARLYBIRD"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value)}
+                      disabled={!!appliedCoupon || isValidatingCoupon}
+                      className="bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-800 h-10 rounded-xl uppercase"
+                    />
+                    {appliedCoupon ? (
+                      <Button
+                        type="button"
+                        onClick={handleRemoveCoupon}
+                        variant="destructive"
+                        className="h-10 rounded-xl"
+                      >
+                        Hapus
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        onClick={handleApplyCoupon}
+                        disabled={isValidatingCoupon || !couponCode.trim()}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-10 rounded-xl cursor-pointer"
+                      >
+                        {isValidatingCoupon ? "Mengecek..." : "Gunakan"}
+                      </Button>
+                    )}
+                  </div>
+                  {couponError && (
+                    <p className="text-xs text-rose-600 font-semibold">{couponError}</p>
+                  )}
+                  {appliedCoupon && (
+                    <p className="text-xs text-emerald-600 font-semibold">
+                      Kupon terpasang: Potongan Rp {appliedCoupon.discountAmount.toLocaleString("id-ID")} (
+                      {appliedCoupon.discountType === "percentage" ? `${appliedCoupon.discountValue}%` : "Nominal Tetap"})
+                    </p>
                   )}
                 </div>
+
+                {/* Payment Methods */}
+                {(!appliedCoupon || appliedCoupon.finalPrice > 0) ? (
+                  <div className="space-y-2 border-t pt-4">
+                    <Label>Pilih Metode Pembayaran</Label>
+                    {paymentChannels.length === 0 ? (
+                      <div className="text-xs p-3 bg-rose-50 border border-rose-200 text-rose-600 rounded-xl">
+                        Tidak ada metode pembayaran aktif. Silakan hubungi admin pengelola form.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[220px] overflow-y-auto pr-1">
+                        {paymentChannels.map((ch) => (
+                          <label
+                            key={ch.code}
+                            className={`flex items-center space-x-3 rounded-xl border p-3 cursor-pointer select-none transition-all duration-200 ${
+                              selectedChannel === ch.code 
+                                ? "border-indigo-600 bg-indigo-50/40 font-semibold shadow-sm" 
+                                : "border-slate-200 bg-white hover:bg-slate-50"
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="payment_method"
+                              value={ch.code}
+                              checked={selectedChannel === ch.code}
+                              onChange={() => setSelectedChannel(ch.code)}
+                              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs font-semibold text-slate-800 truncate">{ch.name}</div>
+                              <div className="text-[9px] text-slate-400 uppercase tracking-wider">{ch.code}</div>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="rounded-xl p-4 bg-emerald-50 border border-emerald-200 text-center space-y-1">
+                    <p className="text-xs font-semibold text-emerald-800">
+                      Diskon 100% Diterapkan!
+                    </p>
+                    <p className="text-[10px] text-slate-500">
+                      Anda dapat langsung mengirimkan tanggapan secara gratis tanpa memilih metode pembayaran.
+                    </p>
+                  </div>
+                )}
 
                 <div className="pt-4 flex flex-col sm:flex-row gap-3 border-t">
                   <Button
@@ -776,13 +988,13 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                   
                   <Button
                     onClick={handleFormPayment}
-                    disabled={isPending || paymentChannels.length === 0}
+                    disabled={isPending || ((!appliedCoupon || appliedCoupon.finalPrice > 0) && paymentChannels.length === 0)}
                     className="flex-1 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold rounded-xl shadow hover:from-indigo-600 hover:to-indigo-700 transition duration-200 cursor-pointer h-11"
                   >
                     {isPending ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        Membuat Invoice...
+                        Memproses...
                       </>
                     ) : (
                       <>
@@ -1017,8 +1229,12 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
                 </div>
               </div>
               <div className="text-right">
-                <span className="text-sm font-black text-slate-900 block tracking-tight">KAPAN KONSER LAGI</span>
-                <span className="text-[9px] font-semibold text-slate-400 block tracking-wide uppercase">FORM BUILDER</span>
+                {!(form.is_owner_premium && form.remove_branding) && (
+                  <>
+                    <span className="text-sm font-black text-slate-900 block tracking-tight">KAPAN KONSER LAGI</span>
+                    <span className="text-[9px] font-semibold text-slate-400 block tracking-wide uppercase">FORM BUILDER</span>
+                  </>
+                )}
               </div>
             </div>
 
@@ -1394,7 +1610,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
           {/* Form Submit Button */}
           <div className="flex flex-col sm:flex-row gap-3 justify-between items-center pt-4">
             <span className="text-[11px] text-slate-400 font-medium">
-              Formulir ini aman & terenkripsi oleh Personal Form Builder.
+              {!(form.is_owner_premium && form.remove_branding) && "Formulir ini aman & terenkripsi oleh Personal Form Builder."}
             </span>
             <Button
               type="submit"

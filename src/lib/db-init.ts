@@ -213,6 +213,50 @@ export async function initDatabase() {
       ON CONFLICT (key) DO NOTHING;
     `;
 
+    // MIGRATION: Premium features (Branding, Pixels, Coupons, Custom Domains)
+    await sql`
+      ALTER TABLE forms ADD COLUMN IF NOT EXISTS remove_branding BOOLEAN DEFAULT FALSE;
+    `;
+    await sql`
+      ALTER TABLE forms ADD COLUMN IF NOT EXISTS fb_pixel_id VARCHAR(50);
+    `;
+    await sql`
+      ALTER TABLE forms ADD COLUMN IF NOT EXISTS gtm_id VARCHAR(50);
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS coupons (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        form_id UUID REFERENCES forms(id) ON DELETE CASCADE,
+        code VARCHAR(50) NOT NULL,
+        discount_type VARCHAR(20) NOT NULL,
+        discount_value INT NOT NULL,
+        max_uses INT,
+        used_count INT DEFAULT 0,
+        is_active BOOLEAN DEFAULT TRUE,
+        expires_at TIMESTAMP WITH TIME ZONE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS custom_domains (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        domain VARCHAR(255) UNIQUE NOT NULL,
+        status VARCHAR(50) DEFAULT 'pending',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
+    await sql`
+      ALTER TABLE custom_domains ADD COLUMN IF NOT EXISTS form_id UUID REFERENCES forms(id) ON DELETE CASCADE;
+    `;
+
+    await sql`
+      ALTER TABLE transactions ADD COLUMN IF NOT EXISTS coupon_id UUID REFERENCES coupons(id) ON DELETE SET NULL;
+    `;
+
     isInitialized = true;
     console.log("Database initialization check completed successfully.");
   } catch (error) {

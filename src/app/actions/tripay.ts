@@ -143,6 +143,7 @@ export async function createPaymentAction(params: {
   payerName: string;
   payerEmail: string;
   formId?: string;
+  couponCode?: string;
   formResponseAnswers?: Record<string, any>;
 }) {
   try {
@@ -154,9 +155,12 @@ export async function createPaymentAction(params: {
     const headerList = await headers();
     const ip = headerList.get("x-forwarded-for")?.split(",")[0] || headerList.get("x-real-ip") || "127.0.0.1";
 
+    const targetFormId: string | null = params.formId || null;
+
     let amount = 0;
     let orderItems: any[] = [];
     let merchantRef = "";
+    let couponId: string | null = null;
 
     if (params.type === "subscription") {
       if (!user) {
@@ -173,14 +177,14 @@ export async function createPaymentAction(params: {
         }
       ];
     } else if (params.type === "form_payment") {
-      if (!params.formId) {
+      if (!targetFormId) {
         return { success: false, error: "Form ID tidak valid." };
       }
 
       // Ambil detail form dari db
       const formRes = await sql`
         SELECT title, is_paid_form, form_price, form_payment_description
-        FROM forms WHERE id = ${params.formId} LIMIT 1
+        FROM forms WHERE id = ${targetFormId} LIMIT 1
       `;
       if (formRes.length === 0) {
         return { success: false, error: "Formulir tidak ditemukan." };
@@ -192,7 +196,35 @@ export async function createPaymentAction(params: {
       }
 
       amount = form.form_price || 0;
-      merchantRef = `REF-FORM-${params.formId.substring(0, 8)}-${Date.now()}`;
+      merchantRef = `REF-FORM-${targetFormId.substring(0, 8)}-${Date.now()}`;
+
+      // Check coupon
+      if (params.couponCode) {
+        const cleanCode = params.couponCode.trim().toUpperCase();
+        const couponRes = await sql`
+          SELECT id, discount_type, discount_value, max_uses, used_count, is_active, expires_at
+          FROM coupons
+          WHERE form_id = ${targetFormId} AND code = ${cleanCode} LIMIT 1
+        `;
+        if (couponRes.length > 0) {
+          const coupon = couponRes[0];
+          const isValid = coupon.is_active && 
+                          (!coupon.max_uses || coupon.used_count < coupon.max_uses) && 
+                          (!coupon.expires_at || new Date(coupon.expires_at) >= new Date());
+          if (isValid) {
+            couponId = coupon.id;
+            let discount = 0;
+            if (coupon.discount_type === "percentage") {
+              discount = Math.round(amount * (coupon.discount_value / 100));
+            } else {
+              discount = coupon.discount_value;
+            }
+            if (discount > amount) discount = amount;
+            amount = amount - discount;
+          }
+        }
+      }
+
       orderItems = [
         {
           name: `Akses Form: ${form.title}`,
@@ -202,7 +234,98 @@ export async function createPaymentAction(params: {
       ];
     }
 
-    // Panggil API Tripay
+    // Jika final price adalah 0 (Kupon 100% diskon) dan tipe form_payment
+    if (amount === 0 && params.type === "form_payment") {
+      if (!targetFormId) {
+        return { success: false, error: "Form ID tidak valid." };
+      }
+      const freeRef = `REF-FREE-${targetFormId.substring(0, 8)}-${Date.now()}`;
+      
+      // Ambil detail form untuk notifikasi
+      const formResInfo = await sql`
+        SELECT title, fields, webhook_url, notify_email
+        FROM forms WHERE id = ${targetFormId} LIMIT 1
+      `;
+      
+      let responseId = null;
+      if (formResInfo.length > 0) {
+        const form = formResInfo[0];
+        const insertRes = await sql`
+          INSERT INTO form_responses (form_id, answers, ip_address)
+          VALUES (${targetFormId}, ${sql.json(params.formResponseAnswers || {})}, ${ip})
+          RETURNING id
+        `;
+        responseId = insertRes[0]?.id;
+
+        // Picu notifikasi (webhook & email)
+        const { triggerResponseNotifications } = require("@/lib/notifications");
+        await triggerResponseNotifications({
+          form: {
+            id: targetFormId,
+            title: form.title,
+            fields: form.fields,
+            webhook_url: form.webhook_url,
+            notify_email: form.notify_email,
+          },
+          answers: params.formResponseAnswers || {},
+          ip: ip,
+        });
+      }
+
+      // Catat ke database transaksi
+      await sql`
+        INSERT INTO transactions (
+          user_id,
+          form_id,
+          reference,
+          tripay_reference,
+          payment_method,
+          amount,
+          status,
+          type,
+          payer_name,
+          payer_email,
+          ip_address,
+          form_response_answers,
+          form_response_id,
+          coupon_id
+        ) VALUES (
+          ${user ? user.id : null},
+          ${targetFormId},
+          ${freeRef},
+          ${freeRef},
+          'FREE_COUPON',
+          0,
+          'paid',
+          ${params.type},
+          ${params.payerName},
+          ${params.payerEmail},
+          ${ip},
+          ${params.formResponseAnswers ? JSON.stringify(params.formResponseAnswers) : null},
+          ${responseId},
+          ${couponId}
+        )
+      `;
+
+      // Update used_count kupon
+      if (couponId) {
+        await sql`
+          UPDATE coupons SET used_count = used_count + 1 WHERE id = ${couponId}
+        `;
+      }
+
+      return { 
+        success: true, 
+        isFree: true,
+        reference: freeRef,
+        payCode: null,
+        qrUrl: null,
+        qrString: null,
+        instructions: []
+      };
+    }
+
+    // Panggil API Tripay untuk transaksi berbayar (> 0)
     const tripayRes = await createTripayTransaction({
       method: params.method,
       merchantRef: merchantRef,
@@ -212,7 +335,7 @@ export async function createPaymentAction(params: {
       orderItems: orderItems,
       returnUrl: params.type === "subscription" 
         ? `${process.env.NEXT_PUBLIC_APP_URL || "https://kapankonserlagi.my.id"}/admin/premium`
-        : `${process.env.NEXT_PUBLIC_APP_URL || "https://kapankonserlagi.my.id"}/forms/${params.formId}`,
+        : `${process.env.NEXT_PUBLIC_APP_URL || "https://kapankonserlagi.my.id"}/forms/${targetFormId}`,
     });
 
     if (!tripayRes.success) {
@@ -236,10 +359,11 @@ export async function createPaymentAction(params: {
         payer_name,
         payer_email,
         ip_address,
-        form_response_answers
+        form_response_answers,
+        coupon_id
       ) VALUES (
         ${user ? user.id : null},
-        ${params.formId || null},
+        ${targetFormId},
         ${merchantRef},
         ${data.reference},
         ${params.method},
@@ -249,7 +373,8 @@ export async function createPaymentAction(params: {
         ${params.payerName},
         ${params.payerEmail},
         ${ip},
-        ${params.formResponseAnswers ? JSON.stringify(params.formResponseAnswers) : null}
+        ${params.formResponseAnswers ? JSON.stringify(params.formResponseAnswers) : null},
+        ${couponId}
       )
     `;
 
