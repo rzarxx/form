@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useTransition, Suspense } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { registerAction } from "@/app/actions/auth";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,15 +12,30 @@ import { toast } from "@/components/ui/toast";
 
 function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const planParam = searchParams.get("plan");
+  const defaultPlan = (planParam === "pro" || planParam === "free") ? planParam : "free";
+
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [plan, setPlan] = useState<"free" | "pro">(defaultPlan);
   const [isPending, startTransition] = useTransition();
 
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password || !confirmPassword) {
+    if (!name.trim() || !email.trim() || !password || !confirmPassword) {
       toast.error("Semua kolom wajib diisi.");
+      return;
+    }
+    if (!email.trim().toLowerCase().endsWith("@gmail.com")) {
+      toast.error("Hanya alamat email @gmail.com yang diperbolehkan.");
+      return;
+    }
+    const localPart = email.trim().toLowerCase().split("@")[0];
+    if (localPart.includes(".")) {
+      toast.error("Penggunaan dot trick (titik) pada alamat Gmail tidak diperbolehkan.");
       return;
     }
     if (password !== confirmPassword) {
@@ -34,7 +49,7 @@ function RegisterForm() {
 
     startTransition(async () => {
       try {
-        const result = await registerAction(email.trim(), password);
+        const result = await registerAction(name.trim(), email.trim(), password, plan);
         if (result.success) {
           toast.success("Pendaftaran berhasil! Selamat datang.");
           router.push("/admin");
@@ -66,7 +81,7 @@ function RegisterForm() {
               Daftar Akun Baru
             </CardTitle>
             <CardDescription className="text-slate-500 text-xs">
-              Buat akun pembuat form Anda secara gratis sekarang
+              Buat akun pembuat form Anda secara instan sekarang
             </CardDescription>
           </div>
         </CardHeader>
@@ -74,18 +89,54 @@ function RegisterForm() {
         <form onSubmit={handleRegister}>
           <CardContent className="space-y-4 pt-2">
             <div className="space-y-2">
+              <Label htmlFor="name" className="text-slate-600 text-xs font-semibold">
+                Nama Lengkap
+              </Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder="Masukkan nama lengkap Anda"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                disabled={isPending}
+                className="bg-white/60 border border-slate-200 text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 focus:bg-white h-11 rounded-xl transition-all text-sm"
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="email" className="text-slate-600 text-xs font-semibold">
-                Alamat Email
+                Alamat Email (@gmail.com)
               </Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="nama@domain.com"
+                placeholder="contoh@gmail.com (tanpa titik/dot trick)"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isPending}
                 className="bg-white/60 border border-slate-200 text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 focus:bg-white h-11 rounded-xl transition-all text-sm"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-slate-600 text-xs font-semibold">Pilih Paket Akun</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div 
+                  onClick={() => !isPending && setPlan("free")}
+                  className={`border p-3 rounded-xl cursor-pointer text-center transition-all ${plan === "free" ? "border-indigo-500 bg-indigo-50/50 text-indigo-700 font-bold" : "border-slate-200 hover:bg-slate-50 text-slate-500"}`}
+                >
+                  <span className="block text-sm">Basic (Free)</span>
+                  <span className="block text-[10px] text-slate-400 font-normal">Rp0 / selamanya</span>
+                </div>
+                <div 
+                  onClick={() => !isPending && setPlan("pro")}
+                  className={`border p-3 rounded-xl cursor-pointer text-center transition-all relative overflow-hidden ${plan === "pro" ? "border-indigo-500 bg-indigo-50/50 text-indigo-700 font-bold" : "border-slate-200 hover:bg-slate-50 text-slate-500"}`}
+                >
+                  <div className="absolute top-0 right-0 bg-indigo-500 text-white text-[8px] px-1.5 py-0.5 rounded-bl">PRO</div>
+                  <span className="block text-sm">Pro Premium</span>
+                  <span className="block text-[10px] text-slate-400 font-normal">Rp99.000 / bln</span>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-2">

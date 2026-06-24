@@ -111,12 +111,24 @@ export async function loginAction(password: string, email?: string) {
 /**
  * Mendaftarkan akun publik baru (berperan sebagai 'user' secara default).
  */
-export async function registerAction(email: string, password: string) {
+export async function registerAction(name: string, email: string, password: string, plan: "free" | "pro") {
   await initDatabase();
 
+  const trimmedName = name.trim();
   const trimmedEmail = email.trim().toLowerCase();
-  if (!trimmedEmail || !password) {
-    return { success: false, error: "Email dan Password wajib diisi." };
+  if (!trimmedName || !trimmedEmail || !password) {
+    return { success: false, error: "Nama, Email, dan Password wajib diisi." };
+  }
+
+  // Hanya perbolehkan @gmail.com
+  if (!trimmedEmail.endsWith("@gmail.com")) {
+    return { success: false, error: "Hanya alamat email @gmail.com yang diperbolehkan." };
+  }
+
+  // Tidak boleh menggunakan dot trick (titik pada bagian lokal email gmail)
+  const localPart = trimmedEmail.split("@")[0];
+  if (localPart.includes(".")) {
+    return { success: false, error: "Pendaftaran gagal. Penggunaan dot trick (titik) pada alamat Gmail tidak diperbolehkan." };
   }
 
   try {
@@ -131,10 +143,14 @@ export async function registerAction(email: string, password: string) {
     // Hash password
     const hashedPassword = await hashPassword(password);
 
+    // Tentukan status premium berdasarkan paket pilihan
+    const isPremium = plan === "pro";
+    const premiumExpires = isPremium ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null;
+
     // Daftarkan pengguna baru (Role 'user' secara default)
     const userRes = await sql`
-      INSERT INTO users (email, password_hash, role)
-      VALUES (${trimmedEmail}, ${hashedPassword}, 'user')
+      INSERT INTO users (name, email, password_hash, role, is_premium, premium_expires_at)
+      VALUES (${trimmedName}, ${trimmedEmail}, ${hashedPassword}, 'user', ${isPremium}, ${premiumExpires})
       RETURNING id
     `;
     const userId = userRes[0].id;

@@ -11,7 +11,7 @@ const Toaster = ({ ...props }: any) => {
   return (
     <GooeyToaster
       theme={themeClean}
-      position="top-right"
+      position="bottom-center"
       closeButton={true}
       preset="bouncy"
       {...props}

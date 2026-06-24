@@ -129,6 +129,9 @@ export async function initDatabase() {
     await sql`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS openai_model TEXT;
     `;
+    await sql`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS name VARCHAR(255);
+    `;
 
     // Add paid form columns to forms
     await sql`
