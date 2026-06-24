@@ -746,60 +746,87 @@ export async function generateFormWithAIAction(prompt: string, userApiKey?: stri
       return { success: false, error: "Unauthorized: Silakan masuk terlebih dahulu." };
     }
 
-    let apiKey = (userApiKey || "").trim();
-    if (!apiKey) {
-      if (user.id !== "00000000-0000-0000-0000-000000000000") {
-        try {
-          const userRes = await sql`
-            SELECT openrouter_api_key FROM users WHERE id = ${user.id} LIMIT 1
-          `;
-          if (userRes.length > 0 && userRes[0].openrouter_api_key) {
-            apiKey = userRes[0].openrouter_api_key.trim();
-          }
-        } catch (err) {
-          console.error("Gagal membaca setelan AI user:", err);
-        }
-      }
-    }
-
-    // Pengguna biasa wajib menggunakan API Key kustom mereka sendiri demi keamanan dan privasi
-    if (!apiKey && user.role === "user") {
-      return { 
-        success: false, 
-        error: "Kunci API OpenRouter kustom belum diatur. Untuk keamanan dan privasi, silakan masukkan API Key Anda sendiri di menu 'Setelan AI Akun'." 
+    // Hanya member Pro (Premium) atau super_admin yang dapat mengakses fitur AI
+    if (!user.is_premium && user.role !== "super_admin") {
+      return {
+        success: false,
+        error: "Fitur pembuatan form dengan AI hanya tersedia untuk member Pro (Premium). Silakan tingkatkan akun Anda."
       };
     }
 
-    // Hanya Super Admin yang diizinkan menggunakan fallback kunci global/server
-    if (!apiKey && user.role === "super_admin") {
-      apiKey = (await getSetting("openrouter_api_key")).trim();
-    }
+    let provider = "openrouter";
+    let apiKey = "";
+    let model = "";
 
-    if (!apiKey) {
-      return { success: false, error: "Kunci API OpenRouter tidak ditemukan. Silakan hubungi Super Admin untuk mengonfigurasi API Key di Setelan Global." };
-    }
-
-    let model = (userModel || "").trim();
-    if (!model) {
+    // 1. Ambil setelan kustom user dari database (jika bukan legacy admin)
+    if (user.id !== "00000000-0000-0000-0000-000000000000") {
       try {
-        const cookieStore = await cookies();
-        const sessionToken = cookieStore.get("admin_session")?.value;
-        const user = await getSessionUser(sessionToken);
-        if (user && user.id !== "00000000-0000-0000-0000-000000000000") {
-          const userRes = await sql`
-            SELECT openrouter_model FROM users WHERE id = ${user.id} LIMIT 1
-          `;
-          if (userRes.length > 0 && userRes[0].openrouter_model) {
-            model = userRes[0].openrouter_model.trim();
+        const userRes = await sql`
+          SELECT ai_provider, openrouter_api_key, openrouter_model,
+                 gemini_api_key, gemini_model, openai_api_key, openai_model
+          FROM users WHERE id = ${user.id} LIMIT 1
+        `;
+        if (userRes.length > 0) {
+          const userData = userRes[0];
+          provider = userData.ai_provider || "openrouter";
+          
+          if (provider === "openrouter") {
+            apiKey = (userData.openrouter_api_key || "").trim();
+            model = (userData.openrouter_model || "google/gemini-2.5-flash").trim();
+          } else if (provider === "gemini") {
+            apiKey = (userData.gemini_api_key || "").trim();
+            model = (userData.gemini_model || "gemini-2.5-flash").trim();
+          } else if (provider === "openai") {
+            apiKey = (userData.openai_api_key || "").trim();
+            model = (userData.openai_model || "gpt-4o-mini").trim();
           }
         }
       } catch (err) {
-        console.error("Gagal membaca model AI user:", err);
+        console.error("Gagal membaca setelan AI kustom user:", err);
       }
     }
 
-    if (!model) {
-      model = (await getSetting("openrouter_model")).trim();
+    // 2. Fallback ke setelan global (atau jika super_admin / legacy admin)
+    try {
+      const dbSettings = await sql`SELECT key, value FROM settings`;
+      const settingsMap: Record<string, string> = {};
+      dbSettings.forEach((row) => {
+        settingsMap[row.key] = row.value || "";
+      });
+
+      if (!apiKey) {
+        if (user.id === "00000000-0000-0000-0000-000000000000") {
+          provider = settingsMap["ai_provider"] || "openrouter";
+        }
+
+        if (provider === "openrouter") {
+          apiKey = (settingsMap["openrouter_api_key"] || process.env.OPENROUTER_API_KEY || "").trim();
+          if (!model) model = (settingsMap["openrouter_model"] || process.env.OPENROUTER_MODEL || "google/gemini-2.5-flash").trim();
+        } else if (provider === "gemini") {
+          apiKey = (settingsMap["gemini_api_key"] || process.env.GEMINI_API_KEY || "").trim();
+          if (!model) model = (settingsMap["gemini_model"] || process.env.GEMINI_MODEL || "gemini-2.5-flash").trim();
+        } else if (provider === "openai") {
+          apiKey = (settingsMap["openai_api_key"] || process.env.OPENAI_API_KEY || "").trim();
+          if (!model) model = (settingsMap["openai_model"] || process.env.OPENAI_MODEL || "gpt-4o-mini").trim();
+        }
+      }
+    } catch (err) {
+      console.error("Gagal membaca setelan AI global:", err);
+    }
+
+    // Jika API Key tidak ditemukan
+    if (!apiKey) {
+      if (user.role === "user") {
+        return {
+          success: false,
+          error: `Kunci API kustom untuk provider '${provider}' belum diatur. Silakan isi API Key Anda di menu 'Setelan AI Akun'.`
+        };
+      } else {
+        return {
+          success: false,
+          error: `Kunci API global untuk provider '${provider}' tidak ditemukan di Setelan Global. Silakan hubungi admin.`
+        };
+      }
     }
 
     const systemPrompt = `Anda adalah asisten pembuat formulir AI yang handal.
@@ -827,38 +854,101 @@ Aturan penting:
 4. Buat opsi pilihan ganda yang cerdas dan lengkap untuk tipe "select" atau "radio".
 5. Gunakan Bahasa Indonesia.`;
 
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-        "HTTP-Referer": "https://github.com/rzarxx/form",
-        "X-Title": "Personal Form Builder",
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: prompt }
-        ],
-        temperature: 0.7,
-      }),
-    });
+    let content = "";
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("OpenRouter API error:", errorText);
-      return { success: false, error: `Gagal menghubungi OpenRouter: ${response.statusText} (${response.status})` };
+    // Panggil API sesuai dengan Provider terpilih
+    if (provider === "gemini") {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: systemPrompt + "\n\nPrompt pengguna: " + prompt }
+              ]
+            }
+          ],
+          generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.7
+          }
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Gemini API error:", errorText);
+        return { success: false, error: `Gagal menghubungi Gemini: ${response.statusText} (${response.status})` };
+      }
+
+      const result = await response.json();
+      content = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
     }
+    else if (provider === "openai") {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: prompt }
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.7,
+        }),
+      });
 
-    const result = await response.json();
-    const content = result.choices?.[0]?.message?.content?.trim();
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("OpenAI API error:", errorText);
+        return { success: false, error: `Gagal menghubungi OpenAI: ${response.statusText} (${response.status})` };
+      }
+
+      const result = await response.json();
+      content = result.choices?.[0]?.message?.content?.trim() || "";
+    }
+    else {
+      // Default: openrouter
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+          "HTTP-Referer": "https://github.com/rzarxx/form",
+          "X-Title": "Personal Form Builder",
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: prompt }
+          ],
+          temperature: 0.7,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("OpenRouter API error:", errorText);
+        return { success: false, error: `Gagal menghubungi OpenRouter: ${response.statusText} (${response.status})` };
+      }
+
+      const result = await response.json();
+      content = result.choices?.[0]?.message?.content?.trim() || "";
+    }
 
     if (!content) {
       return { success: false, error: "Respons kosong dari AI." };
     }
 
-    // Try parsing JSON. Clean the output first if the model included backticks
+    // Membersihkan output dari tag codeblock jika ada
     let jsonString = content;
     if (jsonString.startsWith("```")) {
       const match = jsonString.match(/```(?:json)?([\s\S]*?)```/);

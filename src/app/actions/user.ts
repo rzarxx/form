@@ -34,8 +34,13 @@ export async function getUserSettingsAction() {
       return {
         success: true,
         data: {
+          ai_provider: "openrouter",
           openrouter_api_key: "",
           openrouter_model: "google/gemini-2.5-flash",
+          gemini_api_key: "",
+          gemini_model: "gemini-2.5-flash",
+          openai_api_key: "",
+          openai_model: "gpt-4o-mini",
           is_legacy_admin: true,
         }
       };
@@ -43,7 +48,8 @@ export async function getUserSettingsAction() {
 
     // Ambil setelan AI kustom pengguna dari tabel users
     const userRes = await sql`
-      SELECT openrouter_api_key, openrouter_model
+      SELECT ai_provider, openrouter_api_key, openrouter_model,
+             gemini_api_key, gemini_model, openai_api_key, openai_model
       FROM users
       WHERE id = ${user.id}
       LIMIT 1
@@ -54,14 +60,24 @@ export async function getUserSettingsAction() {
     }
 
     const userData = userRes[0];
-    const apiKey = userData.openrouter_api_key || "";
-    const model = userData.openrouter_model || "google/gemini-2.5-flash";
+    const aiProvider = userData.ai_provider || "openrouter";
+    const openrouterApiKey = userData.openrouter_api_key || "";
+    const openrouterModel = userData.openrouter_model || "google/gemini-2.5-flash";
+    const geminiApiKey = userData.gemini_api_key || "";
+    const geminiModel = userData.gemini_model || "gemini-2.5-flash";
+    const openaiApiKey = userData.openai_api_key || "";
+    const openaiModel = userData.openai_model || "gpt-4o-mini";
 
     return {
       success: true,
       data: {
-        openrouter_api_key: apiKey ? maskSecret(apiKey) : "",
-        openrouter_model: model,
+        ai_provider: aiProvider,
+        openrouter_api_key: openrouterApiKey ? maskSecret(openrouterApiKey) : "",
+        openrouter_model: openrouterModel,
+        gemini_api_key: geminiApiKey ? maskSecret(geminiApiKey) : "",
+        gemini_model: geminiModel,
+        openai_api_key: openaiApiKey ? maskSecret(openaiApiKey) : "",
+        openai_model: openaiModel,
         is_legacy_admin: false,
       }
     };
@@ -72,9 +88,17 @@ export async function getUserSettingsAction() {
 }
 
 /**
- * Menyimpan setelan API Key AI (OpenRouter) tingkat user.
+ * Menyimpan setelan API Key AI tingkat user.
  */
-export async function saveUserSettingsAction(openrouterApiKey: string, openrouterModel: string) {
+export async function saveUserSettingsAction(settings: {
+  ai_provider: string;
+  openrouter_api_key: string;
+  openrouter_model: string;
+  gemini_api_key: string;
+  gemini_model: string;
+  openai_api_key: string;
+  openai_model: string;
+}) {
   try {
     const user = await requireAuth();
     await initDatabase();
@@ -83,21 +107,40 @@ export async function saveUserSettingsAction(openrouterApiKey: string, openroute
       return { success: false, error: "Legacy Admin tidak memiliki profil database. Setelan AI Anda dikelola lewat Setelan Global." };
     }
 
-    if (openrouterApiKey.includes("••••")) {
-      // Hanya perbarui model, jangan timpa API Key (karena ter-masking)
-      await sql`
-        UPDATE users
-        SET openrouter_model = ${openrouterModel}
-        WHERE id = ${user.id}
-      `;
-    } else {
-      // Perbarui API Key dan Model sekaligus
-      await sql`
-        UPDATE users
-        SET openrouter_api_key = ${openrouterApiKey}, openrouter_model = ${openrouterModel}
-        WHERE id = ${user.id}
-      `;
+    const userRes = await sql`
+      SELECT openrouter_api_key, gemini_api_key, openai_api_key
+      FROM users
+      WHERE id = ${user.id}
+      LIMIT 1
+    `;
+    if (userRes.length === 0) {
+      return { success: false, error: "Data pengguna tidak ditemukan." };
     }
+    const currentUser = userRes[0];
+
+    const finalOpenrouterKey = settings.openrouter_api_key.includes("••••") 
+      ? currentUser.openrouter_api_key 
+      : settings.openrouter_api_key;
+
+    const finalGeminiKey = settings.gemini_api_key.includes("••••") 
+      ? currentUser.gemini_api_key 
+      : settings.gemini_api_key;
+
+    const finalOpenaiKey = settings.openai_api_key.includes("••••") 
+      ? currentUser.openai_api_key 
+      : settings.openai_api_key;
+
+    await sql`
+      UPDATE users
+      SET ai_provider = ${settings.ai_provider},
+          openrouter_api_key = ${finalOpenrouterKey},
+          openrouter_model = ${settings.openrouter_model},
+          gemini_api_key = ${finalGeminiKey},
+          gemini_model = ${settings.gemini_model},
+          openai_api_key = ${finalOpenaiKey},
+          openai_model = ${settings.openai_model}
+      WHERE id = ${user.id}
+    `;
 
     return { success: true };
   } catch (err: any) {

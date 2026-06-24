@@ -6,12 +6,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState({
+    ai_provider: "openrouter",
     openrouter_api_key: "",
     openrouter_model: "google/gemini-2.5-flash",
+    gemini_api_key: "",
+    gemini_model: "gemini-2.5-flash",
+    openai_api_key: "",
+    openai_model: "gpt-4o-mini",
     cloudflare_turnstile_site_key: "",
     cloudflare_turnstile_secret_key: "",
     resend_api_key: "",
@@ -20,6 +26,10 @@ export default function SettingsPage() {
   const [meta, setMeta] = useState({
     has_db_openrouter_key: false,
     has_env_openrouter_key: false,
+    has_db_gemini_key: false,
+    has_env_gemini_key: false,
+    has_db_openai_key: false,
+    has_env_openai_key: false,
     has_db_turnstile_secret: false,
     has_env_turnstile_secret: false,
     has_db_resend_key: false,
@@ -27,6 +37,8 @@ export default function SettingsPage() {
   });
 
   const [showOpenRouter, setShowOpenRouter] = useState(false);
+  const [showGemini, setShowGemini] = useState(false);
+  const [showOpenAI, setShowOpenAI] = useState(false);
   const [showTurnstileSecret, setShowTurnstileSecret] = useState(false);
   const [showResend, setShowResend] = useState(false);
 
@@ -39,19 +51,28 @@ export default function SettingsPage() {
         const res = await getGlobalSettingsAction();
         if (res.success && res.data) {
           setSettings({
+            ai_provider: res.data.ai_provider || "openrouter",
             openrouter_api_key: res.data.openrouter_api_key || "",
             openrouter_model: res.data.openrouter_model || "google/gemini-2.5-flash",
+            gemini_api_key: res.data.gemini_api_key || "",
+            gemini_model: res.data.gemini_model || "gemini-2.5-flash",
+            openai_api_key: res.data.openai_api_key || "",
+            openai_model: res.data.openai_model || "gpt-4o-mini",
             cloudflare_turnstile_site_key: res.data.cloudflare_turnstile_site_key || "",
             cloudflare_turnstile_secret_key: res.data.cloudflare_turnstile_secret_key || "",
             resend_api_key: res.data.resend_api_key || "",
           });
           setMeta({
-            has_db_openrouter_key: res.data.has_db_openrouter_key,
-            has_env_openrouter_key: res.data.has_env_openrouter_key,
-            has_db_turnstile_secret: res.data.has_db_turnstile_secret,
-            has_env_turnstile_secret: res.data.has_env_turnstile_secret,
-            has_db_resend_key: res.data.has_db_resend_key,
-            has_env_resend_key: res.data.has_env_resend_key,
+            has_db_openrouter_key: !!res.data.has_db_openrouter_key,
+            has_env_openrouter_key: !!res.data.has_env_openrouter_key,
+            has_db_gemini_key: !!res.data.has_db_gemini_key,
+            has_env_gemini_key: !!res.data.has_env_gemini_key,
+            has_db_openai_key: !!res.data.has_db_openai_key,
+            has_env_openai_key: !!res.data.has_env_openai_key,
+            has_db_turnstile_secret: !!res.data.has_db_turnstile_secret,
+            has_env_turnstile_secret: !!res.data.has_env_turnstile_secret,
+            has_db_resend_key: !!res.data.has_db_resend_key,
+            has_env_resend_key: !!res.data.has_env_resend_key,
           });
         } else {
           toast.error(res.error || "Gagal memuat setelan global.");
@@ -71,6 +92,10 @@ export default function SettingsPage() {
     setSettings((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleSelectChange = (name: string, value: string) => {
+    setSettings((prev) => ({ ...prev, [name]: value }));
+  };
+
   const handleSave = () => {
     startTransition(async () => {
       try {
@@ -81,19 +106,28 @@ export default function SettingsPage() {
           const updated = await getGlobalSettingsAction();
           if (updated.success && updated.data) {
             setSettings({
+              ai_provider: updated.data.ai_provider || "openrouter",
               openrouter_api_key: updated.data.openrouter_api_key || "",
               openrouter_model: updated.data.openrouter_model || "google/gemini-2.5-flash",
+              gemini_api_key: updated.data.gemini_api_key || "",
+              gemini_model: updated.data.gemini_model || "gemini-2.5-flash",
+              openai_api_key: updated.data.openai_api_key || "",
+              openai_model: updated.data.openai_model || "gpt-4o-mini",
               cloudflare_turnstile_site_key: updated.data.cloudflare_turnstile_site_key || "",
               cloudflare_turnstile_secret_key: updated.data.cloudflare_turnstile_secret_key || "",
               resend_api_key: updated.data.resend_api_key || "",
             });
             setMeta({
-              has_db_openrouter_key: updated.data.has_db_openrouter_key,
-              has_env_openrouter_key: updated.data.has_env_openrouter_key,
-              has_db_turnstile_secret: updated.data.has_db_turnstile_secret,
-              has_env_turnstile_secret: updated.data.has_env_turnstile_secret,
-              has_db_resend_key: updated.data.has_db_resend_key,
-              has_env_resend_key: updated.data.has_env_resend_key,
+              has_db_openrouter_key: !!updated.data.has_db_openrouter_key,
+              has_env_openrouter_key: !!updated.data.has_env_openrouter_key,
+              has_db_gemini_key: !!updated.data.has_db_gemini_key,
+              has_env_gemini_key: !!updated.data.has_env_gemini_key,
+              has_db_openai_key: !!updated.data.has_db_openai_key,
+              has_env_openai_key: !!updated.data.has_env_openai_key,
+              has_db_turnstile_secret: !!updated.data.has_db_turnstile_secret,
+              has_env_turnstile_secret: !!updated.data.has_env_turnstile_secret,
+              has_db_resend_key: !!updated.data.has_db_resend_key,
+              has_env_resend_key: !!updated.data.has_env_resend_key,
             });
           }
         } else {
@@ -126,77 +160,216 @@ export default function SettingsPage() {
             <i className="fa-solid fa-gears text-indigo-600"></i> Setelan Global Website
           </h1>
           <p className="text-sm text-slate-500 font-medium mt-1">
-            Kelola API Key, Captcha, dan integrasi pihak ketiga secara terpusat di database.
+            Kelola API Key, AI engine, Captcha, dan integrasi email pihak ketiga secara terpusat di database.
           </p>
         </div>
       </div>
 
       <div className="grid gap-6">
-        {/* OpenRouter AI Settings Card */}
+        {/* Global AI Assistant Settings Card */}
         <Card className="border-slate-200/80 shadow-sm bg-white">
           <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-4">
             <CardTitle className="text-base font-bold text-slate-800 flex items-center gap-2">
-              <i className="fa-solid fa-robot text-indigo-500"></i> OpenRouter AI Assistant
+              <i className="fa-solid fa-robot text-indigo-500"></i> Integrasi AI Global (Fallback System)
             </CardTitle>
             <CardDescription className="text-xs">
-              Digunakan untuk asisten AI pembuat formulir otomatis.
+              Digunakan untuk pembuat formulir AI global. Jika user tidak menyediakan API key kustom, maka asisten akan menggunakan konfigurasi di bawah ini (Khusus Admin/Super Admin).
             </CardDescription>
           </CardHeader>
-          <CardContent className="pt-6 space-y-4">
+          <CardContent className="pt-6 space-y-6">
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="openrouter_api_key" className="text-sm font-bold text-slate-700">
-                  OpenRouter API Key
-                </Label>
-                {meta.has_db_openrouter_key ? (
-                  <span className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">
-                    <i className="fa-solid fa-database mr-1"></i> Tersimpan di Database
-                  </span>
-                ) : meta.has_env_openrouter_key ? (
-                  <span className="text-[10px] bg-slate-200 text-slate-600 font-bold px-2 py-0.5 rounded-full">
-                    <i className="fa-solid fa-server mr-1"></i> Terbaca dari .env
-                  </span>
-                ) : null}
-              </div>
-              <div className="relative">
-                <Input
-                  id="openrouter_api_key"
-                  name="openrouter_api_key"
-                  type={showOpenRouter ? "text" : "password"}
-                  value={settings.openrouter_api_key}
-                  onChange={handleChange}
-                  placeholder={meta.has_env_openrouter_key && !settings.openrouter_api_key ? "•••••••• (Menggunakan kunci .env)" : "sk-or-v1-..."}
-                  className="pr-10 border-slate-300 hover:border-slate-400 focus:border-indigo-500"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowOpenRouter(!showOpenRouter)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
-                >
-                  <i className={`fa-solid ${showOpenRouter ? "fa-eye-slash" : "fa-eye"}`}></i>
-                </button>
-              </div>
-              <p className="text-[11px] text-slate-500 leading-relaxed">
-                Masukkan API Key OpenRouter Anda. Jika kosong, sistem otomatis akan menggunakan fallback kunci dari environment variables.
-              </p>
+              <Label htmlFor="ai_provider" className="text-sm font-bold text-slate-700">
+                Penyedia AI Global Default
+              </Label>
+              <Select
+                value={settings.ai_provider}
+                onValueChange={(val) => handleSelectChange("ai_provider", val || "openrouter")}
+                disabled={isPending}
+              >
+                <SelectTrigger id="ai_provider" className="h-11 border-slate-300 rounded-xl">
+                  <SelectValue placeholder="Pilih AI Provider Global" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="openrouter">OpenRouter API</SelectItem>
+                  <SelectItem value="gemini">Google Gemini API</SelectItem>
+                  <SelectItem value="openai">OpenAI API</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="openrouter_model" className="text-sm font-bold text-slate-700">
-                AI Model Default
-              </Label>
-              <Input
-                id="openrouter_model"
-                name="openrouter_model"
-                type="text"
-                value={settings.openrouter_model}
-                onChange={handleChange}
-                placeholder="google/gemini-2.5-flash"
-                className="border-slate-300 hover:border-slate-400 focus:border-indigo-500"
-              />
-              <p className="text-[11px] text-slate-500 leading-relaxed">
-                ID Model OpenRouter default yang akan digunakan (contoh: <code>google/gemini-2.5-flash</code> atau <code>meta-llama/llama-3-8b-instruct:free</code>).
-              </p>
+            <div className="border-t border-slate-100 pt-6 space-y-4">
+              {settings.ai_provider === "openrouter" && (
+                <>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="openrouter_api_key" className="text-sm font-bold text-slate-700">
+                        OpenRouter API Key
+                      </Label>
+                      {meta.has_db_openrouter_key ? (
+                        <span className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">
+                          <i className="fa-solid fa-database mr-1"></i> Tersimpan di Database
+                        </span>
+                      ) : meta.has_env_openrouter_key ? (
+                        <span className="text-[10px] bg-slate-200 text-slate-600 font-bold px-2 py-0.5 rounded-full">
+                          <i className="fa-solid fa-server mr-1"></i> Terbaca dari .env
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="relative">
+                      <Input
+                        id="openrouter_api_key"
+                        name="openrouter_api_key"
+                        type={showOpenRouter ? "text" : "password"}
+                        value={settings.openrouter_api_key}
+                        onChange={handleChange}
+                        placeholder={meta.has_env_openrouter_key && !settings.openrouter_api_key ? "•••••••• (Menggunakan kunci .env)" : "sk-or-v1-..."}
+                        className="pr-10 border-slate-300 hover:border-slate-400 focus:border-indigo-500 h-11 rounded-xl"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowOpenRouter(!showOpenRouter)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                      >
+                        <i className={`fa-solid ${showOpenRouter ? "fa-eye-slash" : "fa-eye"}`}></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="openrouter_model" className="text-sm font-bold text-slate-700">
+                      AI Model Default
+                    </Label>
+                    <Input
+                      id="openrouter_model"
+                      name="openrouter_model"
+                      type="text"
+                      value={settings.openrouter_model}
+                      onChange={handleChange}
+                      placeholder="google/gemini-2.5-flash"
+                      className="border-slate-300 hover:border-slate-400 focus:border-indigo-500 h-11 rounded-xl"
+                    />
+                  </div>
+                </>
+              )}
+
+              {settings.ai_provider === "gemini" && (
+                <>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="gemini_api_key" className="text-sm font-bold text-slate-700">
+                        Google Gemini API Key
+                      </Label>
+                      {meta.has_db_gemini_key ? (
+                        <span className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">
+                          <i className="fa-solid fa-database mr-1"></i> Tersimpan di Database
+                        </span>
+                      ) : meta.has_env_gemini_key ? (
+                        <span className="text-[10px] bg-slate-200 text-slate-600 font-bold px-2 py-0.5 rounded-full">
+                          <i className="fa-solid fa-server mr-1"></i> Terbaca dari .env
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="relative">
+                      <Input
+                        id="gemini_api_key"
+                        name="gemini_api_key"
+                        type={showGemini ? "text" : "password"}
+                        value={settings.gemini_api_key}
+                        onChange={handleChange}
+                        placeholder={meta.has_env_gemini_key && !settings.gemini_api_key ? "•••••••• (Menggunakan kunci .env)" : "AIzaSy..."}
+                        className="pr-10 border-slate-300 hover:border-slate-400 focus:border-indigo-500 h-11 rounded-xl"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowGemini(!showGemini)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                      >
+                        <i className={`fa-solid ${showGemini ? "fa-eye-slash" : "fa-eye"}`}></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="gemini_model" className="text-sm font-bold text-slate-700">
+                      Gemini Model Default
+                    </Label>
+                    <Select
+                      value={settings.gemini_model}
+                      onValueChange={(val) => handleSelectChange("gemini_model", val || "gemini-2.5-flash")}
+                      disabled={isPending}
+                    >
+                      <SelectTrigger id="gemini_model" className="h-11 border-slate-300 rounded-xl">
+                        <SelectValue placeholder="Pilih model Gemini" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="gemini-2.5-flash">gemini-2.5-flash</SelectItem>
+                        <SelectItem value="gemini-2.5-pro">gemini-2.5-pro</SelectItem>
+                        <SelectItem value="gemini-1.5-flash">gemini-1.5-flash</SelectItem>
+                        <SelectItem value="gemini-1.5-pro">gemini-1.5-pro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
+
+              {settings.ai_provider === "openai" && (
+                <>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="openai_api_key" className="text-sm font-bold text-slate-700">
+                        OpenAI API Key
+                      </Label>
+                      {meta.has_db_openai_key ? (
+                        <span className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">
+                          <i className="fa-solid fa-database mr-1"></i> Tersimpan di Database
+                        </span>
+                      ) : meta.has_env_openai_key ? (
+                        <span className="text-[10px] bg-slate-200 text-slate-600 font-bold px-2 py-0.5 rounded-full">
+                          <i className="fa-solid fa-server mr-1"></i> Terbaca dari .env
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="relative">
+                      <Input
+                        id="openai_api_key"
+                        name="openai_api_key"
+                        type={showOpenAI ? "text" : "password"}
+                        value={settings.openai_api_key}
+                        onChange={handleChange}
+                        placeholder={meta.has_env_openai_key && !settings.openai_api_key ? "•••••••• (Menggunakan kunci .env)" : "sk-proj-..."}
+                        className="pr-10 border-slate-300 hover:border-slate-400 focus:border-indigo-500 h-11 rounded-xl"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowOpenAI(!showOpenAI)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                      >
+                        <i className={`fa-solid ${showOpenAI ? "fa-eye-slash" : "fa-eye"}`}></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="openai_model" className="text-sm font-bold text-slate-700">
+                      OpenAI Model Default
+                    </Label>
+                    <Select
+                      value={settings.openai_model}
+                      onValueChange={(val) => handleSelectChange("openai_model", val || "gpt-4o-mini")}
+                      disabled={isPending}
+                    >
+                      <SelectTrigger id="openai_model" className="h-11 border-slate-300 rounded-xl">
+                        <SelectValue placeholder="Pilih model OpenAI" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="gpt-4o-mini">gpt-4o-mini</SelectItem>
+                        <SelectItem value="gpt-4o">gpt-4o</SelectItem>
+                        <SelectItem value="gpt-3.5-turbo">gpt-3.5-turbo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -224,7 +397,7 @@ export default function SettingsPage() {
                   value={settings.cloudflare_turnstile_site_key}
                   onChange={handleChange}
                   placeholder="0x4AAAAAAA..."
-                  className="border-slate-300 hover:border-slate-400 focus:border-indigo-500"
+                  className="border-slate-300 hover:border-slate-400 focus:border-indigo-500 h-11 rounded-xl"
                 />
                 <p className="text-[11px] text-slate-500">
                   Site Key publik Turnstile untuk merender widget di halaman form.
@@ -254,7 +427,7 @@ export default function SettingsPage() {
                     value={settings.cloudflare_turnstile_secret_key}
                     onChange={handleChange}
                     placeholder={meta.has_env_turnstile_secret && !settings.cloudflare_turnstile_secret_key ? "•••••••• (Menggunakan kunci .env)" : "0x4AAAAAAA..."}
-                    className="pr-10 border-slate-300 hover:border-slate-400 focus:border-indigo-500"
+                    className="pr-10 border-slate-300 hover:border-slate-400 focus:border-indigo-500 h-11 rounded-xl"
                   />
                   <button
                     type="button"
@@ -270,10 +443,10 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <div className="bg-amber-50/60 border border-amber-200 rounded-lg p-3 text-xs text-amber-800 leading-relaxed flex gap-2.5">
+            <div className="bg-amber-50/60 border border-amber-200 rounded-xl p-4 text-xs text-amber-800 leading-relaxed flex gap-2.5">
               <i className="fa-solid fa-triangle-exclamation text-amber-500 shrink-0 mt-0.5 text-sm"></i>
               <span>
-                <strong>Perhatian:</strong> Kunci bawaan <code>0x4...</code> hanya berlaku di <code>localhost</code>. Jika form diakses lewat Vercel (seperti <code>form-eight-wine.vercel.app</code>) atau domain produksi lain, Anda <strong>wajib</strong> mengisi Site Key dan Secret Key asli dari dashboard Cloudflare Turnstile agar widget keamanan tidak kosong (Error 400020).
+                <strong>Perhatian:</strong> Kunci bawaan <code>0x4...</code> hanya berlaku di <code>localhost</code>. Jika form diakses lewat domain produksi, Anda <strong>wajib</strong> mengisi Site Key dan Secret Key asli dari dashboard Cloudflare Turnstile.
               </span>
             </div>
           </CardContent>
@@ -313,7 +486,7 @@ export default function SettingsPage() {
                   value={settings.resend_api_key}
                   onChange={handleChange}
                   placeholder={meta.has_env_resend_key && !settings.resend_api_key ? "•••••••• (Menggunakan kunci .env)" : "re_..."}
-                  className="pr-10 border-slate-300 hover:border-slate-400 focus:border-indigo-500"
+                  className="pr-10 border-slate-300 hover:border-slate-400 focus:border-indigo-500 h-11 rounded-xl"
                 />
                 <button
                   type="button"
@@ -336,7 +509,7 @@ export default function SettingsPage() {
         <Button
           onClick={handleSave}
           disabled={isPending}
-          className="bg-primary hover:bg-primary/95 text-white font-bold px-6 py-2 shadow-md flex items-center gap-2 cursor-pointer transition-all duration-200 rounded-lg"
+          className="bg-primary hover:bg-primary/95 text-white font-bold px-6 py-2.5 shadow-md flex items-center gap-2 cursor-pointer transition-all duration-200 rounded-xl"
         >
           {isPending ? (
             <>

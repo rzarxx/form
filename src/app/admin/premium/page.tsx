@@ -232,6 +232,10 @@ export default function PremiumPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <i className="fa-solid fa-circle-check text-emerald-500 shrink-0"></i>
+                  <span>Asisten Rancang Form berbasis AI (Multi-provider)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <i className="fa-solid fa-circle-check text-emerald-500 shrink-0"></i>
                   <span>Keamanan Cloudflare Turnstile anti-bot</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -281,21 +285,26 @@ export default function PremiumPage() {
                         <td className="px-6 py-4 text-center font-bold text-slate-900 bg-amber-50/30">Tanpa Batas</td>
                       </tr>
                       <tr className="border-b bg-white">
+                        <th scope="row" className="px-6 py-4 font-medium text-slate-900">Rancang Form dengan AI</th>
+                        <td className="px-6 py-4 text-center">❌ Tidak</td>
+                        <td className="px-6 py-4 text-center text-emerald-600 font-bold bg-amber-50/30">✓ Ya (Gemini, OpenAI, OpenRouter)</td>
+                      </tr>
+                      <tr className="border-b bg-slate-50/30">
                         <th scope="row" className="px-6 py-4 font-medium text-slate-900">Keamanan Cloudflare Turnstile</th>
                         <td className="px-6 py-4 text-center">❌ Tidak</td>
                         <td className="px-6 py-4 text-center text-emerald-600 font-bold bg-amber-50/30">✓ Ya</td>
                       </tr>
-                      <tr className="border-b bg-slate-50/30">
+                      <tr className="border-b bg-white">
                         <th scope="row" className="px-6 py-4 font-medium text-slate-900">Unggah File (Upload File)</th>
                         <td className="px-6 py-4 text-center">❌ Tidak</td>
                         <td className="px-6 py-4 text-center text-emerald-600 font-bold bg-amber-50/30">✓ Ya</td>
                       </tr>
-                      <tr className="border-b bg-white">
+                      <tr className="border-b bg-slate-50/30">
                         <th scope="row" className="px-6 py-4 font-medium text-slate-900">Custom Redirect URL</th>
                         <td className="px-6 py-4 text-center">❌ Tidak</td>
                         <td className="px-6 py-4 text-center text-emerald-600 font-bold bg-amber-50/30">✓ Ya</td>
                       </tr>
-                      <tr className="bg-slate-50/30">
+                      <tr className="bg-white">
                         <th scope="row" className="px-6 py-4 font-medium text-slate-900">Integrasi Webhook</th>
                         <td className="px-6 py-4 text-center">❌ Tidak</td>
                         <td className="px-6 py-4 text-center text-emerald-600 font-bold bg-amber-50/30">✓ Ya</td>

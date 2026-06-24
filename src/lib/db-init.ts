@@ -114,6 +114,21 @@ export async function initDatabase() {
     await sql`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_expires_at TIMESTAMP WITH TIME ZONE;
     `;
+    await sql`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_provider VARCHAR(50) DEFAULT 'openrouter';
+    `;
+    await sql`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS gemini_api_key TEXT;
+    `;
+    await sql`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS gemini_model TEXT;
+    `;
+    await sql`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS openai_api_key TEXT;
+    `;
+    await sql`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS openai_model TEXT;
+    `;
 
     // Add paid form columns to forms
     await sql`

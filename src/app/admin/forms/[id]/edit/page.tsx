@@ -155,7 +155,7 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
     const loadingToast = toast.loading("AI sedang merancang formulir Anda...");
 
     try {
-      const result = await generateFormWithAIAction(aiPrompt, aiApiKey || undefined, aiModel);
+      const result = await generateFormWithAIAction(aiPrompt);
       toast.dismiss(loadingToast);
       
       if (result.success && result.data) {
@@ -474,8 +474,8 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
               <CardTitle className="text-lg font-black tracking-tight text-indigo-900 flex items-center gap-2">
                 <i className="fa-solid fa-wand-magic-sparkles text-indigo-600 animate-pulse"></i>
                 Asisten AI Form Builder
-                <span className="text-[9px] font-bold tracking-wider text-indigo-705 bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-full uppercase ml-1">
-                  Gemini Powered
+                <span className="text-[9px] font-bold tracking-wider text-indigo-750 bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-full uppercase ml-1">
+                  Multi-Provider Enabled
                 </span>
               </CardTitle>
               <span className="text-slate-400 hover:text-slate-600 transition-colors">
@@ -483,148 +483,104 @@ export default function EditFormBuilder({ params }: { params: Promise<{ id: stri
               </span>
             </div>
             <CardDescription className="text-slate-500 text-xs">
-              Ubah atau tambahkan pertanyaan formulir Anda menggunakan bantuan kecerdasan buatan OpenRouter.
+              Ubah atau tambahkan pertanyaan formulir Anda menggunakan bantuan kecerdasan buatan Gemini, OpenAI, atau OpenRouter.
             </CardDescription>
           </CardHeader>
           
           {showAiPanel && (
             <CardContent className="space-y-4 pt-0 pb-6 border-t border-indigo-100/50 mt-2">
-              <div className="space-y-2 pt-4">
-                <Label htmlFor="ai-prompt" className="text-indigo-900 text-xs font-bold flex items-center justify-between">
-                  <span>Jelaskan rancangan/pertanyaan baru yang ingin Anda buat</span>
-                  <span className="text-[10px] text-slate-400 font-normal">Contoh: "Tambahkan pertanyaan tentang kepuasan pelayanan pengiriman barang"</span>
-                </Label>
-                <Textarea
-                  id="ai-prompt"
-                  placeholder="Ketik topik atau detail formulir yang Anda inginkan..."
-                  value={aiPrompt}
-                  onChange={(e) => setAiPrompt(e.target.value)}
-                  className="bg-white/85 border border-indigo-200/80 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-800 min-h-[85px] leading-relaxed rounded-xl transition-all"
-                  disabled={isAiGenerating}
-                />
-              </div>
-
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-                {/* Method selection */}
-                <div className="flex items-center gap-4">
-                  <span className="text-xs text-slate-500 font-bold">Mode Penggabungan:</span>
-                  <label className="flex items-center gap-1.5 text-xs text-slate-700 font-medium cursor-pointer">
-                    <input
-                      type="radio"
-                      name="ai-merge-mode"
-                      checked={aiMergeMode === "replace"}
-                      onChange={() => setAiMergeMode("replace")}
-                      className="accent-indigo-600"
+              {!isPremium ? (
+                <div className="pt-6 flex flex-col items-center text-center p-6 bg-gradient-to-br from-indigo-50/50 via-purple-50/20 to-pink-50/50 border border-indigo-100 rounded-2xl shadow-sm">
+                  <div className="h-12 w-12 rounded-2xl bg-indigo-100 flex items-center justify-center mb-3">
+                    <i className="fa-solid fa-lock text-indigo-600 text-lg"></i>
+                  </div>
+                  <h3 className="text-sm font-bold text-slate-800">Fitur AI Form Builder Khusus Premium</h3>
+                  <p className="text-xs text-slate-500 max-w-sm mt-1 leading-relaxed">
+                    Rancang formulir impian Anda secara instan hanya dengan perintah teks. Dapatkan akses penuh ke fitur AI multi-provider dengan berlangganan Pro.
+                  </p>
+                  <Link href="/admin/premium" className="mt-4 inline-flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all duration-200 cursor-pointer">
+                    <i className="fa-solid fa-crown text-amber-300"></i> Upgrade ke Pro (Premium)
+                  </Link>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-2 pt-4">
+                    <Label htmlFor="ai-prompt" className="text-indigo-900 text-xs font-bold flex items-center justify-between">
+                      <span>Jelaskan rancangan/pertanyaan baru yang ingin Anda buat</span>
+                      <span className="text-[10px] text-slate-400 font-normal">Contoh: "Tambahkan pertanyaan tentang kepuasan pelayanan pengiriman barang"</span>
+                    </Label>
+                    <Textarea
+                      id="ai-prompt"
+                      placeholder="Ketik topik atau detail formulir yang Anda inginkan..."
+                      value={aiPrompt}
+                      onChange={(e) => setAiPrompt(e.target.value)}
+                      className="bg-white/85 border border-indigo-200/80 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-800 min-h-[85px] leading-relaxed rounded-xl transition-all"
                       disabled={isAiGenerating}
                     />
-                    Gantikan formulir saat ini
-                  </label>
-                  <label className="flex items-center gap-1.5 text-xs text-slate-700 font-medium cursor-pointer">
-                    <input
-                      type="radio"
-                      name="ai-merge-mode"
-                      checked={aiMergeMode === "append"}
-                      onChange={() => setAiMergeMode("append")}
-                      className="accent-indigo-600"
-                      disabled={isAiGenerating}
-                    />
-                    Tambahkan ke formulir saat ini
-                  </label>
-                </div>
+                  </div>
 
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowAiSettings(!showAiSettings)}
-                    className="text-slate-500 hover:text-slate-700 h-9 px-3 rounded-lg border border-slate-200/60 bg-white/40 cursor-pointer"
-                  >
-                    <i className="fa-solid fa-key mr-1.5 text-xs"></i>
-                    API Key
-                  </Button>
-
-                  <Button
-                    type="button"
-                    onClick={handleGenerateWithAI}
-                    disabled={isAiGenerating}
-                    className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-700 hover:to-violet-700 font-semibold px-4 h-9 rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer"
-                  >
-                    {isAiGenerating ? (
-                      <>
-                        <i className="fa-solid fa-circle-notch fa-spin"></i>
-                        Merancang Form...
-                      </>
-                    ) : (
-                      <>
-                        <i className="fa-solid fa-wand-magic-sparkles"></i>
-                        Hasilkan dengan AI
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              {showAiSettings && (
-                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl mt-2">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="ai-api-key" className="text-slate-700 text-xs font-bold flex items-center justify-between">
-                        <span>OpenRouter API Key (Opsional jika sudah diset di server)</span>
-                      </Label>
-                      <div className="flex gap-2">
-                        <Input
-                          id="ai-api-key"
-                          type="password"
-                          placeholder="sk-or-v1-..."
-                          value={aiApiKey}
-                          onChange={(e) => handleSaveApiKey(e.target.value)}
-                          className="bg-white border border-slate-300 focus:border-indigo-500 text-slate-800 h-9 rounded-lg text-xs"
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                    {/* Method selection */}
+                    <div className="flex items-center gap-4">
+                      <span className="text-xs text-slate-500 font-bold">Mode Penggabungan:</span>
+                      <label className="flex items-center gap-1.5 text-xs text-slate-700 font-medium cursor-pointer">
+                        <input
+                          type="radio"
+                          name="ai-merge-mode"
+                          checked={aiMergeMode === "replace"}
+                          onChange={() => setAiMergeMode("replace")}
+                          className="accent-indigo-600"
+                          disabled={isAiGenerating}
                         />
-                        {aiApiKey && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            onClick={() => handleSaveApiKey("")}
-                            className="text-red-500 hover:text-red-700 border border-slate-200/60 bg-white h-9 px-2.5 rounded-lg text-xs cursor-pointer"
-                          >
-                            Hapus
-                          </Button>
-                        )}
-                      </div>
+                        Gantikan formulir saat ini
+                      </label>
+                      <label className="flex items-center gap-1.5 text-xs text-slate-700 font-medium cursor-pointer">
+                        <input
+                          type="radio"
+                          name="ai-merge-mode"
+                          checked={aiMergeMode === "append"}
+                          onChange={() => setAiMergeMode("append")}
+                          className="accent-indigo-600"
+                          disabled={isAiGenerating}
+                        />
+                        Tambahkan ke formulir saat ini
+                      </label>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="ai-model-select" className="text-slate-700 text-xs font-bold">
-                        Model AI OpenRouter
-                      </Label>
-                      <select
-                        id="ai-model-select"
-                        value={aiModel}
-                        onChange={(e) => handleSaveModel(e.target.value)}
-                        className="w-full bg-white border border-slate-300 text-slate-800 h-9 px-3 rounded-lg text-xs focus:outline-none focus:border-indigo-500 transition-colors cursor-pointer"
+                    <div className="flex items-center gap-2">
+                      <Link href="/admin/profile">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-slate-500 hover:text-slate-700 h-9 px-3 rounded-lg border border-slate-200/60 bg-white/40 cursor-pointer flex items-center gap-1.5"
+                        >
+                          <i className="fa-solid fa-gear text-indigo-500 text-xs"></i>
+                          Setelan AI
+                        </Button>
+                      </Link>
+
+                      <Button
+                        type="button"
+                        onClick={handleGenerateWithAI}
+                        disabled={isAiGenerating}
+                        className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-700 hover:to-violet-700 font-semibold px-4 h-9 rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer"
                       >
-                        {aiModelList.length > 0 ? (
-                          aiModelList.map((model, idx) => (
-                            <option key={idx} value={model.value}>
-                              {model.label}
-                            </option>
-                          ))
+                        {isAiGenerating ? (
+                          <>
+                            <i className="fa-solid fa-circle-notch fa-spin"></i>
+                            Merancang Form...
+                          </>
                         ) : (
                           <>
-                            <option value="openrouter/free">openrouter/free (Auto Routing Gratis)</option>
-                            <option value="google/gemini-2.5-flash">google/gemini-2.5-flash (Direkomendasikan)</option>
-                            <option value="google/gemini-2.5-pro">google/gemini-2.5-pro</option>
-                            <option value="google/gemma-2-9b-it:free">google/gemma-2-9b-it:free (Gratis)</option>
-                            <option value="meta-llama/llama-3.1-8b-instruct:free">meta-llama/llama-3.1-8b-instruct:free (Gratis)</option>
-                            <option value="meta-llama/llama-3-8b-instruct:free">meta-llama/llama-3-8b-instruct:free (Gratis)</option>
-                            <option value="qwen/qwen-2.5-72b-instruct:free">qwen/qwen-2.5-72b-instruct:free (Gratis)</option>
+                            <i className="fa-solid fa-wand-magic-sparkles"></i>
+                            Hasilkan dengan AI
                           </>
                         )}
-                      </select>
+                      </Button>
                     </div>
                   </div>
-                </div>
+                </>
               )}
             </CardContent>
           )}
