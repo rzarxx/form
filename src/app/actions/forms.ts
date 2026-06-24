@@ -736,6 +736,35 @@ export async function toggleFormActiveAction(formId: string, isActive: boolean) 
   }
 }
 
+/**
+ * Fungsi helper khusus untuk melakukan request fetch dengan retry otomatis (Exponential Backoff).
+ * Digunakan untuk menangani status kode transient seperti 429 (Rate Limit) dan 503 (Service Unavailable).
+ */
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  retries = 2,
+  delay = 1000
+): Promise<Response> {
+  try {
+    const response = await fetch(url, options);
+    // Ulangi jika status transient (429, 502, 503, 504) dan masih memiliki sisa retry
+    if ([429, 502, 503, 504].includes(response.status) && retries > 0) {
+      console.warn(`[fetchWithRetry] Gagal dengan status ${response.status}. Mencoba kembali dalam ${delay}ms... (Sisa retry: ${retries})`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      return fetchWithRetry(url, options, retries - 1, delay * 2);
+    }
+    return response;
+  } catch (error) {
+    if (retries > 0) {
+      console.warn(`[fetchWithRetry] Request melempar error: ${error}. Mencoba kembali dalam ${delay}ms... (Sisa retry: ${retries})`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      return fetchWithRetry(url, options, retries - 1, delay * 2);
+    }
+    throw error;
+  }
+}
+
 export async function generateFormWithAIAction(prompt: string, userApiKey?: string, userModel?: string) {
   try {
     const cookieStore = await cookies();
@@ -858,7 +887,7 @@ Aturan penting:
 
     // Panggil API sesuai dengan Provider terpilih
     if (provider === "gemini") {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+      const response = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -873,7 +902,8 @@ Aturan penting:
           ],
           generationConfig: {
             responseMimeType: "application/json",
-            temperature: 0.7
+            temperature: 0.7,
+            maxOutputTokens: 1500 // Batasi token keluaran untuk efisiensi biaya
           }
         }),
       });
@@ -881,14 +911,22 @@ Aturan penting:
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Gemini API error:", errorText);
-        return { success: false, error: `Gagal menghubungi Gemini: ${response.statusText} (${response.status})` };
+        let friendlyMessage = `Gagal menghubungi Gemini: ${response.statusText} (${response.status})`;
+        if (response.status === 503) {
+          friendlyMessage = "Layanan Gemini sedang sibuk atau tidak tersedia sementara (503). Silakan coba lagi beberapa saat lagi, atau ganti Penyedia AI ke OpenAI/OpenRouter di Setelan AI Akun Anda.";
+        } else if (response.status === 429) {
+          friendlyMessage = "Batas kuota Gemini terlampaui (429/Rate Limit). Silakan tunggu sebentar, atau periksa kuota limit API Key Anda di Google AI Studio.";
+        } else if (response.status === 400 || response.status === 401 || response.status === 403) {
+          friendlyMessage = "API Key Gemini tidak valid atau tidak diizinkan. Silakan periksa kembali konfigurasi API Key Anda di Setelan AI Akun.";
+        }
+        return { success: false, error: friendlyMessage };
       }
 
       const result = await response.json();
       content = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
     }
     else if (provider === "openai") {
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      const response = await fetchWithRetry("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -902,13 +940,20 @@ Aturan penting:
           ],
           response_format: { type: "json_object" },
           temperature: 0.7,
+          max_tokens: 1500 // Batasi token keluaran untuk efisiensi biaya
         }),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error("OpenAI API error:", errorText);
-        return { success: false, error: `Gagal menghubungi OpenAI: ${response.statusText} (${response.status})` };
+        let friendlyMessage = `Gagal menghubungi OpenAI: ${response.statusText} (${response.status})`;
+        if (response.status === 429) {
+          friendlyMessage = "Batas kuota OpenAI terlampaui (429/Rate Limit). Silakan tunggu sebentar, atau periksa kuota limit API Key Anda.";
+        } else if (response.status === 401 || response.status === 403) {
+          friendlyMessage = "API Key OpenAI tidak valid atau tidak memiliki izin akses. Silakan periksa konfigurasi API Key Anda di Setelan AI Akun.";
+        }
+        return { success: false, error: friendlyMessage };
       }
 
       const result = await response.json();
@@ -916,7 +961,7 @@ Aturan penting:
     }
     else {
       // Default: openrouter
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      const response = await fetchWithRetry("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -931,13 +976,20 @@ Aturan penting:
             { role: "user", content: prompt }
           ],
           temperature: 0.7,
+          max_tokens: 1500 // Batasi token keluaran untuk efisiensi biaya
         }),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error("OpenRouter API error:", errorText);
-        return { success: false, error: `Gagal menghubungi OpenRouter: ${response.statusText} (${response.status})` };
+        let friendlyMessage = `Gagal menghubungi OpenRouter: ${response.statusText} (${response.status})`;
+        if (response.status === 429) {
+          friendlyMessage = "Batas kuota OpenRouter terlampaui (429/Rate Limit). Silakan tunggu sebentar atau periksa kredit akun Anda.";
+        } else if (response.status === 401 || response.status === 403) {
+          friendlyMessage = "API Key OpenRouter tidak valid atau tidak diizinkan. Silakan periksa konfigurasi API Key Anda di Setelan AI Akun.";
+        }
+        return { success: false, error: friendlyMessage };
       }
 
       const result = await response.json();
@@ -1106,12 +1158,38 @@ export async function generateResponseInsightsAction(formId: string) {
       }
     });
 
+    // Optimisasi Token: Kelompokkan jawaban yang sama dan hitung frekuensinya (Frequency-based Aggregation)
+    // Ini menghemat token secara drastis dibandingkan mengulang jawaban yang sama berkali-kali.
     let responseSummaryText = "";
     Object.keys(aggregatedData).forEach((label) => {
       responseSummaryText += `Pertanyaan: ${label}\nJawaban:\n`;
+      
+      const answerCounts: Record<string, number> = {};
       aggregatedData[label].forEach((ans) => {
-        responseSummaryText += `- ${ans}\n`;
+        const cleanAns = ans.trim();
+        if (cleanAns) {
+          answerCounts[cleanAns] = (answerCounts[cleanAns] || 0) + 1;
+        }
       });
+
+      // Urutkan berdasarkan frekuensi terbanyak
+      const sortedAnswers = Object.entries(answerCounts).sort((a, b) => b[1] - a[1]);
+      
+      // Batasi maksimal 50 jawaban unik per pertanyaan agar tidak membebani konteks prompt
+      const topAnswers = sortedAnswers.slice(0, 50);
+      
+      topAnswers.forEach(([ans, count]) => {
+        if (count > 1) {
+          responseSummaryText += `- ${ans} (muncul sebanyak ${count} kali)\n`;
+        } else {
+          responseSummaryText += `- ${ans}\n`;
+        }
+      });
+      
+      if (sortedAnswers.length > 50) {
+        responseSummaryText += `- ... (dan ${sortedAnswers.length - 50} jawaban unik lainnya)\n`;
+      }
+      
       responseSummaryText += `\n`;
     });
 
@@ -1211,7 +1289,7 @@ ${responseSummaryText}`;
 
     // Panggil API sesuai dengan Provider terpilih
     if (provider === "gemini") {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+      const response = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1225,7 +1303,8 @@ ${responseSummaryText}`;
             }
           ],
           generationConfig: {
-            temperature: 0.7
+            temperature: 0.7,
+            maxOutputTokens: 2000 // Batasi token keluaran untuk efisiensi biaya
           }
         }),
       });
@@ -1233,14 +1312,22 @@ ${responseSummaryText}`;
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Gemini API error:", errorText);
-        return { success: false, error: `Gagal menghubungi Gemini: ${response.statusText} (${response.status})` };
+        let friendlyMessage = `Gagal menghubungi Gemini: ${response.statusText} (${response.status})`;
+        if (response.status === 503) {
+          friendlyMessage = "Layanan Gemini sedang sibuk atau tidak tersedia sementara (503). Silakan coba lagi beberapa saat lagi, atau ganti Penyedia AI ke OpenAI/OpenRouter di Setelan AI Akun Anda.";
+        } else if (response.status === 429) {
+          friendlyMessage = "Batas kuota Gemini terlampaui (429/Rate Limit). Silakan tunggu sebentar, atau periksa kuota limit API Key Anda di Google AI Studio.";
+        } else if (response.status === 400 || response.status === 401 || response.status === 403) {
+          friendlyMessage = "API Key Gemini tidak valid atau tidak diizinkan. Silakan periksa kembali konfigurasi API Key Anda di Setelan AI Akun.";
+        }
+        return { success: false, error: friendlyMessage };
       }
 
       const result = await response.json();
       content = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
     }
     else if (provider === "openai") {
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      const response = await fetchWithRetry("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1253,13 +1340,20 @@ ${responseSummaryText}`;
             { role: "user", content: promptContent }
           ],
           temperature: 0.7,
+          max_tokens: 2000 // Batasi token keluaran untuk efisiensi biaya
         }),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error("OpenAI API error:", errorText);
-        return { success: false, error: `Gagal menghubungi OpenAI: ${response.statusText} (${response.status})` };
+        let friendlyMessage = `Gagal menghubungi OpenAI: ${response.statusText} (${response.status})`;
+        if (response.status === 429) {
+          friendlyMessage = "Batas kuota OpenAI terlampaui (429/Rate Limit). Silakan tunggu sebentar, atau periksa kuota limit API Key Anda.";
+        } else if (response.status === 401 || response.status === 403) {
+          friendlyMessage = "API Key OpenAI tidak valid atau tidak memiliki izin akses. Silakan periksa konfigurasi API Key Anda di Setelan AI Akun.";
+        }
+        return { success: false, error: friendlyMessage };
       }
 
       const result = await response.json();
@@ -1267,7 +1361,7 @@ ${responseSummaryText}`;
     }
     else {
       // Default: openrouter
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      const response = await fetchWithRetry("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1282,13 +1376,20 @@ ${responseSummaryText}`;
             { role: "user", content: promptContent }
           ],
           temperature: 0.7,
+          max_tokens: 2000 // Batasi token keluaran untuk efisiensi biaya
         }),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error("OpenRouter API error:", errorText);
-        return { success: false, error: `Gagal menghubungi OpenRouter: ${response.statusText} (${response.status})` };
+        let friendlyMessage = `Gagal menghubungi OpenRouter: ${response.statusText} (${response.status})`;
+        if (response.status === 429) {
+          friendlyMessage = "Batas kuota OpenRouter terlampaui (429/Rate Limit). Silakan tunggu sebentar atau periksa kredit akun Anda.";
+        } else if (response.status === 401 || response.status === 403) {
+          friendlyMessage = "API Key OpenRouter tidak valid atau tidak diizinkan. Silakan periksa konfigurasi API Key Anda di Setelan AI Akun.";
+        }
+        return { success: false, error: friendlyMessage };
       }
 
       const result = await response.json();
