@@ -175,6 +175,44 @@ export async function initDatabase() {
       ALTER TABLE forms ADD COLUMN IF NOT EXISTS ai_insights_updated_at TIMESTAMP WITH TIME ZONE;
     `;
 
+    // MIGRATION: Creator Balance & Withdrawal System
+    await sql`
+      ALTER TABLE transactions ADD COLUMN IF NOT EXISTS platform_commission INT DEFAULT 0;
+    `;
+    await sql`
+      ALTER TABLE transactions ADD COLUMN IF NOT EXISTS creator_amount INT DEFAULT 0;
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS balances (
+        user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        balance INT DEFAULT 0,
+        total_earned INT DEFAULT 0,
+        total_withdrawn INT DEFAULT 0,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS withdrawals (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        amount INT NOT NULL,
+        bank_name VARCHAR(100) NOT NULL,
+        account_number VARCHAR(100) NOT NULL,
+        account_name VARCHAR(255) NOT NULL,
+        status VARCHAR(50) DEFAULT 'pending',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        completed_at TIMESTAMP WITH TIME ZONE
+      );
+    `;
+
+    await sql`
+      INSERT INTO settings (key, value)
+      VALUES ('platform_commission_percent', '5')
+      ON CONFLICT (key) DO NOTHING;
+    `;
+
     isInitialized = true;
     console.log("Database initialization check completed successfully.");
   } catch (error) {

@@ -54,7 +54,7 @@ export async function POST(req: Request) {
 
     // Cari transaksi di database berdasarkan merchant_ref atau tripay_reference
     const txRes = await sql`
-      SELECT id, user_id, form_id, status, type, form_response_answers, payer_name, payer_email, ip_address
+      SELECT id, user_id, form_id, amount, status, type, form_response_answers, payer_name, payer_email, ip_address
       FROM transactions 
       WHERE reference = ${merchant_ref || ""} OR tripay_reference = ${reference}
       LIMIT 1
@@ -96,14 +96,15 @@ export async function POST(req: Request) {
         const formId = tx.form_id;
 
         if (formId && answers) {
-          // Ambil detail form untuk notifikasi
+          // Ambil detail form untuk notifikasi dan user_id Creator
           const formRes = await sql`
-            SELECT title, fields, webhook_url, notify_email
+            SELECT user_id, title, fields, webhook_url, notify_email
             FROM forms WHERE id = ${formId} LIMIT 1
           `;
           
           if (formRes.length > 0) {
             const form = formRes[0];
+            const creatorId = form.user_id;
             
             // Simpan jawaban ke form_responses
             const ip = tx.ip_address || req.headers.get("x-forwarded-for") || "127.0.0.1";
@@ -114,12 +115,42 @@ export async function POST(req: Request) {
             `;
             const responseId = insertRes[0]?.id;
 
-            // Update status transaksi dengan response_id
+            // Hitung komisi platform
+            let commissionPercent = 5;
+            const commSetting = await getSetting("platform_commission_percent");
+            if (commSetting) {
+              const parsed = parseInt(commSetting, 10);
+              if (!isNaN(parsed)) {
+                commissionPercent = parsed;
+              }
+            }
+
+            const platformCommission = Math.round(tx.amount * (commissionPercent / 100));
+            const creatorAmount = tx.amount - platformCommission;
+
+            // Update status transaksi dengan response_id, platform_commission, dan creator_amount
             await sql`
               UPDATE transactions
-              SET status = 'paid', form_response_id = ${responseId}, updated_at = CURRENT_TIMESTAMP
+              SET status = 'paid', 
+                  form_response_id = ${responseId}, 
+                  platform_commission = ${platformCommission},
+                  creator_amount = ${creatorAmount},
+                  updated_at = CURRENT_TIMESTAMP
               WHERE id = ${tx.id}
             `;
+
+            // Update saldo Creator (balances) jika creatorId ada
+            if (creatorId) {
+              await sql`
+                INSERT INTO balances (user_id, balance, total_earned, updated_at)
+                VALUES (${creatorId}, ${creatorAmount}, ${creatorAmount}, CURRENT_TIMESTAMP)
+                ON CONFLICT (user_id) DO UPDATE
+                SET balance = balances.balance + ${creatorAmount},
+                    total_earned = balances.total_earned + ${creatorAmount},
+                    updated_at = CURRENT_TIMESTAMP
+              `;
+              console.log(`[Tripay Webhook] Credited creator ${creatorId} balance with net: ${creatorAmount} (commission: ${platformCommission})`);
+            }
 
             console.log(`[Tripay Webhook] Saved paid form response ID: ${responseId} for form: ${formId}`);
 

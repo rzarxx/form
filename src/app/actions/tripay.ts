@@ -30,7 +30,7 @@ export async function getTripaySettingsAction() {
   await requireAdmin();
 
   try {
-    const dbSettings = await sql`SELECT key, value FROM settings WHERE key LIKE 'tripay_%' OR key = 'premium_monthly_price'`;
+    const dbSettings = await sql`SELECT key, value FROM settings WHERE key LIKE 'tripay_%' OR key = 'premium_monthly_price' OR key = 'platform_commission_percent'`;
     const settingsMap: Record<string, string> = {};
     dbSettings.forEach((row) => {
       settingsMap[row.key] = row.value || "";
@@ -41,6 +41,7 @@ export async function getTripaySettingsAction() {
     const apiKey = settingsMap["tripay_api_key"] || "";
     const privateKey = settingsMap["tripay_private_key"] || "";
     const premiumPrice = parseInt(settingsMap["premium_monthly_price"] || "50000", 10);
+    const commissionPercent = parseInt(settingsMap["platform_commission_percent"] || "5", 10);
     
     let enabledChannels: string[] = [];
     try {
@@ -60,6 +61,7 @@ export async function getTripaySettingsAction() {
         tripay_api_key: apiKey ? maskSecret(apiKey) : "",
         tripay_private_key: privateKey ? maskSecret(privateKey) : "",
         premium_monthly_price: premiumPrice,
+        platform_commission_percent: commissionPercent,
         enabled_channels: enabledChannels,
         available_channels: availableChannels,
         has_api_key: !!apiKey,
@@ -81,6 +83,7 @@ export async function saveTripaySettingsAction(formData: {
   tripay_api_key: string;
   tripay_private_key: string;
   premium_monthly_price: number;
+  platform_commission_percent: number;
   tripay_payment_channels: string[];
 }) {
   await requireAdmin();
@@ -90,6 +93,7 @@ export async function saveTripaySettingsAction(formData: {
       tripay_mode: formData.tripay_mode,
       tripay_merchant_code: formData.tripay_merchant_code,
       premium_monthly_price: formData.premium_monthly_price.toString(),
+      platform_commission_percent: formData.platform_commission_percent.toString(),
       tripay_payment_channels: JSON.stringify(formData.tripay_payment_channels || []),
     };
 

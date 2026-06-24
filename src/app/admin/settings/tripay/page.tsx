@@ -22,6 +22,7 @@ export default function TripaySettingsPage() {
     tripay_api_key: "",
     tripay_private_key: "",
     premium_monthly_price: 50000,
+    platform_commission_percent: 5,
   });
 
   const [availableChannels, setAvailableChannels] = useState<PaymentChannel[]>([]);
@@ -63,6 +64,7 @@ export default function TripaySettingsPage() {
             tripay_api_key: res.data.tripay_api_key,
             tripay_private_key: res.data.tripay_private_key,
             premium_monthly_price: res.data.premium_monthly_price,
+            platform_commission_percent: res.data.platform_commission_percent,
           });
           setEnabledChannels(res.data.enabled_channels || []);
           setAvailableChannels(res.data.available_channels || []);
@@ -83,7 +85,9 @@ export default function TripaySettingsPage() {
     const { name, value } = e.target;
     setSettings((prev) => ({
       ...prev,
-      [name]: name === "premium_monthly_price" ? parseInt(value, 10) || 0 : value,
+      [name]: name === "premium_monthly_price" || name === "platform_commission_percent"
+        ? parseInt(value, 10) || 0 
+        : value,
     }));
   };
 
@@ -124,6 +128,7 @@ export default function TripaySettingsPage() {
               tripay_api_key: updated.data.tripay_api_key,
               tripay_private_key: updated.data.tripay_private_key,
               premium_monthly_price: updated.data.premium_monthly_price,
+              platform_commission_percent: updated.data.platform_commission_percent,
             });
             setEnabledChannels(updated.data.enabled_channels || []);
           }
@@ -244,9 +249,9 @@ export default function TripaySettingsPage() {
 
         <Card className="shadow-md border border-slate-200">
           <CardHeader>
-            <CardTitle>Biaya Langganan Premium</CardTitle>
+            <CardTitle>Monetisasi & Biaya Platform</CardTitle>
             <CardDescription>
-              Tentukan nominal harga untuk paket langganan premium per 30 hari.
+              Konfigurasikan harga paket premium dan persentase potongan komisi transaksi.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -268,6 +273,29 @@ export default function TripaySettingsPage() {
               </div>
               <p className="text-[11px] text-slate-400">
                 Default: Rp 50.000,-
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="platform_commission_percent">Komisi Potongan Platform (%)</Label>
+              <div className="relative">
+                <Input
+                  id="platform_commission_percent"
+                  name="platform_commission_percent"
+                  type="number"
+                  min="0"
+                  max="100"
+                  placeholder="5"
+                  value={settings.platform_commission_percent}
+                  onChange={handleChange}
+                  className="pr-9"
+                />
+                <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-500 font-semibold text-sm">
+                  %
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400">
+                Akan dipotong otomatis pada setiap transaksi form berbayar Creator. Default: 5%
               </p>
             </div>
           </CardContent>

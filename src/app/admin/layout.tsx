@@ -66,10 +66,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       path: "/admin/forms/new",
       icon: "fa-solid fa-square-plus",
     },
+    {
+      name: "Keuangan & Saldo",
+      path: "/admin/earnings",
+      icon: "fa-solid fa-wallet",
+    },
   ];
 
   if (user?.role === "super_admin") {
     menuItems.push(
+      {
+        name: "Persetujuan Payout",
+        path: "/admin/withdrawals",
+        icon: "fa-solid fa-money-bill-transfer",
+      },
       {
         name: "Setelan Global",
         path: "/admin/settings",
