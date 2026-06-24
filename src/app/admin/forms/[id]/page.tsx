@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useTransition, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getFormDetailAction, deleteFormAction, toggleFormActiveAction, deleteResponseAction } from "@/app/actions/forms";
+import { getFormDetailAction, deleteFormAction, toggleFormActiveAction, deleteResponseAction, generateResponseInsightsAction } from "@/app/actions/forms";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -64,8 +64,11 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
     onConfirm: () => void;
   } | null>(null);
 
-  // Tab View state: "table" vs "analytics"
-  const [activeTab, setActiveTab] = useState<"table" | "analytics">("table");
+  // Tab View state: "table" vs "analytics" vs "ai_insights"
+  const [activeTab, setActiveTab] = useState<"table" | "analytics" | "ai_insights">("table");
+  const [aiInsights, setAiInsights] = useState<string | null>(null);
+  const [aiInsightsUpdatedAt, setAiInsightsUpdatedAt] = useState<string | null>(null);
+  const [isAiInsightsGenerating, setIsAiInsightsGenerating] = useState(false);
   
   // Share Panel visibility state
   const [showShare, setShowShare] = useState(false);
@@ -87,6 +90,8 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
       setForm(result.data.form as FormSchema);
       setResponses(result.data.responses as unknown as ResponseSchema[]);
       setIsPremium(!!result.data.isPremium);
+      setAiInsights(result.data.form.ai_insights || null);
+      setAiInsightsUpdatedAt(result.data.form.ai_insights_updated_at || null);
     } else {
       toast.error(result.error || "Gagal memuat detail formulir.");
       router.push("/admin");
@@ -97,6 +102,89 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
   useEffect(() => {
     fetchFormDetails();
   }, [formId]);
+
+  const handleGenerateAiInsights = async () => {
+    setIsAiInsightsGenerating(true);
+    const loadingToast = toast.loading("AI sedang menganalisis tanggapan formulir Anda...");
+    try {
+      const result = await generateResponseInsightsAction(formId);
+      toast.dismiss(loadingToast);
+      if (result.success) {
+        setAiInsights(result.insights || null);
+        setAiInsightsUpdatedAt(result.updatedAt || null);
+        toast.success("Analisis tanggapan AI berhasil dibuat!");
+      } else {
+        toast.error(result.error || "Gagal menghasilkan analisis AI.");
+      }
+    } catch (err: any) {
+      toast.dismiss(loadingToast);
+      console.error(err);
+      toast.error(err.message || "Terjadi kesalahan koneksi saat memanggil AI.");
+    } finally {
+      setIsAiInsightsGenerating(false);
+    }
+  };
+
+  const renderMarkdown = (text: string) => {
+    if (!text) return null;
+    const lines = text.split("\n");
+    return lines.map((line, idx) => {
+      // Heading 3
+      if (line.startsWith("### ")) {
+        return <h3 key={idx} className="text-sm font-bold text-indigo-955 mt-4 mb-2">{line.replace("### ", "")}</h3>;
+      }
+      // Heading 2
+      if (line.startsWith("## ")) {
+        return <h2 key={idx} className="text-base font-black text-indigo-950 mt-5 mb-2.5 border-b border-indigo-100 pb-1">{line.replace("## ", "")}</h2>;
+      }
+      // Heading 1
+      if (line.startsWith("# ")) {
+        return <h1 key={idx} className="text-lg font-black text-indigo-955 mt-6 mb-3">{line.replace("# ", "")}</h1>;
+      }
+      // Bold list items
+      if (line.startsWith("- **") || line.startsWith("* **")) {
+        const match = line.match(/^[-*]\s+\*\*(.*?)\*\*:(.*)$/);
+        if (match) {
+          return (
+            <li key={idx} className="ml-4 list-disc text-xs text-slate-700 leading-relaxed mb-1.5">
+              <strong className="text-slate-800">{match[1]}:</strong>{match[2]}
+            </li>
+          );
+        }
+      }
+      // Bold paragraph starting
+      if (line.startsWith("**") && line.includes("**")) {
+        const parts = line.split("**");
+        return (
+          <p key={idx} className="text-xs text-slate-700 leading-relaxed mb-2">
+            {parts.map((p, i) => i % 2 === 1 ? <strong key={i} className="text-slate-800">{p}</strong> : p)}
+          </p>
+        );
+      }
+      // Simple list items
+      if (line.trim().startsWith("- ") || line.trim().startsWith("* ")) {
+        return (
+          <li key={idx} className="ml-4 list-disc text-xs text-slate-700 leading-relaxed mb-1.5">
+            {line.replace(/^[-*]\s+/, "")}
+          </li>
+        );
+      }
+      // Numbered list items
+      if (/^\d+\.\s+/.test(line.trim())) {
+        return (
+          <li key={idx} className="ml-5 list-decimal text-xs text-slate-700 leading-relaxed mb-1.5">
+            {line.replace(/^\d+\.\s+/, "")}
+          </li>
+        );
+      }
+      // Empty line
+      if (!line.trim()) {
+        return <div key={idx} className="h-1.5" />;
+      }
+      // Normal paragraph
+      return <p key={idx} className="text-xs text-slate-700 leading-relaxed mb-2">{line}</p>;
+    });
+  };
 
   const handleToggleActive = async () => {
     if (!form) return;
@@ -556,8 +644,8 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
           </Card>
         )}
 
-        {/* Tab View Header: Table vs Charts */}
-        <div className="flex space-x-1 rounded-xl bg-slate-200/60 p-1 border border-slate-200/40 max-w-sm shadow-sm">
+        {/* Tab View Header: Table vs Charts vs AI Insights */}
+        <div className="flex space-x-1 rounded-xl bg-slate-200/60 p-1 border border-slate-200/40 max-w-md shadow-sm">
           <button
             type="button"
             onClick={() => setActiveTab("table")}
@@ -581,6 +669,18 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
           >
             <i className="fa-solid fa-chart-bar text-[11px]"></i>
             <span>Grafik Ringkasan</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("ai_insights")}
+            className={`flex items-center justify-center space-x-2 w-full rounded-lg py-2 text-xs font-semibold transition-all duration-200 cursor-pointer ${
+              activeTab === "ai_insights" 
+                ? "bg-white text-slate-800 shadow-sm" 
+                : "text-slate-500 hover:text-slate-850"
+            }`}
+          >
+            <i className="fa-solid fa-wand-magic-sparkles text-[11px] text-indigo-600 animate-pulse"></i>
+            <span>Analisis AI 👑</span>
           </button>
         </div>
 
@@ -991,6 +1091,86 @@ export default function FormDetailsPage({ params }: { params: Promise<{ id: stri
                   })}
                 </div>
               </>
+            )}
+          </div>
+        )}
+
+        {/* TAB 3: AI INSIGHTS */}
+        {activeTab === "ai_insights" && (
+          <div className="space-y-6 animate-fade-in">
+            {!isPremium ? (
+              <Card className="pt-12 pb-12 flex flex-col items-center text-center p-8 bg-gradient-to-br from-indigo-50/50 via-purple-50/20 to-pink-50/50 border border-indigo-100 rounded-2xl shadow-sm">
+                <div className="h-16 w-16 rounded-2xl bg-indigo-100 flex items-center justify-center mb-4 border border-indigo-200/50">
+                  <i className="fa-solid fa-lock text-indigo-600 text-2xl animate-pulse"></i>
+                </div>
+                <h3 className="text-lg font-bold text-slate-800">Fitur Analisis Jawaban AI Khusus Premium</h3>
+                <p className="text-sm text-slate-500 max-w-md mt-1.5 leading-relaxed">
+                  Dapatkan ringkasan eksekutif, temuan penting, analisis tren sentimen, dan rekomendasi langkah tindakan secara instan berdasarkan seluruh data tanggapan yang masuk.
+                </p>
+                <Link href="/admin/premium" className="mt-5 inline-flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold text-sm px-6 py-3 rounded-xl shadow-md transition-all duration-200 cursor-pointer">
+                  <i className="fa-solid fa-crown text-amber-300"></i> Upgrade ke Pro (Premium)
+                </Link>
+              </Card>
+            ) : responses.length === 0 ? (
+              <Card className="border border-slate-200 bg-white p-16 text-center text-slate-500 text-xs font-semibold shadow-sm">
+                Belum ada tanggapan masuk untuk dianalisis oleh AI.
+              </Card>
+            ) : (
+              <Card className="bg-white border border-slate-200 shadow-sm rounded-2xl relative overflow-hidden transition-all duration-300 hover:border-slate-400">
+                <div className="absolute top-0 left-0 w-full h-[4px] bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
+                <CardHeader className="border-b border-slate-100 bg-slate-50/40 pb-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <CardTitle className="text-base font-bold text-slate-800 flex items-center gap-2">
+                        <i className="fa-solid fa-wand-magic-sparkles text-indigo-600"></i> Analisis Cerdas Tanggapan AI
+                      </CardTitle>
+                      <CardDescription className="text-xs">
+                        {aiInsightsUpdatedAt ? (
+                          <span>Terakhir diperbarui: {new Date(aiInsightsUpdatedAt).toLocaleString("id-ID")}</span>
+                        ) : (
+                          <span>Analisis AI belum dibuat untuk tanggapan saat ini.</span>
+                        )}
+                      </CardDescription>
+                    </div>
+                    <Button
+                      onClick={handleGenerateAiInsights}
+                      disabled={isAiInsightsGenerating}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs px-4 h-9 rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer ml-auto sm:ml-0"
+                    >
+                      {isAiInsightsGenerating ? (
+                        <>
+                          <i className="fa-solid fa-circle-notch fa-spin"></i> Menganalisis...
+                        </>
+                      ) : aiInsights ? (
+                        <>
+                          <i className="fa-solid fa-arrows-rotate"></i> Perbarui Analisis
+                        </>
+                      ) : (
+                        <>
+                          <i className="fa-solid fa-wand-magic-sparkles"></i> Buat Analisis AI
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-6">
+                  {aiInsights ? (
+                    <div className="prose prose-slate max-w-none space-y-4">
+                      {renderMarkdown(aiInsights)}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 space-y-3">
+                      <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
+                        <i className="fa-solid fa-brain text-xl"></i>
+                      </div>
+                      <h4 className="text-sm font-bold text-slate-700">Analisis AI Belum Dibuat</h4>
+                      <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
+                        Klik tombol "Buat Analisis AI" di atas untuk memproses ringkasan pintar dan analisis sentimen responden.
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             )}
           </div>
         )}

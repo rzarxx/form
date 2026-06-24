@@ -331,7 +331,7 @@ export async function getFormDetailAction(formId: string) {
       SELECT id, title, description, created_at, fields, banner_url, max_responses, is_active,
              custom_success_message, redirect_url, expiry_date, notify_email,
              limit_one_per_ip, max_total_responses, access_password, webhook_url, enable_turnstile,
-             is_paid_form, form_price, form_payment_description
+             is_paid_form, form_price, form_payment_description, ai_insights, ai_insights_updated_at
       FROM forms
       WHERE id = ${formId} AND (user_id = ${userId} OR (user_id IS NULL AND ${userId} = '00000000-0000-0000-0000-000000000000'))
     `;
@@ -1023,4 +1023,299 @@ export async function getUserFormCreationStatusAction() {
     return { success: false, error: err.message || "Gagal mendapatkan status." };
   }
 }
+
+export async function generateResponseInsightsAction(formId: string) {
+  try {
+    const cookieStore = await cookies();
+    const sessionToken = cookieStore.get("admin_session")?.value;
+    const user = await getSessionUser(sessionToken);
+
+    if (!user) {
+      return { success: false, error: "Unauthorized: Silakan masuk terlebih dahulu." };
+    }
+
+    // Ambil formulir
+    const formRes = await sql`
+      SELECT id, title, description, fields, user_id, ai_insights, ai_insights_updated_at 
+      FROM forms WHERE id = ${formId} LIMIT 1
+    `;
+    if (formRes.length === 0) {
+      return { success: false, error: "Formulir tidak ditemukan." };
+    }
+    const form = formRes[0];
+
+    // Cek otorisasi kepemilikan form
+    if (form.user_id !== user.id && user.role !== "super_admin") {
+      return { success: false, error: "Unauthorized: Anda tidak memiliki akses ke formulir ini." };
+    }
+
+    // Hanya member Pro (Premium) atau super_admin yang dapat mengakses fitur analisis AI
+    if (!user.is_premium && user.role !== "super_admin") {
+      return {
+        success: false,
+        error: "Fitur analisis tanggapan dengan AI hanya tersedia untuk member Pro (Premium). Silakan tingkatkan akun Anda."
+      };
+    }
+
+    // Ambil semua tanggapan
+    const responsesRes = await sql`
+      SELECT answers FROM form_responses WHERE form_id = ${formId} ORDER BY created_at DESC
+    `;
+    if (responsesRes.length === 0) {
+      return { 
+        success: true, 
+        insights: "Belum ada tanggapan masuk untuk formulir ini. Analisis AI memerlukan minimal 1 tanggapan.",
+        updatedAt: null 
+      };
+    }
+
+    // Format tanggapan agar bisa diproses AI
+    const fields = typeof form.fields === 'string' ? JSON.parse(form.fields) : form.fields;
+    const fieldMap: Record<string, string> = {};
+    if (Array.isArray(fields)) {
+      fields.forEach((f: any) => {
+        fieldMap[f.id] = f.label || "Pertanyaan";
+      });
+    }
+
+    const aggregatedData: Record<string, string[]> = {};
+    if (Array.isArray(fields)) {
+      fields.forEach((f: any) => {
+        aggregatedData[f.label] = [];
+      });
+    }
+
+    responsesRes.forEach((resp: any) => {
+      let answers = resp.answers;
+      if (typeof answers === 'string') {
+        try {
+          answers = JSON.parse(answers);
+        } catch {
+          answers = {};
+        }
+      }
+      if (answers && typeof answers === 'object') {
+        Object.keys(answers).forEach((fieldId) => {
+          const label = fieldMap[fieldId] || fieldId;
+          if (aggregatedData[label]) {
+            aggregatedData[label].push(String(answers[fieldId]));
+          } else {
+            aggregatedData[label] = [String(answers[fieldId])];
+          }
+        });
+      }
+    });
+
+    let responseSummaryText = "";
+    Object.keys(aggregatedData).forEach((label) => {
+      responseSummaryText += `Pertanyaan: ${label}\nJawaban:\n`;
+      aggregatedData[label].forEach((ans) => {
+        responseSummaryText += `- ${ans}\n`;
+      });
+      responseSummaryText += `\n`;
+    });
+
+    // Ambil setelan AI kustom / global
+    let provider = "openrouter";
+    let apiKey = "";
+    let model = "";
+
+    if (user.id !== "00000000-0000-0000-0000-000000000000") {
+      try {
+        const userRes = await sql`
+          SELECT ai_provider, openrouter_api_key, openrouter_model,
+                 gemini_api_key, gemini_model, openai_api_key, openai_model
+          FROM users WHERE id = ${user.id} LIMIT 1
+        `;
+        if (userRes.length > 0) {
+          const userData = userRes[0];
+          provider = userData.ai_provider || "openrouter";
+          
+          if (provider === "openrouter") {
+            apiKey = (userData.openrouter_api_key || "").trim();
+            model = (userData.openrouter_model || "google/gemini-2.5-flash").trim();
+          } else if (provider === "gemini") {
+            apiKey = (userData.gemini_api_key || "").trim();
+            model = (userData.gemini_model || "gemini-2.5-flash").trim();
+          } else if (provider === "openai") {
+            apiKey = (userData.openai_api_key || "").trim();
+            model = (userData.openai_model || "gpt-4o-mini").trim();
+          }
+        }
+      } catch (err) {
+        console.error("Gagal membaca setelan AI kustom user:", err);
+      }
+    }
+
+    try {
+      const dbSettings = await sql`SELECT key, value FROM settings`;
+      const settingsMap: Record<string, string> = {};
+      dbSettings.forEach((row) => {
+        settingsMap[row.key] = row.value || "";
+      });
+
+      if (!apiKey) {
+        if (user.id === "00000000-0000-0000-0000-000000000000") {
+          provider = settingsMap["ai_provider"] || "openrouter";
+        }
+
+        if (provider === "openrouter") {
+          apiKey = (settingsMap["openrouter_api_key"] || process.env.OPENROUTER_API_KEY || "").trim();
+          if (!model) model = (settingsMap["openrouter_model"] || process.env.OPENROUTER_MODEL || "google/gemini-2.5-flash").trim();
+        } else if (provider === "gemini") {
+          apiKey = (settingsMap["gemini_api_key"] || process.env.GEMINI_API_KEY || "").trim();
+          if (!model) model = (settingsMap["gemini_model"] || process.env.GEMINI_MODEL || "gemini-2.5-flash").trim();
+        } else if (provider === "openai") {
+          apiKey = (settingsMap["openai_api_key"] || process.env.OPENAI_API_KEY || "").trim();
+          if (!model) model = (settingsMap["openai_model"] || process.env.OPENAI_MODEL || "gpt-4o-mini").trim();
+        }
+      }
+    } catch (err) {
+      console.error("Gagal membaca setelan AI global:", err);
+    }
+
+    if (!apiKey) {
+      if (user.role === "user") {
+        return {
+          success: false,
+          error: `Kunci API kustom untuk provider '${provider}' belum diatur. Silakan isi API Key Anda di menu 'Setelan AI Akun'.`
+        };
+      } else {
+        return {
+          success: false,
+          error: `Kunci API global untuk provider '${provider}' tidak ditemukan di Setelan Global. Silakan hubungi admin.`
+        };
+      }
+    }
+
+    const systemPrompt = `Anda adalah asisten data analitik AI profesional.
+Tugas Anda adalah menganalisis data tanggapan dari suatu formulir online dan menyajikan kesimpulan komprehensif dalam Bahasa Indonesia.
+
+Format analisis Anda wajib menggunakan Markdown terstruktur yang berisi:
+1. **Ringkasan Tanggapan (Executive Summary)**: Ringkasan singkat mengenai hasil keseluruhan.
+2. **Temuan Utama (Key Findings)**: Poin-poin kesimpulan penting dari jawaban responden.
+3. **Analisis Sentimen & Tren**: Bagaimana sikap umum responden, pola jawaban, atau tren yang menonjol.
+4. **Saran & Langkah Tindakan**: Rekomendasi konkret berdasarkan data tanggapan tersebut untuk pembuat formulir.
+
+Gunakan bahasa yang profesional, jelas, dan lugas. Fokuslah pada data yang diberikan.`;
+
+    const promptContent = `Berikut adalah data tanggapan dari formulir:
+Judul Formulir: ${form.title}
+Deskripsi Formulir: ${form.description || "Tidak ada deskripsi"}
+Total Tanggapan: ${responsesRes.length}
+
+TANGGAPAN RESPONDEN:
+${responseSummaryText}`;
+
+    let content = "";
+
+    // Panggil API sesuai dengan Provider terpilih
+    if (provider === "gemini") {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: systemPrompt + "\n\nData Tanggapan:\n" + promptContent }
+              ]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.7
+          }
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Gemini API error:", errorText);
+        return { success: false, error: `Gagal menghubungi Gemini: ${response.statusText} (${response.status})` };
+      }
+
+      const result = await response.json();
+      content = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
+    }
+    else if (provider === "openai") {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: promptContent }
+          ],
+          temperature: 0.7,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("OpenAI API error:", errorText);
+        return { success: false, error: `Gagal menghubungi OpenAI: ${response.statusText} (${response.status})` };
+      }
+
+      const result = await response.json();
+      content = result.choices?.[0]?.message?.content?.trim() || "";
+    }
+    else {
+      // Default: openrouter
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+          "HTTP-Referer": "https://github.com/rzarxx/form",
+          "X-Title": "Personal Form Builder Insights",
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: promptContent }
+          ],
+          temperature: 0.7,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("OpenRouter API error:", errorText);
+        return { success: false, error: `Gagal menghubungi OpenRouter: ${response.statusText} (${response.status})` };
+      }
+
+      const result = await response.json();
+      content = result.choices?.[0]?.message?.content?.trim() || "";
+    }
+
+    if (!content) {
+      return { success: false, error: "Respons analisis kosong dari AI." };
+    }
+
+    // Update database
+    await sql`
+      UPDATE forms
+      SET ai_insights = ${content}, ai_insights_updated_at = CURRENT_TIMESTAMP
+      WHERE id = ${formId}
+    `;
+
+    return { 
+      success: true, 
+      insights: content, 
+      updatedAt: new Date().toISOString() 
+    };
+
+  } catch (err: any) {
+    console.error("Error in generateResponseInsightsAction:", err);
+    return { success: false, error: err.message || "Gagal memproses analisis AI." };
+  }
+}
+
 

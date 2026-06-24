@@ -167,6 +167,14 @@ export async function initDatabase() {
       ALTER TABLE transactions ADD COLUMN IF NOT EXISTS ip_address VARCHAR(45);
     `;
 
+    await sql`
+      ALTER TABLE forms ADD COLUMN IF NOT EXISTS ai_insights TEXT;
+    `;
+
+    await sql`
+      ALTER TABLE forms ADD COLUMN IF NOT EXISTS ai_insights_updated_at TIMESTAMP WITH TIME ZONE;
+    `;
+
     isInitialized = true;
     console.log("Database initialization check completed successfully.");
   } catch (error) {
