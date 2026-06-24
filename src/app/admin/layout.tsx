@@ -4,7 +4,7 @@ import React, { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { logoutAction, getCurrentUserAction, stopImpersonatingAction } from "@/app/actions/auth";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

@@ -25,7 +25,7 @@ import {
   DialogHeader, 
   DialogTitle 
 } from "@/components/ui/dialog";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import { 
   Wallet, 
   DollarSign, 
