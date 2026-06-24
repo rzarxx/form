@@ -24,13 +24,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           is_premium: !!res.user.is_premium,
         });
         setIsImpersonating(!!res.is_impersonating);
-      } else {
-        toast.error("Sesi Anda berakhir atau tidak valid. Silakan login kembali.");
-        router.push("/login");
       }
     }
     fetchUser();
-  }, [router]);
+  }, []);
 
   const handleLogout = async () => {
     startTransition(async () => {
@@ -100,6 +97,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       path: "/admin/premium",
       icon: "fa-solid fa-crown text-amber-500",
     });
+  }
+
+  if (!user) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-[#f1f5f9]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-indigo-600"></div>
+          <p className="text-sm font-semibold text-slate-500">Memuat dasbor...</p>
+        </div>
+      </div>
+    );
   }
 
   return (

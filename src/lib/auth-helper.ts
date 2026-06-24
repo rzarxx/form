@@ -1,11 +1,40 @@
 import { sql } from "./db";
+import bcrypt from "bcryptjs";
 
-export async function hashPassword(password: string): Promise<string> {
+// Legacy SHA-256 password hashing for session tokens and old accounts verification
+export async function hashPasswordLegacy(password: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(password + "salt-for-form-builder");
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * Hash password baru menggunakan bcrypt dengan 10 salt rounds.
+ */
+export async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, 10);
+}
+
+/**
+ * Memverifikasi sandi raw dengan hash (mendukung bcrypt dan fallback SHA-256 lama).
+ */
+export async function verifyPassword(
+  password: string,
+  hash: string
+): Promise<{ isValid: boolean; needsMigration: boolean }> {
+  // Bcrypt hash dimulai dengan prefix '$2a$', '$2b$', atau '$2y$'
+  const isBcrypt = hash.startsWith("$2");
+  if (isBcrypt) {
+    const isValid = await bcrypt.compare(password, hash);
+    return { isValid, needsMigration: false };
+  } else {
+    // Fallback ke hash SHA-256 lama
+    const legacyHash = await hashPasswordLegacy(password);
+    const isValid = legacyHash === hash;
+    return { isValid, needsMigration: isValid };
+  }
 }
 
 /**
@@ -44,7 +73,7 @@ export async function getSessionUser(sessionToken: string | undefined): Promise<
 
   // 2. Fallback untuk legacy single-user admin (ADMIN_PASSWORD di .env)
   const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
-  const expectedToken = await hashPassword(adminPassword);
+  const expectedToken = await hashPasswordLegacy(adminPassword);
   if (sessionToken === expectedToken) {
     return {
       id: "00000000-0000-0000-0000-000000000000",

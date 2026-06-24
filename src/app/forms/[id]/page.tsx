@@ -958,7 +958,7 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
           )}
 
           {/* Printable Receipt Area */}
-          <div id="print-receipt-section" className="hidden print:block font-sans p-10 bg-white text-slate-800 text-left max-w-4xl mx-auto">
+          <div id="print-receipt-section" className="hidden print:block font-sans p-10 bg-white text-slate-800 text-left max-w-4xl mx-auto relative overflow-hidden">
             <style dangerouslySetInnerHTML={{ __html: `
               @media print {
                 body * {
@@ -977,97 +977,123 @@ export default function PublicFormPage({ params }: { params: Promise<{ id: strin
               }
             ` }} />
             
-            {/* Header Brand */}
-            <div className="flex justify-between items-center border-b-2 border-indigo-600 pb-6 mb-6">
-              <div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded">TANDA TERIMA RESMI</span>
-                <h1 className="text-2xl font-black text-slate-900 tracking-tight mt-2">Bukti Pengisian Formulir</h1>
-                <p className="text-xs text-slate-500 mt-1">Dicetak secara elektronik pada: {new Date().toLocaleString("id-ID")}</p>
-              </div>
-              <div className="text-right">
-                <span className="text-sm font-black text-slate-900 block tracking-tight">KAPAN KONSER LAGI</span>
-                <span className="text-[9px] font-semibold text-slate-400 block tracking-wide uppercase">FORM BUILDER</span>
-              </div>
+            {/* Sleek double border top accent bar */}
+            <div className="w-full h-1.5 bg-indigo-600 rounded-t-md mb-1" />
+            <div className="w-full h-0.5 bg-slate-200 mb-6" />
+
+            {/* Background verified watermark rotated at 12 degrees */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0">
+              <span className="text-[120px] font-black text-slate-900/[0.025] uppercase tracking-widest transform rotate-12">
+                TERVERIFIKASI
+              </span>
             </div>
 
-            {/* Receipt metadata */}
-            <div className="grid grid-cols-2 gap-6 bg-slate-50 rounded-2xl p-5 border border-slate-100 text-xs mb-6">
-              <div className="space-y-2">
-                <div>
-                  <span className="font-semibold text-slate-500 block uppercase tracking-wider text-[9px]">Nama Formulir</span>
-                  <span className="text-sm font-bold text-indigo-950">{form.title}</span>
-                </div>
-                {form.description && (
+            <div className="relative z-10">
+              {/* Header Brand */}
+              <div className="flex justify-between items-start pb-6 mb-6 border-b border-slate-200">
+                <div className="flex items-start gap-4">
+                  {/* Logo container with file invoice icon */}
+                  <div className="bg-indigo-50 p-2.5 rounded-xl border border-indigo-100 flex items-center justify-center text-indigo-600">
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
                   <div>
-                    <span className="font-semibold text-slate-500 block uppercase tracking-wider text-[9px]">Keterangan</span>
-                    <span className="text-[11px] text-slate-600 block leading-relaxed">{form.description}</span>
+                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-600 bg-indigo-50/50 border border-indigo-100/50 px-2.5 py-1 rounded">TANDA TERIMA RESMI</span>
+                    <h1 className="text-2xl font-black text-slate-900 tracking-tight mt-2">Bukti Pengisian Formulir</h1>
+                    <p className="text-xs text-slate-500 mt-1">Dicetak secara elektronik pada: {new Date().toLocaleString("id-ID")}</p>
                   </div>
-                )}
-              </div>
-              <div className="space-y-2 text-right">
-                {responseId && (
-                  <div>
-                    <span className="font-semibold text-slate-500 block uppercase tracking-wider text-[9px]">ID Tanggapan</span>
-                    <span className="font-mono text-xs font-bold text-slate-800 bg-white border px-2.5 py-1 rounded-xl shadow-xs inline-block mt-1">#{responseId}</span>
-                  </div>
-                )}
-                {form.is_paid_form && (
-                  <div className="mt-1">
-                    <span className="font-semibold text-slate-500 block uppercase tracking-wider text-[9px]">Status Pembayaran</span>
-                    <span className="text-[10px] font-bold bg-emerald-50 border border-emerald-200/50 text-emerald-700 px-2.5 py-0.5 rounded-full inline-block mt-1">LUNAS (PAID)</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <p className="text-xs text-slate-500 italic mb-4 leading-relaxed bg-indigo-50/40 border-l-2 border-indigo-400 p-2.5 rounded-r-xl">
-                Dokumen ini merupakan bukti digital yang sah atas pengisian formulir di bawah ini. Informasi tersimpan aman dalam sistem database kami.
-              </p>
-            </div>
-
-            {/* Questions Table */}
-            <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-              <table className="w-full border-collapse text-xs">
-                <thead>
-                  <tr className="bg-slate-100 border-b border-slate-200">
-                    <th className="px-5 py-3 text-left font-bold text-slate-700 uppercase tracking-wider text-[9px] w-1/3">Pertanyaan / Kolom</th>
-                    <th className="px-5 py-3 text-left font-bold text-slate-700 uppercase tracking-wider text-[9px]">Tanggapan / Jawaban</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 text-slate-700">
-                  {fields.map((field) => {
-                    if (!isFieldVisible(field.id)) return null;
-                    let displayVal = answers[field.id] || "-";
-                    if (Array.isArray(displayVal)) {
-                      displayVal = displayVal.join(", ");
-                    }
-                    return (
-                      <tr key={field.id} className="hover:bg-slate-50/20 transition-colors">
-                        <td className="px-5 py-3.5 font-bold text-slate-800 bg-slate-50/30">{field.label}</td>
-                        <td className="px-5 py-3.5 whitespace-pre-wrap text-slate-700 leading-relaxed">{String(displayVal)}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Verification Footer and Stamp */}
-            <div className="flex justify-between items-end border-t border-slate-200 mt-12 pt-6">
-              <div className="text-[10px] text-slate-400 space-y-1">
-                <p className="font-bold text-slate-500">Verifikasi Digital</p>
-                <p>Status: Terverifikasi oleh Sistem Keamanan</p>
-                <p>Host: {process.env.NEXT_PUBLIC_APP_URL || "https://kapankonserlagi.my.id"}</p>
-              </div>
-              <div className="text-center w-36 space-y-1">
-                <div className="border-b border-dashed border-slate-400 pb-16 relative">
-                  {/* Virtual stamp mark */}
-                  <span className="absolute top-1 left-6 text-[10px] border-2 border-emerald-500/30 text-emerald-500/40 rounded-full font-black uppercase tracking-widest px-2.5 py-1.5 rotate-12 select-none pointer-events-none">
-                    TERKIRIM
-                  </span>
                 </div>
-                <span className="text-[9px] font-bold text-slate-400 block tracking-wider uppercase mt-1">Sistem Otomatis</span>
+                <div className="text-right">
+                  <span className="text-sm font-black text-slate-900 block tracking-tight">KAPAN KONSER LAGI</span>
+                  <span className="text-[9px] font-semibold text-slate-400 block tracking-wide uppercase">FORM BUILDER</span>
+                </div>
+              </div>
+
+              {/* Receipt metadata */}
+              <div className="grid grid-cols-2 gap-6 bg-slate-50/80 rounded-2xl p-5 border border-slate-100 text-xs mb-6 backdrop-blur-xs">
+                <div className="space-y-3">
+                  <div>
+                    <span className="font-semibold text-slate-400 block uppercase tracking-wider text-[9px]">Nama Formulir</span>
+                    <span className="text-sm font-bold text-slate-900">{form.title}</span>
+                  </div>
+                  {form.description && (
+                    <div>
+                      <span className="font-semibold text-slate-400 block uppercase tracking-wider text-[9px]">Keterangan</span>
+                      <span className="text-[11px] text-slate-600 block leading-relaxed">{form.description}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-3 text-right flex flex-col justify-between items-end">
+                  {responseId && (
+                    <div>
+                      <span className="font-semibold text-slate-400 block uppercase tracking-wider text-[9px]">ID Tanggapan</span>
+                      <span className="font-mono text-[11px] font-bold text-slate-800 bg-white border border-slate-200/60 px-2.5 py-1 rounded-lg shadow-xs inline-block mt-1">#{responseId}</span>
+                    </div>
+                  )}
+                  {form.is_paid_form && (
+                    <div className="mt-1">
+                      <span className="font-semibold text-slate-400 block uppercase tracking-wider text-[9px] mb-1">Status Pembayaran</span>
+                      <span className="text-[10px] font-bold bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-1 rounded-full inline-flex items-center gap-1 shadow-xs">
+                        <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        LUNAS (PAID)
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <p className="text-xs text-slate-500 italic mb-4 leading-relaxed bg-indigo-50/20 border-l-2 border-indigo-400 p-3 rounded-r-xl">
+                  Dokumen ini merupakan bukti digital yang sah atas pengisian formulir di bawah ini. Informasi tersimpan aman dalam sistem database kami.
+                </p>
+              </div>
+
+              {/* Questions Table */}
+              <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-xs bg-white">
+                <table className="w-full border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200">
+                      <th className="px-5 py-3.5 text-left font-bold text-slate-600 uppercase tracking-wider text-[9px] w-1/3">Pertanyaan / Kolom</th>
+                      <th className="px-5 py-3.5 text-left font-bold text-slate-600 uppercase tracking-wider text-[9px]">Tanggapan / Jawaban</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-slate-700">
+                    {fields.map((field) => {
+                      if (!isFieldVisible(field.id)) return null;
+                      let displayVal = answers[field.id] || "-";
+                      if (Array.isArray(displayVal)) {
+                        displayVal = displayVal.join(", ");
+                      }
+                      return (
+                        <tr key={field.id} className="hover:bg-slate-50/10 transition-colors">
+                          <td className="px-5 py-4 font-bold text-slate-800 bg-slate-50/20 border-r border-slate-100">{field.label}</td>
+                          <td className="px-5 py-4 whitespace-pre-wrap text-slate-600 leading-relaxed font-medium">{String(displayVal)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Verification Footer and Stamp */}
+              <div className="flex justify-between items-end border-t border-slate-200 mt-12 pt-6">
+                <div className="text-[10px] text-slate-400 space-y-1">
+                  <p className="font-bold text-slate-500">Verifikasi Digital</p>
+                  <p>Status: Terverifikasi oleh Sistem Keamanan</p>
+                  <p>Host: {process.env.NEXT_PUBLIC_APP_URL || "https://kapankonserlagi.my.id"}</p>
+                </div>
+                <div className="text-center w-36 space-y-1">
+                  <div className="border-b border-dashed border-slate-300 pb-16 relative">
+                    {/* Virtual stamp mark */}
+                    <span className="absolute top-2 left-6 text-[10px] border-2 border-emerald-500/40 text-emerald-500/50 rounded-full font-black uppercase tracking-widest px-3 py-1.5 rotate-12 select-none pointer-events-none bg-white">
+                      TERKIRIM
+                    </span>
+                  </div>
+                  <span className="text-[9px] font-bold text-slate-400 block tracking-wider uppercase mt-1">Sistem Otomatis</span>
+                </div>
               </div>
             </div>
           </div>

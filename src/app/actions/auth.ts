@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers";
 import { sql } from "@/lib/db";
-import { hashPassword, getSessionUser } from "@/lib/auth-helper";
+import { hashPassword, getSessionUser, verifyPassword, hashPasswordLegacy } from "@/lib/auth-helper";
 import { initDatabase } from "@/lib/db-init";
 
 /**
@@ -41,10 +41,25 @@ export async function loginAction(password: string, email?: string) {
       }
 
       const user = userRes[0];
-      const hashedPasswordInput = await hashPassword(password);
+      const verifyResult = await verifyPassword(password, user.password_hash);
 
-      if (user.password_hash !== hashedPasswordInput) {
+      if (!verifyResult.isValid) {
         return { success: false, error: "Email atau Password salah!" };
+      }
+
+      // Fallback/graceful upgrade: re-hash password to bcrypt in background
+      if (verifyResult.needsMigration) {
+        try {
+          const newBcryptHash = await hashPassword(password);
+          sql`
+            UPDATE users
+            SET password_hash = ${newBcryptHash}
+            WHERE id = ${user.id}
+          `.catch((err) => console.error("Gagal melakukan migrasi password hash ke bcrypt:", err));
+          console.log(`[Auth Security] Berhasil migrasi password hash ke bcrypt untuk user: ${user.email}`);
+        } catch (migrationError) {
+          console.error("Kesalahan migrasi password hash:", migrationError);
+        }
       }
 
       // Buat sesi di database
@@ -77,7 +92,8 @@ export async function loginAction(password: string, email?: string) {
   // 2. Fallback login menggunakan ADMIN_PASSWORD .env (Legacy Admin)
   const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
   if (password === adminPassword) {
-    const token = await hashPassword(adminPassword);
+    // Gunakan hashPasswordLegacy agar token admin berupa SHA-256 konstan untuk session check
+    const token = await hashPasswordLegacy(adminPassword);
     const cookieStore = await cookies();
     cookieStore.set("admin_session", token, {
       httpOnly: true,

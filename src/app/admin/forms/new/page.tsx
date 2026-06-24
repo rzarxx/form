@@ -59,10 +59,6 @@ export default function NewFormBuilder() {
 
   // AI Form Generator State
   const [aiPrompt, setAiPrompt] = useState("");
-  const [aiApiKey, setAiApiKey] = useState("");
-  const [aiModel, setAiModel] = useState("google/gemini-2.5-flash");
-  const [aiModelList, setAiModelList] = useState<{ label: string; value: string }[]>([]);
-  const [showAiSettings, setShowAiSettings] = useState(false);
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [aiMergeMode, setAiMergeMode] = useState<"replace" | "append">("replace");
   const [showAiPanel, setShowAiPanel] = useState(false);
@@ -71,34 +67,6 @@ export default function NewFormBuilder() {
 
   useEffect(() => {
     async function initSettings() {
-      let localKey = "";
-      let localModel = "";
-
-      if (typeof window !== "undefined") {
-        localKey = localStorage.getItem("openrouter_api_key") || "";
-        localModel = localStorage.getItem("openrouter_ai_model") || "";
-      }
-
-      try {
-        const res = await getGlobalSettingsAction();
-        if (res.success && res.data) {
-          const activeModel = localModel || res.data.openrouter_model || "google/gemini-2.5-flash";
-          setAiModel(activeModel);
-
-          if (!localKey && res.data.openrouter_api_key) {
-            setAiApiKey("");
-          } else {
-            setAiApiKey(localKey);
-          }
-        } else {
-          setAiModel(localModel || "google/gemini-2.5-flash");
-          setAiApiKey(localKey);
-        }
-      } catch {
-        setAiModel(localModel || "google/gemini-2.5-flash");
-        setAiApiKey(localKey);
-      }
-
       try {
         const statusRes = await getUserFormCreationStatusAction();
         if (statusRes.success) {
@@ -112,35 +80,10 @@ export default function NewFormBuilder() {
       } catch (err) {
         console.error("Gagal memuat status pembuatan form:", err);
       }
-
-      if (typeof window !== "undefined") {
-        const savedModels = localStorage.getItem("openrouter_models_list");
-        if (savedModels) {
-          try {
-            setAiModelList(JSON.parse(savedModels));
-          } catch {
-            setAiModelList([]);
-          }
-        }
-      }
     }
 
     initSettings();
   }, []);
-
-  const handleSaveApiKey = (key: string) => {
-    setAiApiKey(key);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("openrouter_api_key", key);
-    }
-  };
-
-  const handleSaveModel = (modelVal: string) => {
-    setAiModel(modelVal);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("openrouter_ai_model", modelVal);
-    }
-  };
 
   const handleGenerateWithAI = async () => {
     if (!aiPrompt.trim()) {
