@@ -25,16 +25,16 @@ import {
 } from "lucide-react";
 
 const fakePurchases = [
-  { message: "Rian baru saja meningkatkan ke akun Pro Premium!", desc: "Baru saja" },
-  { message: "Siti baru saja menghubungkan custom domain registrasi.siti.id", desc: "2 menit yang lalu" },
-  { message: "Ahmad baru saja menarik saldo hasil penjualan Rp450.000", desc: "5 menit yang lalu" },
-  { message: "Budi membuat kupon baru 'LAUNCH2026' dengan potongan 20%", desc: "7 menit yang lalu" },
-  { message: "Rina mengirim 124 auto-invoice PDF ke pembeli via Resend", desc: "10 menit yang lalu" },
-  { message: "Joko mengintegrasikan GTM dan Facebook Pixel di form pendaftarannya", desc: "12 menit yang lalu" },
-  { message: "Dewi mengaktifkan autoresponder WhatsApp via Fonnte", desc: "15 menit yang lalu" },
-  { message: "CV Maju Bersama mengekspor 500 tanggapan ke format Excel Premium", desc: "18 menit yang lalu" },
-  { message: "Doni menggunakan AI Response Insights untuk merangkum hasil survei", desc: "22 menit yang lalu" },
-  { message: "Anisa menyembunyikan branding platform pada formulir kustomnya", desc: "25 menit yang lalu" }
+  { message: "R*** A*** baru saja meningkatkan ke akun Pro Premium!", desc: "Baru saja" },
+  { message: "S*** N*** baru saja menghubungkan custom domain registrasi.s***.id", desc: "2 menit yang lalu" },
+  { message: "A*** H*** baru saja menarik saldo hasil penjualan Rp450.000", desc: "5 menit yang lalu" },
+  { message: "B*** S*** membuat kupon baru 'LAUNCH2026' dengan potongan 20%", desc: "7 menit yang lalu" },
+  { message: "R*** W*** mengirim 124 auto-invoice PDF ke pembeli via Resend", desc: "10 menit yang lalu" },
+  { message: "J*** P*** mengintegrasikan GTM dan Facebook Pixel di form pendaftarannya", desc: "12 menit yang lalu" },
+  { message: "D*** K*** mengaktifkan autoresponder WhatsApp via Fonnte", desc: "15 menit yang lalu" },
+  { message: "M*** B*** mengekspor 500 tanggapan ke format Excel Premium", desc: "18 menit yang lalu" },
+  { message: "D*** P*** menggunakan AI Response Insights untuk merangkum hasil survei", desc: "22 menit yang lalu" },
+  { message: "A*** R*** menyembunyikan branding platform pada formulir kustomnya", desc: "25 menit yang lalu" }
 ];
 
 export default function Home() {

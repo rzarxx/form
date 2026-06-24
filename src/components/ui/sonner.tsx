@@ -13,6 +13,7 @@ const Toaster = ({ ...props }: any) => {
       theme={themeClean}
       position="top-right"
       closeButton={true}
+      preset="bouncy"
       {...props}
     />
   )

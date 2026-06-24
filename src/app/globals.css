@@ -137,3 +137,22 @@
     background: oklch(0.3 0.05 285);
   }
 }
+
+/* Custom responsive adjustments for goey-toast */
+.gooey-wrapper {
+  max-width: 380px !important;
+  width: calc(100vw - 32px) !important;
+  box-sizing: border-box !important;
+}
+
+[data-sonner-toast] {
+  max-width: 380px !important;
+  width: calc(100vw - 32px) !important;
+  box-sizing: border-box !important;
+}
+
+.gooey-contentExpanded {
+  max-width: 100% !important;
+  min-width: unset !important;
+  box-sizing: border-box !important;
+}
